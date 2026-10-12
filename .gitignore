@@ -1,0 +1,4 @@
+/src/models/cardnames_onnx.json
+/src/models/vit_fp32.onnx
+/src/models/ygo_yolo.pt
+/src/models/cardcaptor_v3_best.pt
