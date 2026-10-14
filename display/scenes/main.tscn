@@ -1,0 +1,435 @@
+[gd_scene format=3 uid="uid://5xtd3pe3cv8g"]
+
+[ext_resource type="Texture2D" uid="uid://bbwadsvjp8xne" path="res://static/ground/red3.png" id="1_o5qli"]
+[ext_resource type="Theme" uid="uid://hvoqjp4bicl6" path="res://ui_themes/cyberpunk/cyberpunk.tres" id="1_o6xl0"]
+[ext_resource type="Texture2D" uid="uid://dnndo8ouulqjn" path="res://static/ground/red.png" id="2_0wfyh"]
+[ext_resource type="Texture2D" uid="uid://vd4vsoo727fu" path="res://static/ground/blue3.png" id="3_jyhfs"]
+[ext_resource type="Texture2D" uid="uid://bcpujwonefavw" path="res://static/ground/blue.png" id="3_sugp2"]
+[ext_resource type="Texture2D" uid="uid://c2niy85dr6hf2" path="res://static/ground/red4.png" id="3_tbgi4"]
+[ext_resource type="Texture2D" uid="uid://c2qk7igwcpgr4" path="res://static/ground/blue4.png" id="6_tefeu"]
+
+[sub_resource type="PanoramaSkyMaterial" id="PanoramaSkyMaterial_tefeu"]
+panorama = ExtResource("3_jyhfs")
+
+[sub_resource type="Sky" id="Sky_tbgi4"]
+sky_material = SubResource("PanoramaSkyMaterial_tefeu")
+
+[sub_resource type="Environment" id="Environment_jyhfs"]
+background_mode = 1
+sky = SubResource("Sky_tbgi4")
+
+[node name="main" type="Node3D" unique_id=356765844]
+
+[node name="ui" type="Control" parent="." unique_id=129540259]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme = ExtResource("1_o6xl0")
+
+[node name="player1" type="Control" parent="ui" unique_id=1882498565]
+layout_mode = 1
+anchors_preset = 9
+anchor_bottom = 1.0
+offset_left = 320.0
+offset_right = 320.0
+grow_vertical = 2
+
+[node name="back" type="Control" parent="ui/player1" unique_id=2127848303]
+layout_mode = 1
+anchors_preset = 4
+anchor_top = 0.5
+anchor_bottom = 0.5
+offset_top = -258.0
+offset_bottom = 258.0
+grow_vertical = 2
+
+[node name="deck" type="TextureRect" parent="ui/player1/back" unique_id=1875706391]
+custom_minimum_size = Vector2(102, 102)
+custom_maximum_size = Vector2(102, 102)
+layout_mode = 1
+anchors_preset = 2
+anchor_top = 1.0
+anchor_bottom = 1.0
+offset_top = -6.0
+offset_right = 102.0
+offset_bottom = 96.0
+grow_vertical = 0
+texture = ExtResource("1_o5qli")
+
+[node name="exdeck" type="TextureRect" parent="ui/player1/back" unique_id=837757041]
+custom_minimum_size = Vector2(102, 102)
+custom_maximum_size = Vector2(102, 102)
+layout_mode = 1
+offset_top = -102.0
+offset_right = 102.0
+texture = ExtResource("1_o5qli")
+
+[node name="back1" type="TextureRect" parent="ui/player1/back" unique_id=713328039]
+custom_minimum_size = Vector2(102, 102)
+custom_maximum_size = Vector2(102, 102)
+layout_mode = 0
+offset_right = 102.0
+offset_bottom = 102.0
+texture = ExtResource("1_o5qli")
+
+[node name="back2" type="TextureRect" parent="ui/player1/back" unique_id=779183857]
+custom_minimum_size = Vector2(102, 102)
+custom_maximum_size = Vector2(102, 102)
+layout_mode = 0
+offset_top = 102.0
+offset_right = 102.0
+offset_bottom = 204.0
+texture = ExtResource("1_o5qli")
+
+[node name="back3" type="TextureRect" parent="ui/player1/back" unique_id=838774856]
+custom_minimum_size = Vector2(102, 102)
+custom_maximum_size = Vector2(102, 102)
+layout_mode = 0
+offset_top = 204.0
+offset_right = 102.0
+offset_bottom = 306.0
+texture = ExtResource("1_o5qli")
+
+[node name="back4" type="TextureRect" parent="ui/player1/back" unique_id=1860167643]
+custom_minimum_size = Vector2(102, 102)
+custom_maximum_size = Vector2(102, 102)
+layout_mode = 0
+offset_top = 306.0
+offset_right = 102.0
+offset_bottom = 408.0
+texture = ExtResource("1_o5qli")
+
+[node name="back5" type="TextureRect" parent="ui/player1/back" unique_id=1543369125]
+custom_minimum_size = Vector2(102, 102)
+custom_maximum_size = Vector2(102, 102)
+layout_mode = 0
+offset_top = 408.0
+offset_right = 102.0
+offset_bottom = 510.0
+texture = ExtResource("1_o5qli")
+
+[node name="front" type="Control" parent="ui/player1" unique_id=940633795]
+layout_mode = 1
+anchors_preset = 4
+anchor_top = 0.5
+anchor_bottom = 0.5
+offset_left = 102.0
+offset_top = -258.0
+offset_right = 102.0
+offset_bottom = 258.0
+grow_vertical = 2
+
+[node name="field" type="TextureRect" parent="ui/player1/front" unique_id=1698938218]
+custom_minimum_size = Vector2(102, 102)
+custom_maximum_size = Vector2(102, 102)
+layout_mode = 1
+offset_top = -102.0
+offset_right = 102.0
+texture = ExtResource("1_o5qli")
+
+[node name="grave" type="TextureRect" parent="ui/player1/front" unique_id=24927926]
+custom_minimum_size = Vector2(102, 102)
+custom_maximum_size = Vector2(102, 102)
+layout_mode = 1
+anchors_preset = 2
+anchor_top = 1.0
+anchor_bottom = 1.0
+offset_top = -6.0
+offset_right = 102.0
+offset_bottom = 96.0
+grow_vertical = 0
+texture = ExtResource("1_o5qli")
+
+[node name="front1" type="TextureRect" parent="ui/player1/front" unique_id=2067645883]
+custom_minimum_size = Vector2(102, 102)
+custom_maximum_size = Vector2(102, 102)
+layout_mode = 0
+offset_right = 102.0
+offset_bottom = 102.0
+texture = ExtResource("2_0wfyh")
+
+[node name="front2" type="TextureRect" parent="ui/player1/front" unique_id=163530103]
+custom_minimum_size = Vector2(102, 102)
+custom_maximum_size = Vector2(102, 102)
+layout_mode = 0
+offset_top = 102.0
+offset_right = 102.0
+offset_bottom = 204.0
+texture = ExtResource("2_0wfyh")
+
+[node name="front3" type="TextureRect" parent="ui/player1/front" unique_id=1221657649]
+custom_minimum_size = Vector2(102, 102)
+custom_maximum_size = Vector2(102, 102)
+layout_mode = 0
+offset_top = 204.0
+offset_right = 102.0
+offset_bottom = 306.0
+texture = ExtResource("2_0wfyh")
+
+[node name="front4" type="TextureRect" parent="ui/player1/front" unique_id=800069327]
+custom_minimum_size = Vector2(102, 102)
+custom_maximum_size = Vector2(102, 102)
+layout_mode = 0
+offset_top = 306.0
+offset_right = 102.0
+offset_bottom = 408.0
+texture = ExtResource("2_0wfyh")
+
+[node name="front5" type="TextureRect" parent="ui/player1/front" unique_id=561329829]
+custom_minimum_size = Vector2(102, 102)
+custom_maximum_size = Vector2(102, 102)
+layout_mode = 0
+offset_top = 408.0
+offset_right = 102.0
+offset_bottom = 510.0
+texture = ExtResource("2_0wfyh")
+
+[node name="ex" type="Control" parent="ui/player1" unique_id=464733938]
+layout_mode = 1
+anchors_preset = 4
+anchor_top = 0.5
+anchor_bottom = 0.5
+offset_left = 102.0
+offset_top = -258.0
+offset_right = 102.0
+offset_bottom = 258.0
+grow_vertical = 2
+
+[node name="ex1" type="TextureRect" parent="ui/player1/ex" unique_id=1633435326]
+custom_minimum_size = Vector2(102, 102)
+custom_maximum_size = Vector2(102, 102)
+layout_mode = 0
+offset_left = 102.0
+offset_top = 102.0
+offset_right = 204.0
+offset_bottom = 204.0
+texture = ExtResource("3_tbgi4")
+
+[node name="ex2" type="TextureRect" parent="ui/player1/ex" unique_id=2125974394]
+custom_minimum_size = Vector2(102, 102)
+custom_maximum_size = Vector2(102, 102)
+layout_mode = 0
+offset_left = 102.0
+offset_top = 306.0
+offset_right = 204.0
+offset_bottom = 408.0
+texture = ExtResource("3_tbgi4")
+
+[node name="LPContainer" type="PanelContainer" parent="ui/player1" unique_id=1126451912]
+layout_mode = 0
+offset_right = 48.0
+offset_bottom = 48.0
+
+[node name="player2" type="Control" parent="ui" unique_id=1481827237]
+layout_mode = 1
+anchors_preset = 11
+anchor_left = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -320.0
+offset_right = -320.0
+grow_horizontal = 0
+grow_vertical = 2
+
+[node name="back" type="Control" parent="ui/player2" unique_id=1978905516]
+layout_mode = 1
+anchors_preset = 6
+anchor_left = 1.0
+anchor_top = 0.5
+anchor_right = 1.0
+anchor_bottom = 0.5
+offset_top = -258.0
+offset_bottom = 258.0
+grow_horizontal = 0
+grow_vertical = 2
+
+[node name="exdeck" type="TextureRect" parent="ui/player2/back" unique_id=1255114458]
+custom_minimum_size = Vector2(102, 102)
+custom_maximum_size = Vector2(102, 102)
+layout_mode = 1
+offset_left = -102.0
+offset_top = -102.0
+texture = ExtResource("3_jyhfs")
+
+[node name="deck" type="TextureRect" parent="ui/player2/back" unique_id=857363402]
+custom_minimum_size = Vector2(102, 102)
+custom_maximum_size = Vector2(102, 102)
+layout_mode = 1
+anchors_preset = 2
+anchor_top = 1.0
+anchor_bottom = 1.0
+offset_left = -102.0
+offset_top = -6.0
+offset_bottom = 96.0
+grow_vertical = 0
+texture = ExtResource("3_jyhfs")
+
+[node name="back1" type="TextureRect" parent="ui/player2/back" unique_id=1630506923]
+custom_minimum_size = Vector2(102, 102)
+custom_maximum_size = Vector2(102, 102)
+layout_mode = 0
+offset_left = -102.0
+offset_bottom = 102.0
+texture = ExtResource("3_jyhfs")
+
+[node name="back2" type="TextureRect" parent="ui/player2/back" unique_id=278801070]
+custom_minimum_size = Vector2(102, 102)
+custom_maximum_size = Vector2(102, 102)
+layout_mode = 0
+offset_left = -102.0
+offset_top = 102.0
+offset_bottom = 204.0
+texture = ExtResource("3_jyhfs")
+
+[node name="back3" type="TextureRect" parent="ui/player2/back" unique_id=1466517571]
+custom_minimum_size = Vector2(102, 102)
+custom_maximum_size = Vector2(102, 102)
+layout_mode = 0
+offset_left = -102.0
+offset_top = 204.0
+offset_bottom = 306.0
+texture = ExtResource("3_jyhfs")
+
+[node name="back4" type="TextureRect" parent="ui/player2/back" unique_id=345009114]
+custom_minimum_size = Vector2(102, 102)
+custom_maximum_size = Vector2(102, 102)
+layout_mode = 0
+offset_left = -102.0
+offset_top = 306.0
+offset_bottom = 408.0
+texture = ExtResource("3_jyhfs")
+
+[node name="back5" type="TextureRect" parent="ui/player2/back" unique_id=1103853499]
+custom_minimum_size = Vector2(102, 102)
+custom_maximum_size = Vector2(102, 102)
+layout_mode = 0
+offset_left = -102.0
+offset_top = 408.0
+offset_bottom = 510.0
+texture = ExtResource("3_jyhfs")
+
+[node name="front" type="Control" parent="ui/player2" unique_id=686232888]
+layout_mode = 1
+anchors_preset = 6
+anchor_left = 1.0
+anchor_top = 0.5
+anchor_right = 1.0
+anchor_bottom = 0.5
+offset_left = -102.0
+offset_top = -258.0
+offset_right = -102.0
+offset_bottom = 258.0
+grow_horizontal = 0
+grow_vertical = 2
+
+[node name="field" type="TextureRect" parent="ui/player2/front" unique_id=1468582923]
+custom_minimum_size = Vector2(102, 102)
+custom_maximum_size = Vector2(102, 102)
+layout_mode = 1
+offset_left = -102.0
+offset_top = -102.0
+texture = ExtResource("3_jyhfs")
+
+[node name="grave" type="TextureRect" parent="ui/player2/front" unique_id=301878386]
+custom_minimum_size = Vector2(102, 102)
+custom_maximum_size = Vector2(102, 102)
+layout_mode = 1
+anchors_preset = 2
+anchor_top = 1.0
+anchor_bottom = 1.0
+offset_left = -98.0
+offset_top = -6.0
+offset_right = 4.0
+offset_bottom = 96.0
+grow_vertical = 0
+texture = ExtResource("3_jyhfs")
+
+[node name="front1" type="TextureRect" parent="ui/player2/front" unique_id=1086708143]
+custom_minimum_size = Vector2(102, 102)
+custom_maximum_size = Vector2(102, 102)
+layout_mode = 0
+offset_left = -102.0
+offset_bottom = 102.0
+texture = ExtResource("3_sugp2")
+
+[node name="front2" type="TextureRect" parent="ui/player2/front" unique_id=1266374490]
+custom_minimum_size = Vector2(102, 102)
+custom_maximum_size = Vector2(102, 102)
+layout_mode = 0
+offset_left = -102.0
+offset_top = 102.0
+offset_bottom = 204.0
+texture = ExtResource("3_sugp2")
+
+[node name="front3" type="TextureRect" parent="ui/player2/front" unique_id=1357976459]
+custom_minimum_size = Vector2(102, 102)
+custom_maximum_size = Vector2(102, 102)
+layout_mode = 0
+offset_left = -102.0
+offset_top = 204.0
+offset_bottom = 306.0
+texture = ExtResource("3_sugp2")
+
+[node name="front4" type="TextureRect" parent="ui/player2/front" unique_id=1581747024]
+custom_minimum_size = Vector2(102, 102)
+custom_maximum_size = Vector2(102, 102)
+layout_mode = 0
+offset_left = -102.0
+offset_top = 306.0
+offset_bottom = 408.0
+texture = ExtResource("3_sugp2")
+
+[node name="front5" type="TextureRect" parent="ui/player2/front" unique_id=1985120424]
+custom_minimum_size = Vector2(102, 102)
+custom_maximum_size = Vector2(102, 102)
+layout_mode = 0
+offset_left = -102.0
+offset_top = 408.0
+offset_bottom = 510.0
+texture = ExtResource("3_sugp2")
+
+[node name="ex" type="Control" parent="ui/player2" unique_id=1414532792]
+layout_mode = 1
+anchors_preset = 6
+anchor_left = 1.0
+anchor_top = 0.5
+anchor_right = 1.0
+anchor_bottom = 0.5
+offset_left = -204.0
+offset_top = -258.0
+offset_right = -204.0
+offset_bottom = 258.0
+grow_horizontal = 0
+grow_vertical = 2
+
+[node name="ex1" type="TextureRect" parent="ui/player2/ex" unique_id=1108459227]
+custom_minimum_size = Vector2(102, 102)
+custom_maximum_size = Vector2(102, 102)
+layout_mode = 0
+offset_left = -102.0
+offset_top = 102.0
+offset_bottom = 204.0
+texture = ExtResource("6_tefeu")
+flip_h = true
+
+[node name="ex2" type="TextureRect" parent="ui/player2/ex" unique_id=1963050705]
+custom_minimum_size = Vector2(102, 102)
+custom_maximum_size = Vector2(102, 102)
+layout_mode = 0
+offset_left = -102.0
+offset_top = 306.0
+offset_bottom = 408.0
+texture = ExtResource("6_tefeu")
+flip_h = true
+
+[node name="Camera2D" type="Camera2D" parent="ui" unique_id=2040473244]
+anchor_mode = 0
+
+[node name="showfield" type="Node3D" parent="." unique_id=276305112]
+
+[node name="Camera3D" type="Camera3D" parent="showfield" unique_id=1639057473]
+environment = SubResource("Environment_jyhfs")
+current = true

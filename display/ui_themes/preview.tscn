@@ -1,0 +1,46 @@
+[gd_scene format=3 uid="uid://cg02be6t3kh3t"]
+
+[ext_resource type="Theme" uid="uid://hvoqjp4bicl6" path="res://ui_themes/cyberpunk/cyberpunk.tres" id="1_31gm0"]
+
+[node name="Control" type="Control" unique_id=1582419444]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme = ExtResource("1_31gm0")
+
+[node name="Button" type="Button" parent="." unique_id=1019480721]
+layout_mode = 0
+offset_left = -1.0
+offset_right = 311.0
+offset_bottom = 114.0
+text = "这是按钮Button"
+
+[node name="Button_exec" type="Button" parent="." unique_id=241382835]
+layout_mode = 0
+offset_left = -1.0
+offset_top = 109.0
+offset_right = 311.0
+offset_bottom = 223.0
+theme_type_variation = &"exec"
+text = "这是按钮Button"
+
+[node name="Button_danger" type="Button" parent="." unique_id=1552967937]
+layout_mode = 0
+offset_left = -1.0
+offset_top = 212.0
+offset_right = 311.0
+offset_bottom = 326.0
+theme_type_variation = &"danger"
+text = "这是按钮Button"
+
+[node name="Button_ghost" type="Button" parent="." unique_id=1420700934]
+layout_mode = 0
+offset_left = -1.0
+offset_top = 315.0
+offset_right = 311.0
+offset_bottom = 429.0
+theme_type_variation = &"ghost"
+text = "这是按钮Button"
