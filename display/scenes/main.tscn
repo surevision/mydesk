@@ -6,7 +6,23 @@
 [ext_resource type="Texture2D" uid="uid://vd4vsoo727fu" path="res://static/ground/blue3.png" id="3_jyhfs"]
 [ext_resource type="Texture2D" uid="uid://bcpujwonefavw" path="res://static/ground/blue.png" id="3_sugp2"]
 [ext_resource type="Texture2D" uid="uid://c2niy85dr6hf2" path="res://static/ground/red4.png" id="3_tbgi4"]
+[ext_resource type="Texture2D" uid="uid://cjqphkrm027nb" path="res://ui_themes/cyberpunk/images/lp1.png" id="5_tipki"]
 [ext_resource type="Texture2D" uid="uid://c2qk7igwcpgr4" path="res://static/ground/blue4.png" id="6_tefeu"]
+[ext_resource type="Texture2D" uid="uid://dgcqxsk1jewco" path="res://ui_themes/cyberpunk/images/lp2.png" id="9_85g3d"]
+
+[sub_resource type="StyleBoxTexture" id="StyleBoxTexture_85g3d"]
+texture = ExtResource("5_tipki")
+texture_margin_left = 32.0
+texture_margin_top = 48.0
+texture_margin_right = 32.0
+texture_margin_bottom = 48.0
+
+[sub_resource type="StyleBoxTexture" id="StyleBoxTexture_choun"]
+texture = ExtResource("9_85g3d")
+texture_margin_left = 32.0
+texture_margin_top = 48.0
+texture_margin_right = 32.0
+texture_margin_bottom = 48.0
 
 [sub_resource type="PanoramaSkyMaterial" id="PanoramaSkyMaterial_tefeu"]
 panorama = ExtResource("3_jyhfs")
@@ -218,10 +234,34 @@ offset_right = 204.0
 offset_bottom = 408.0
 texture = ExtResource("3_tbgi4")
 
-[node name="LPContainer" type="PanelContainer" parent="ui/player1" unique_id=1126451912]
+[node name="TextureRect" type="TextureRect" parent="ui/player1" unique_id=230863672]
 layout_mode = 0
-offset_right = 48.0
-offset_bottom = 48.0
+offset_right = 40.0
+offset_bottom = 40.0
+
+[node name="Panel" type="Panel" parent="ui/player1" unique_id=1290365672]
+layout_mode = 0
+offset_left = 377.0
+offset_right = 697.0
+offset_bottom = 128.0
+rotation = 1.5707964
+theme_override_styles/panel = SubResource("StyleBoxTexture_85g3d")
+
+[node name="Label" type="Label" parent="ui/player1/Panel" unique_id=1685929245]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -20.0
+offset_top = -11.5
+offset_right = 20.0
+offset_bottom = 11.5
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_font_sizes/font_size = 84
+text = "8000"
 
 [node name="player2" type="Control" parent="ui" unique_id=1481827237]
 layout_mode = 1
@@ -424,6 +464,31 @@ offset_top = 306.0
 offset_bottom = 408.0
 texture = ExtResource("6_tefeu")
 flip_h = true
+
+[node name="Panel" type="Panel" parent="ui/player2" unique_id=1769051334]
+layout_mode = 0
+offset_left = -401.0
+offset_top = 1050.0
+offset_right = -81.0
+offset_bottom = 1178.0
+rotation = -1.5707964
+theme_override_styles/panel = SubResource("StyleBoxTexture_choun")
+
+[node name="Label" type="Label" parent="ui/player2/Panel" unique_id=1172822913]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -20.0
+offset_top = -11.5
+offset_right = 20.0
+offset_bottom = 11.5
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_font_sizes/font_size = 84
+text = "8000"
 
 [node name="Camera2D" type="Camera2D" parent="ui" unique_id=2040473244]
 anchor_mode = 0
