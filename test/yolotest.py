@@ -22,19 +22,12 @@ print(f"卡名库：{len(names)} 张")
 
 
 def card_name(card_bgr, thr=0.01, topk=5):
-    """
-    对一张已裁好、正立的卡图做卡名识别
-    card_bgr: (H, W, 3) BGR 图像
-    返回 dict 或 None（低于置信度阈值时返回 None）
-    """
+    """对一张已裁好、正立的卡图做卡名识别"""
     if card_bgr is None or card_bgr.size == 0:
         return None
 
-    # 模型训练用的是 RGB，输入必须转 RGB
     card_rgb = cv2.cvtColor(card_bgr, cv2.COLOR_BGR2RGB)
-
     im = cv2.resize(card_rgb, (224, 224), interpolation=cv2.INTER_CUBIC)
-    # [-1, 1] 归一化（已通过对比实验验证）
     x = ((im.astype(np.float32) / 255.0 - 0.5) / 0.5).transpose(2, 0, 1)[None]
 
     logits = sess.run([oname], {iname: x})[0][0]
@@ -70,46 +63,50 @@ def analyze_card(corners, xywhr, img, debug=False):
       - orientation: '横向' / '纵向'
       - crop: 透视矫正后的卡图
 
-    corners: (4,2) OBB 四角坐标
-    xywhr:   (5,)  OBB 的 x, y, w, h, r
-             —— 用 w/h 判断横竖（不受旋转影响，最可靠）
+    朝向判断：量相邻两条边，短的当宽、长的当高。
+              上边 > 左边 → 横向；上边 < 左边 → 纵向。
     """
     pts = corners.astype(np.float32)
 
-    # ---------- 用 xywhr 的真实 w/h 判断朝向 ----------
-    w_real = float(xywhr[2])
-    h_real = float(xywhr[3])
-
-    if w_real < 30 or h_real < 30:
-        return None, "未知", None
-
-    if w_real > h_real:
-        orientation = "横向"
-        W = int(round(h_real))   # 转正后宽 = 原短边
-        H = int(round(w_real))
-    else:
-        orientation = "纵向"
-        W = int(round(w_real))
-        H = int(round(h_real))
-
-    # ---------- 角点重排 ----------
-    # xyxyxyxy 不保证是 TL→TR→BR→BL，按 y 分上下两组，各按 x 排序
+    # ---------- 角点重排：左上、右上、右下、左下 ----------
     pts_sorted = pts[np.argsort(pts[:, 1])]
     top2 = pts_sorted[:2]
     bot2 = pts_sorted[2:]
-    top2 = top2[np.argsort(top2[:, 0])]   # 左上、右上
-    bot2 = bot2[np.argsort(bot2[:, 0])]   # 左下、右下
-
+    top2 = top2[np.argsort(top2[:, 0])]
+    bot2 = bot2[np.argsort(bot2[:, 0])]
     ordered = np.array([top2[0], top2[1], bot2[1], bot2[0]],
                        dtype=np.float32)
 
+    # ---------- 量相邻两边 ----------
+    side_a = _dist(ordered[0], ordered[1])   # 上边长度
+    side_b = _dist(ordered[0], ordered[3])   # 左边长度
+
+    # 游戏王卡：高度 > 宽度
+    W = int(round(min(side_a, side_b)))
+    H = int(round(max(side_a, side_b)))
+
+    if W < 30 or H < 30:
+        return None, "未知", None
+
+    # 上边 > 左边 → 框横躺 → 横向
+    # 上边 < 左边 → 框直立 → 纵向
+    if side_a > side_b:
+        orientation = "横向"
+    else:
+        orientation = "纵向"
+
+    if debug:
+        print(f"  [debug] side_a(上)={side_a:.1f} side_b(左)={side_b:.1f} "
+              f"→ {orientation} W={W} H={H}")
+
     # ---------- 透视变换 ----------
+    # 注意：crop 永远是 W < H（竖着的卡），不管你原图里卡是横还是竖
     dst = np.array([[0, 0], [W - 1, 0], [W - 1, H - 1], [0, H - 1]],
                    dtype=np.float32)
     M = cv2.getPerspectiveTransform(ordered, dst)
     crop = cv2.warpPerspective(img, M, (W, H))
 
-    # ---------- 正反面判定 ----------
+    # ---------- 正反面判定（HSV）----------
     hsv = cv2.cvtColor(crop, cv2.COLOR_BGR2HSV)
     h_ch, s_ch, v_ch = cv2.split(hsv)
 
@@ -122,14 +119,13 @@ def analyze_card(corners, xywhr, img, debug=False):
     h_var = np.var(h_ch)
 
     if debug:
-        print(f"  [debug] W={W} H={H} orient={orientation} "
-              f"dark_ratio={center_dark_ratio:.3f} "
+        print(f"  [debug] dark_ratio={center_dark_ratio:.3f} "
               f"mean_v={center_mean_v:.1f} h_var={h_var:.1f}")
 
     # 卡背：中心大片暗色
     if center_dark_ratio > 0.6 and center_mean_v < 80:
         return "反面", orientation, crop
-    # 卡面：色相方差大（彩色卡图）
+    # 卡面：色相方差大
     elif h_var > 500:
         return "正面", orientation, crop
 
@@ -139,11 +135,10 @@ def analyze_card(corners, xywhr, img, debug=False):
 # ============================================================
 # 主流程
 # ============================================================
-# ========== 1. 加载模型（只加载一次）==========
 print("\n加载 DRAW2 (ygo_yolo)...")
 model_draw = YOLO("../src/models/ygo_yolo.pt")
-print("加载 cardcaptor...")
-model_cap = YOLO("../src/models/cardcaptor_v3_best.pt")
+print("加载 cardback...")
+model_cap = YOLO("../src/models/cardback_best.pt")
 
 # ========== 2. 图片列表 ==========
 images = [
@@ -182,7 +177,7 @@ for img_path in images:
                 'index': i + 1,
             })
 
-    # ---------- cardcaptor 推理（用于背面卡）----------
+    # ---------- cardback 推理（用于背面卡）----------
     t0 = time.time()
     r_cap = model_cap.predict(img_path, conf=0.5, verbose=False)[0]
     t_cap = time.time() - t0
@@ -221,7 +216,7 @@ for img_path in images:
             }
             front_cards.append(card_info)
 
-    # 背面卡（来自 cardcaptor）
+    # 背面卡（来自 cardback 模型）
     for d in cap_data:
         side, orientation, crop = analyze_card(d['corners'], d['xywhr'], img)
         if side == "反面":
@@ -276,7 +271,7 @@ for img_path in images:
 
     # ---------- 终端输出 ----------
     print(f"DRAW2 耗时: {t_draw:.3f}s（{len(draw_data)} 框 → 正面 {len(front_cards)}）")
-    print(f"cardcaptor 耗时: {t_cap:.3f}s（{len(cap_data)} 框 → 反面 {len(back_cards)}）")
+    print(f"cardback 耗时: {t_cap:.3f}s（{len(cap_data)} 框 → 反面 {len(back_cards)}）")
     print(f"总耗时: {t_draw + t_cap:.3f}s")
     print(f"结果已保存: {out_path}")
 
