@@ -49,8 +49,8 @@ theme = ExtResource("1_o6xl0")
 layout_mode = 1
 anchors_preset = 9
 anchor_bottom = 1.0
-offset_left = 320.0
-offset_right = 320.0
+offset_left = 102.0
+offset_right = 102.0
 grow_vertical = 2
 
 [node name="back" type="Control" parent="ui/player1" unique_id=2127848303]
@@ -240,7 +240,7 @@ offset_right = 40.0
 offset_bottom = 40.0
 
 [node name="Panel" type="Panel" parent="ui/player1" unique_id=1290365672]
-layout_mode = 0
+layout_mode = 1
 offset_left = 377.0
 offset_right = 697.0
 offset_bottom = 128.0
@@ -269,8 +269,10 @@ anchors_preset = 11
 anchor_left = 1.0
 anchor_right = 1.0
 anchor_bottom = 1.0
-offset_left = -320.0
-offset_right = -320.0
+offset_left = -100.0
+offset_top = -2.0
+offset_right = -100.0
+offset_bottom = -2.0
 grow_horizontal = 0
 grow_vertical = 2
 
@@ -466,11 +468,15 @@ texture = ExtResource("6_tefeu")
 flip_h = true
 
 [node name="Panel" type="Panel" parent="ui/player2" unique_id=1769051334]
-layout_mode = 0
-offset_left = -401.0
-offset_top = 1050.0
-offset_right = -81.0
-offset_bottom = 1178.0
+layout_mode = 1
+anchors_preset = 2
+anchor_top = 1.0
+anchor_bottom = 1.0
+offset_left = -377.0
+offset_top = -2.0
+offset_right = -57.0
+offset_bottom = 126.0
+grow_vertical = 0
 rotation = -1.5707964
 theme_override_styles/panel = SubResource("StyleBoxTexture_choun")
 
