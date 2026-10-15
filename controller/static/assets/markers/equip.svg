@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32">
+  <!-- 标记“装备”：纯色块，后续替换为真实素材 -->
+  <rect x="1" y="1" width="30" height="30" fill="#2c2606" stroke="#ffe14a"/>
+  <path d="M10 22 L22 10 M22 10 H15 M22 10 V17" fill="none" stroke="#ffe14a" stroke-width="2.5"/>
+</svg>

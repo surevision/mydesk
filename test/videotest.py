@@ -129,7 +129,7 @@ def analyze_card(corners, xywhr, img, debug=False):
 print("\n加载 DRAW2 (ygo_yolo)...")
 model_draw = YOLO("../src/models/ygo_yolo.pt")
 print("加载 cardcaptor...")
-model_cap = YOLO("../src/models/cardcaptor_v3_best.pt")
+model_cap = YOLO("../src/models/cardback_best.pt")
 
 # ---------- 打开手机摄像头流 ----------
 print(f"\n连接视频源: {PHONE_URL}")

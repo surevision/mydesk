@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>center 主控端</title>
+  <link rel="stylesheet" href="admin.css">
+</head>
+<body>
+  <header>
+    <h1>center 主控端</h1>
+    <div id="status-line" class="status-line">加载中…</div>
+  </header>
+
+  <main>
+    <section class="panel">
+      <h2>配置</h2>
+      <form id="config-form">
+        <div class="row">
+          <label>摄像头模式
+            <select name="mode">
+              <option value="single">单摄像头（拍双方）</option>
+              <option value="dual">双摄像头（各拍一方）</option>
+            </select>
+          </label>
+          <label class="chk"><input type="checkbox" name="recognition_enabled"> 启用识别</label>
+        </div>
+
+        <fieldset>
+          <legend>单摄像头</legend>
+          <div class="row">
+            <label>视频源
+              <input type="text" name="s_url" placeholder="http://ip:8080/video 或 0">
+            </label>
+            <label>player1 位置
+              <select name="s_side">
+                <option value="left">画面左侧</option>
+                <option value="right">画面右侧</option>
+              </select>
+            </label>
+          </div>
+        </fieldset>
+
+        <fieldset>
+          <legend>双摄像头</legend>
+          <div class="row">
+            <label class="chk"><input type="checkbox" name="d_swap"> 交换两路与玩家的对应</label>
+          </div>
+          <div class="row">
+            <label>摄像头1 视频源<input type="text" name="d_url1"></label>
+            <label>对应玩家
+              <select name="d_p1"><option value="1">player1</option><option value="2">player2</option></select>
+            </label>
+          </div>
+          <div class="row">
+            <label>摄像头2 视频源<input type="text" name="d_url2"></label>
+            <label>对应玩家
+              <select name="d_p2"><option value="1">player1</option><option value="2">player2</option></select>
+            </label>
+          </div>
+        </fieldset>
+
+        <fieldset>
+          <legend>识别参数</legend>
+          <div class="row">
+            <label>正面置信度<input type="number" step="0.05" min="0" max="1" name="front_conf"></label>
+            <label>卡背置信度<input type="number" step="0.05" min="0" max="1" name="back_conf"></label>
+            <label>卡名阈值<input type="number" step="0.01" min="0" max="1" name="name_thr"></label>
+          </div>
+          <div class="row">
+            <label>识别间隔(秒)<input type="number" step="0.05" min="0.05" name="interval"></label>
+            <label>最小边长(px)<input type="number" step="1" min="1" name="min_side"></label>
+          </div>
+          <div class="row">
+            <label>推理设备<input type="text" name="device" placeholder="0=GPU，cpu=CPU"></label>
+            <label>卡名缓存(秒)<input type="number" step="0.5" min="0" name="name_cache_ttl"></label>
+            <label class="chk"><input type="checkbox" name="track"> OBB 跟踪</label>
+          </div>
+        </fieldset>
+
+        <fieldset>
+          <legend>模型路径</legend>
+          <div class="row">
+            <label>正面检测<input type="text" name="m_yolo_front"></label>
+            <label>卡背检测<input type="text" name="m_yolo_back"></label>
+          </div>
+          <div class="row">
+            <label>卡名 ONNX<input type="text" name="m_name_onnx"></label>
+            <label>卡名库<input type="text" name="m_names_json"></label>
+          </div>
+        </fieldset>
+
+        <div class="actions">
+          <button type="submit">保存并应用</button>
+          <span id="save-msg"></span>
+        </div>
+      </form>
+    </section>
+
+    <section class="panel">
+      <h2>视频预览 <small>（叠加框为当前格子布局，用于校准）</small></h2>
+      <div id="previews" class="previews"></div>
+    </section>
+
+    <section class="panel">
+      <h2>运行状态</h2>
+      <pre id="status-json">…</pre>
+    </section>
+  </main>
+
+  <script src="admin.js"></script>
+</body>
+</html>

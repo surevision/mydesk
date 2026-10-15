@@ -1,0 +1,124 @@
+# -*- coding: utf-8 -*-
+"""
+center 配置：读写 config.json，提供默认值。
+配置文件方便手动编辑，管理页面也可修改。
+"""
+
+import copy
+import json
+import os
+
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+CONFIG_PATH = os.path.join(BASE_DIR, "config.json")
+
+# 模型默认放在项目 src/models 下（与 test/*.py 一致）
+MODELS_DIR = os.path.normpath(os.path.join(BASE_DIR, "..", "src", "models"))
+
+
+def _default_layout():
+    """
+    某一玩家区域内的格子归一化矩形（相对该玩家区域左上角，0-1）。
+    back = 魔陷区（5），front = 怪兽区（5），ex = 额外怪兽区（2），
+    其余为单格。默认排布仅作起点，需按实际拍摄微调（管理页面叠加显示）。
+    """
+    col = lambda i: 0.14 + 0.148 * i  # 第 i 列（0-4）的左边界
+    return {
+        "col_count": 5,
+        "back": [{"x": col(i), "y": 0.10, "w": 0.13, "h": 0.28} for i in range(5)],
+        "front": [{"x": col(i), "y": 0.42, "w": 0.13, "h": 0.28} for i in range(5)],
+        "ex": [
+            {"x": 0.005, "y": 0.42, "w": 0.105, "h": 0.28},
+            {"x": 0.89, "y": 0.42, "w": 0.105, "h": 0.28},
+        ],
+        "field": {"x": 0.005, "y": 0.10, "w": 0.115, "h": 0.28},
+        "grave": {"x": 0.88, "y": 0.10, "w": 0.115, "h": 0.28},
+        "exdeck": {"x": 0.005, "y": 0.73, "w": 0.115, "h": 0.25},
+        "deck": {"x": 0.88, "y": 0.73, "w": 0.115, "h": 0.25},
+    }
+
+
+DEFAULT_CONFIG = {
+    # HTTP 服务（管理页面 + 接口 + 视频预览）
+    "http_host": "0.0.0.0",
+    "http_port": 8080,
+    # WebSocket 服务（display / controller 连接）
+    "ws_host": "0.0.0.0",
+    "ws_port": 8765,
+
+    # 摄像头模式：single（单摄像头拍双方）| dual（双摄像头各拍一方）
+    "mode": "single",
+
+    # 单摄像头模式
+    "single": {
+        "url": "http://10.10.1.105:8080/video",
+        "player1_side": "left",   # left：画面左半为 player1；right：右半为 player1
+    },
+
+    # 双摄像头模式
+    "dual": {
+        "swap": False,            # 交换两个摄像头与玩家的对应
+        "cameras": [
+            {"url": "http://10.10.1.105:8080/video", "player": 1},
+            {"url": "http://10.10.1.105:8080/video", "player": 2},
+        ],
+    },
+
+    # 模型路径（相对项目根目录或绝对路径皆可）
+    "models": {
+        "yolo_front": os.path.join(MODELS_DIR, "ygo_yolo.pt"),      # DRAW2 正面卡检测
+        "yolo_back": os.path.join(MODELS_DIR, "cardback_best.pt"),  # 卡背检测
+        "name_onnx": os.path.join(MODELS_DIR, "vit_fp32.onnx"),     # 卡名识别 ONNX
+        "names_json": os.path.join(MODELS_DIR, "cardnames_onnx.json"),
+    },
+
+    # 识别参数（参考 test/videotest.py）
+    "detect": {
+        "front_conf": 0.1,      # 正面检测置信度阈值
+        "back_conf": 0.5,       # 卡背置信度阈值
+        "name_thr": 0.1,        # 卡名识别置信度阈值（低于则视为未识别，id=-1）
+        "interval": 0.1,        # 识别间隔（秒）
+        "min_side": 30,         # 卡最小边长（像素），过小忽略
+        "device": 0,            # 推理设备：0=第一块 GPU；"cpu"=CPU
+        "track": True,          # 使用 OBB 跟踪（稳定身份 + 卡名缓存）
+        "name_cache_ttl": 3.0,  # 卡名缓存存活时间（秒）
+    },
+
+    # 每玩家区域的格子布局
+    "layout": _default_layout(),
+
+    # 识别结果是否更新战场（可临时关闭，仅用人工操作）
+    "recognition_enabled": True,
+}
+
+
+def _deep_merge(base, override):
+    """把 override 合并进 base 的副本（递归）。"""
+    out = copy.deepcopy(base)
+    if not isinstance(override, dict):
+        return out
+    for k, v in override.items():
+        if isinstance(v, dict) and isinstance(out.get(k), dict):
+            out[k] = _deep_merge(out[k], v)
+        else:
+            out[k] = copy.deepcopy(v)
+    return out
+
+
+def load_config():
+    if not os.path.exists(CONFIG_PATH):
+        save_config(DEFAULT_CONFIG)
+        return copy.deepcopy(DEFAULT_CONFIG)
+    try:
+        with open(CONFIG_PATH, "r", encoding="utf-8") as f:
+            data = json.load(f)
+        return _deep_merge(DEFAULT_CONFIG, data)
+    except (OSError, ValueError) as e:
+        print(f"[config] 读取失败，使用默认配置: {e}")
+        return copy.deepcopy(DEFAULT_CONFIG)
+
+
+def save_config(cfg):
+    merged = _deep_merge(DEFAULT_CONFIG, cfg)
+    with open(CONFIG_PATH, "w", encoding="utf-8") as f:
+        json.dump(merged, f, ensure_ascii=False, indent=2)
+    return merged

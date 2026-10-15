@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="120" height="168" viewBox="0 0 120 168">
+  <!-- 未识别/占位卡面：纯色块，后续替换为真实卡图 -->
+  <rect width="120" height="168" fill="#12324a"/>
+  <rect x="4" y="4" width="112" height="160" fill="none" stroke="#2ad4ff" stroke-opacity="0.7"/>
+  <line x1="4" y1="4" x2="116" y2="164" stroke="#2ad4ff" stroke-opacity="0.15"/>
+  <line x1="116" y1="4" x2="4" y2="164" stroke="#2ad4ff" stroke-opacity="0.15"/>
+  <text x="60" y="90" fill="#7ff0ff" font-family="monospace" font-size="14" text-anchor="middle">NO DATA</text>
+</svg>

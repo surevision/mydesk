@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32">
+  <!-- 标记“无效”：纯色块，后续替换为真实素材 -->
+  <rect x="1" y="1" width="30" height="30" fill="#3a0a0d" stroke="#ff3b46"/>
+  <line x1="8" y1="8" x2="24" y2="24" stroke="#ff3b46" stroke-width="3"/>
+  <line x1="24" y1="8" x2="8" y2="24" stroke="#ff3b46" stroke-width="3"/>
+</svg>

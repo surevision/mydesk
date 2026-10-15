@@ -1,0 +1,40 @@
+:root { color-scheme: dark; }
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  font: 14px/1.5 "Segoe UI", "Microsoft YaHei", sans-serif;
+  background: #0e1116; color: #d7dde5;
+}
+header {
+  display: flex; align-items: center; justify-content: space-between; gap: 16px;
+  padding: 12px 20px; background: #151a22; border-bottom: 1px solid #232a35;
+  position: sticky; top: 0; z-index: 2;
+}
+h1 { font-size: 18px; margin: 0; }
+h2 { font-size: 15px; margin: 0 0 10px; color: #9fb2c8; }
+h2 small { color: #6b7a8d; font-weight: normal; }
+.status-line { color: #8fd3a8; font-size: 13px; }
+main { padding: 16px 20px; display: grid; gap: 16px; }
+.panel { background: #151a22; border: 1px solid #232a35; border-radius: 8px; padding: 14px 16px; }
+.row { display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 10px; }
+label { display: flex; flex-direction: column; gap: 4px; font-size: 13px; color: #aebccd; }
+label.chk { flex-direction: row; align-items: center; gap: 6px; color: #d7dde5; }
+input[type="text"], input[type="number"], select {
+  background: #0e1116; color: #e6edf5; border: 1px solid #2b3441; border-radius: 6px;
+  padding: 6px 8px; min-width: 200px; font: inherit;
+}
+input[type="number"] { min-width: 100px; }
+fieldset { border: 1px solid #232a35; border-radius: 6px; margin: 0 0 12px; padding: 10px 12px; }
+legend { color: #7f92a8; padding: 0 6px; }
+.actions { display: flex; align-items: center; gap: 12px; }
+button {
+  background: #2563eb; color: #fff; border: 0; border-radius: 6px;
+  padding: 8px 16px; font: inherit; cursor: pointer;
+}
+button:hover { background: #1d4ed8; }
+#save-msg { color: #8fd3a8; }
+.previews { display: flex; flex-wrap: wrap; gap: 12px; }
+.preview { flex: 1 1 360px; max-width: 640px; background: #0b0e13; border: 1px solid #232a35; border-radius: 6px; overflow: hidden; }
+.preview img { display: block; width: 100%; }
+.preview .cap { padding: 4px 8px; color: #7f92a8; font-size: 12px; }
+pre { background: #0b0e13; border: 1px solid #232a35; border-radius: 6px; padding: 10px; overflow: auto; max-height: 320px; font-size: 12px; }
