@@ -55,15 +55,18 @@
 - 播放BGM
 - 播放音效
 
+- 设置识别置信度
+
 ## 环境记录
 
 ```
-conda create -n ygodeck python=3.12
-conda activate ygodeck
+conda create -n ygodesk python=3.12
+conda activate ygodesk
 ```
 
 ```
 pip install pydantic>=2.7.0
 pip install ultralytics
 pip install onnxruntime
+pip install onnxruntime-gpu
 ```

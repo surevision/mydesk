@@ -142,10 +142,9 @@ model_cap = YOLO("../src/models/cardback_best.pt")
 
 # ========== 2. 图片列表 ==========
 images = [
-    "image.png",
-    "imadfge (2).png",
-    "imadfge.png",
-    "imagfe.png",
+    "timg.png",
+    "QQ截图20261015170608.png",
+    "10000.jpg",
 ]
 
 # ========== 3. 循环识别 ==========
@@ -160,7 +159,7 @@ for img_path in images:
 
     # ---------- DRAW2 推理（用于正面卡）----------
     t0 = time.time()
-    r_draw = model_draw.predict(img_path, conf=0.1, verbose=False)[0]
+    r_draw = model_draw.predict(img_path, conf=0.8, verbose=False)[0]
     t_draw = time.time() - t0
 
     img = r_draw.orig_img.copy()
@@ -203,7 +202,7 @@ for img_path in images:
         side, orientation, crop = analyze_card(d['corners'], d['xywhr'], img)
         if side == "正面":
             t0 = time.time()
-            info = card_name(crop, thr=0.4)
+            info = card_name(crop, thr=0.01)
             t_name = time.time() - t0
 
             card_info = {
