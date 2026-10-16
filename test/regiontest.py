@@ -14,7 +14,7 @@ regiontest.py
         ② HSV 阈值 + 灰度阈值 → 白色掩膜
         ③ 闭运算（连接外白框 + 内白点） + 腐蚀（分离粘连）
         ④ 逐轮廓六重过滤：
-            1. 边长 40~70（过滤格子框 81×77）
+            1. 边长 = ROI 宽的 4%~25%（过滤格子框）
             2. 宽高比 0.75~1.35
             3. 四边形 + 凸
             4. 白占比 0.05~0.90
@@ -42,9 +42,10 @@ MAX_SIDE = 1920
 # ============================================================
 # 方块检测参数
 # ============================================================
-# 边长范围：定位方块约 56×56，格子框约 81×77 → 上限 70 区分
-SIDE_MIN = 40
-SIDE_MAX = 70
+# 边长范围：按 ROI 宽度比例（不再用绝对像素，任意缩放都能识别）
+# 放宽到 0.04~0.25，容忍框选范围大小不一
+SIDE_MIN_RATIO = 0.04
+SIDE_MAX_RATIO = 0.25
 
 # 宽高比：定位方块是正方形
 SQUARE_MIN = 0.75
@@ -167,6 +168,7 @@ def ask_user_roi(img_bgr):
 
     print("\n" + "=" * 70)
     print(">>> 第 1 步：框选【左侧玩家区】")
+    print("    提示：框紧一点，贴住 4 个方块外沿，别留太多空余")
     print("=" * 70)
     win1 = f"STEP 1/2 LEFT ({W}x{H})  ENTER=OK"
     cv2.namedWindow(win1, cv2.WINDOW_NORMAL)
@@ -182,6 +184,7 @@ def ask_user_roi(img_bgr):
     cv2.rectangle(preview, (lx, ly), (lx + lw, ly + lh), (0, 255, 0), 3)
 
     print(">>> 第 2 步：框选【右侧玩家区】")
+    print("    提示：框紧一点，贴住 4 个方块外沿，别留太多空余")
     win2 = f"STEP 2/2 RIGHT ({W}x{H})  ENTER=OK"
     cv2.namedWindow(win2, cv2.WINDOW_NORMAL)
     cv2.resizeWindow(win2, 1200, 700)
@@ -259,6 +262,11 @@ def find_markers_in_rect(img_bgr, rect):
     rx0, ry0, rx1, ry1 = rect
     sub = img_bgr[ry0:ry1, rx0:rx1]
 
+    # 按当前 ROI 宽度换算边长范围
+    roi_w = rx1 - rx0
+    side_min = int(roi_w * SIDE_MIN_RATIO)
+    side_max = int(roi_w * SIDE_MAX_RATIO)
+
     # ---------- ① 灰度化 + CLAHE ----------
     # CLAHE clipLimit=4.0 比默认 2.0 大，专门压制屏幕反光过曝
     gray = cv2.cvtColor(sub, cv2.COLOR_BGR2GRAY)
@@ -297,9 +305,8 @@ def find_markers_in_rect(img_bgr, rect):
     for c in contours:
         bx, by, bw, bh = cv2.boundingRect(c)
 
-        # 过滤 1：边长 40~70
-        # 定位方块约 56×56，格子框约 81×77 → 上限 70 区分
-        if not (SIDE_MIN <= bw <= SIDE_MAX and SIDE_MIN <= bh <= SIDE_MAX):
+        # 过滤 1：边长 = ROI 宽的 4%~25%
+        if not (side_min <= bw <= side_max and side_min <= bh <= side_max):
             continue
 
         # 过滤 2：宽高比 0.75~1.35（正方形）
@@ -318,9 +325,9 @@ def find_markers_in_rect(img_bgr, rect):
         # 过滤 4：白占比 0.05~0.90
         # 空心框 0.05~0.15，实心方块 0.4~0.7 → 都通过
         # > 0.90 说明纯白反光
-        roi_w = mask_white[by:by + bh, bx:bx + bw]
+        roi_w_mask = mask_white[by:by + bh, bx:bx + bw]
         total = bw * bh
-        wr = cv2.countNonZero(roi_w) / float(total)
+        wr = cv2.countNonZero(roi_w_mask) / float(total)
         if wr < WHITE_RATIO_MIN or wr > WHITE_RATIO_MAX:
             continue
 

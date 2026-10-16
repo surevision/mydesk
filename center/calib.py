@@ -29,7 +29,7 @@ import threading
 # ============================================================
 # 纵向（单摄像头）：移植自 test/regiontest.py
 PARAMS_V = {
-    "side_min": 40, "side_max": 70,          # 定位方块约 56×56，格子框约 81×77
+    "side_min_ratio": 0.04, "side_max_ratio": 0.25,  # 边长占 ROI 宽的比例（自适应分辨率）
     "square_min": 0.75, "square_max": 1.35,  # 正方形
     "white_ratio_min": 0.05, "white_ratio_max": 0.90,
     "white_min_v": 120, "white_max_s": 160,  # HSV：低饱和 + 高亮度
@@ -44,7 +44,7 @@ PARAMS_V = {
 
 # 横向（双摄像头）：移植自 test/h_regiontest.py
 PARAMS_H = {
-    "side_min": 60, "side_max": 120,         # 横板定位方块更大
+    "side_min_ratio": 0.04, "side_max_ratio": 0.10,  # 边长占 ROI 宽的比例
     "square_min": 0.75, "square_max": 1.35,
     "white_ratio_min": 0.05, "white_ratio_max": 0.85,   # 过滤反光块（纯白 wr > 0.85）
     "white_min_v": 120, "white_max_s": 160,
@@ -211,6 +211,11 @@ def find_markers_in_rect(img_bgr, rect, params=None):
     if sub.size == 0:
         return []
 
+    # 按当前 ROI 宽度换算边长范围（比例，任意分辨率/缩放都适用）
+    roi_w = rx1 - rx0
+    side_min = int(roi_w * p["side_min_ratio"])
+    side_max = int(roi_w * p["side_max_ratio"])
+
     # ① 灰度化 + CLAHE
     gray = cv2.cvtColor(sub, cv2.COLOR_BGR2GRAY)
     clahe = cv2.createCLAHE(clipLimit=p["clahe_clip"], tileGridSize=(8, 8))
@@ -240,8 +245,8 @@ def find_markers_in_rect(img_bgr, rect, params=None):
     for c in contours:
         bx, by, bw, bh = cv2.boundingRect(c)
 
-        if not (p["side_min"] <= bw <= p["side_max"]
-                and p["side_min"] <= bh <= p["side_max"]):
+        if not (side_min <= bw <= side_max
+                and side_min <= bh <= side_max):
             continue
         ratio = bw / float(bh)
         if not (p["square_min"] <= ratio <= p["square_max"]):

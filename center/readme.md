@@ -39,7 +39,7 @@ conda run -n ygodesk python center.py
 | `state.py` | 战场状态存储（人工优先、识别补充） |
 | `gridmap.py` | 画面坐标 → (玩家, 格子) 的映射（未定位时的回退方案） |
 | `calib.py` | 定位/校准：4 个定位方块 → 单应变换 → 正空间格子（纵向移植自 test/regiontest.py，横向移植自 test/h_regiontest.py） |
-| `recognize.py` | 摄像头线程 + YOLO/ONNX 识别流水线 |
+| `recognize.py` | 摄像头线程 + 每路独立 `Detector`（YOLO/ONNX）识别流水线；多路并发不串号 |
 | `http_server.py` | 管理页面、接口、MJPEG 预览 |
 | `static/` | 管理页面（admin.html/js/css） |
 
@@ -54,6 +54,8 @@ conda run -n ygodesk python center.py
 
 - **单摄像头 `single`**：一台摄像头横向拍摄双方场地；画面左右各属一名玩家，`player1_side` 决定 player1 在左还是右。
 - **双摄像头 `dual`**：每台拍一名玩家；`cameras[i].player` 指定对应玩家，`swap` 可整体交换。
+- 每路摄像头在**独立线程**里取流，并各有**独立的识别器**（独立 YOLO 实例与跟踪器、卡名缓存），因此两路可真正并发、OBB 跟踪 id 不会相互串号；只共享无状态的卡名 ONNX 会话。
+- 双摄像头要填**两个不同**的视频流地址（如采集端 monitor 的 `/video/0`、`/video/1`）；若两路填同一地址，实际只有一路画面。
 
 识别到的卡牌用**中心坐标**落到格子：若已做过定位（见下），走校准的单应映射；否则回退到「玩家区域矩形 + `layout` 归一化矩形」。
 

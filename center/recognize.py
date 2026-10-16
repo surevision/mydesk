@@ -4,6 +4,10 @@ recognize.py
 摄像头识别：读取视频流 → YOLO(OBB) 检测卡牌 → 透视矫正/正反面/朝向 → 卡名识别
 → 由卡牌中心坐标映射到 (玩家, 格子) → 写入 BattlefieldStore。
 
+多路并发：Models 只保存无状态共享资源（cv2/numpy、卡名 ONNX 会话、卡名库），
+每路摄像头各自建一个 Detector（独占 YOLO 实例与跟踪器、卡名缓存），
+因此两路摄像头可同时识别，且 OBB 跟踪 id 不会相互串号。
+
 参考 test/videotest.py（实时）与 test/yolotest.py（图片）：
 - OBB 结果同时给 corners 与 xywhr，朝向/尺寸用 xywhr 判断（更稳）。
 - 使用 OBB 跟踪 id + 卡名缓存（TTL）避免每帧重跑 ONNX。
@@ -27,25 +31,22 @@ def _log(*a):
 
 
 class Models:
-    """共享的模型容器；加载一次，所有摄像头复用。"""
+    """共享资源：cv2/numpy、卡名 ONNX 会话与卡名库。
+    每路摄像头各自 make_detector() 出一个 Detector（独占 YOLO 与跟踪器），
+    只共享无状态的 ONNX 会话，从而可安全并发。"""
 
     def __init__(self, cfg):
         self.cfg = cfg
         self.cv2 = None
         self.np = None
-        self.front = None
-        self.back = None
         self.sess = None
         self.iname = None
         self.oname = None
         self.names = None
         self.providers = []
-        self.ok = False          # 完整识别链路可用
+        self.ok = False          # 共享识别链路可用（cv2/numpy + ONNX + 卡名库）
         self.ready = False       # 至少 cv2 可用（能取流预览）
         self.reason = "未加载"
-        self._frame = None
-        self._cache = {}         # tid -> info | None
-        self._seen = {}          # tid -> 最近出现时间
 
     def load(self):
         try:
@@ -65,15 +66,13 @@ class Models:
             _log(self.reason)
             return False
         try:
-            from ultralytics import YOLO
             import onnxruntime as ort
+            from ultralytics import YOLO  # noqa: F401  （实际实例在 Detector 里建）
         except Exception as e:  # noqa: BLE001
             self.reason = f"缺少 ultralytics/onnxruntime（仅预览）: {e}"
             _log(self.reason)
             return False
         try:
-            self.front = YOLO(m["yolo_front"])
-            self.back = YOLO(m["yolo_back"])
             # onnxruntime 优先 GPU（CUDA），否则回退 CPU
             avail = ort.get_available_providers()
             self.providers = [p for p in ("CUDAExecutionProvider", "CPUExecutionProvider")
@@ -92,6 +91,44 @@ class Models:
         self.reason = f"已加载（卡名库 {len(self.names)} 张，ONNX: {'/'.join(used)}）"
         _log(self.reason)
         return True
+
+    def make_detector(self):
+        """为一路摄像头创建独立识别器（各自的 YOLO 实例与跟踪器）。"""
+        return Detector(self)
+
+    def device_info(self):
+        return {"providers": self.providers, "device": self.cfg["detect"].get("device", 0)}
+
+
+class Detector:
+    """单摄像头的识别器：独占 YOLO(front/back) 实例与跟踪器、卡名缓存。
+    多个 Detector 之间只共享无状态的 ONNX 会话，可安全并发。"""
+
+    def __init__(self, models):
+        self.models = models
+        self.cfg = models.cfg
+        self.cv2 = models.cv2
+        self.np = models.np
+        self.sess = models.sess
+        self.iname = models.iname
+        self.oname = models.oname
+        self.names = models.names
+        self.front = None
+        self.back = None
+        self.ready = False
+        self.error = ""
+        self._frame = None
+        self._cache = {}         # tid -> info | None
+        self._seen = {}          # tid -> 最近出现时间
+        try:
+            from ultralytics import YOLO
+            m = self.cfg["models"]
+            self.front = YOLO(m["yolo_front"])
+            self.back = YOLO(m["yolo_back"])
+            self.ready = True
+        except Exception as e:  # noqa: BLE001
+            self.error = f"YOLO 加载失败: {e}"
+            _log(self.error)
 
     # ---- 卡名识别（带缓存）------------------------------------------------
     def _card_name(self, card_bgr, thr):
@@ -220,9 +257,6 @@ class Models:
             "info": info,
         }
 
-    def device_info(self):
-        return {"providers": self.providers, "device": self.cfg["detect"].get("device", 0)}
-
 
 class CameraWorker(threading.Thread):
     def __init__(self, cam_id, url, players, store, models, cfg, frames,
@@ -232,11 +266,12 @@ class CameraWorker(threading.Thread):
         self.url = url
         self.players = players           # 该摄像头负责的玩家列表 [1] 或 [1,2]
         self.store = store
-        self.models = models
+        self.models = models             # 共享资源（cv2 等）
         self.cfg = cfg
         self.frames = frames            # {cam_id: jpeg bytes} 预览（带叠加）
         self.calib = calib              # CalibrationStore 或 None
         self.raw_frames = raw_frames    # {cam_id: bgr frame} 原始帧（校准用）
+        self.detector = None            # 本摄像头独立的识别器（在 run 里创建）
         self._stop = threading.Event()
         self.connected = False
         self.fps = 0.0
@@ -261,6 +296,9 @@ class CameraWorker(threading.Thread):
         if cv2 is None:
             self.error = self.models.reason
             return
+        # 本路独立识别器：独占 YOLO 与跟踪器，和多路并发互不干扰
+        if self.models.ok:
+            self.detector = self.models.make_detector()
         cap = self._open()
         if not cap.isOpened():
             self.error = f"无法打开视频源: {self.url}"
@@ -295,8 +333,8 @@ class CameraWorker(threading.Thread):
                 count = 0
                 t0 = now
             result = None
-            if self.models.ok and self.cfg.get("recognition_enabled", True) and \
-                    now - last_detect >= interval:
+            if self.detector is not None and self.detector.ready and \
+                    self.cfg.get("recognition_enabled", True) and now - last_detect >= interval:
                 last_detect = now
                 try:
                     result = self._process(frame)
@@ -308,7 +346,7 @@ class CameraWorker(threading.Thread):
         self.connected = False
 
     def _process(self, frame):
-        dets = self.models.detect(frame)
+        dets = self.detector.detect(frame)
         by_player = {p: {} for p in self.players}
         layout = self.cfg["layout"]
         mode = self.cfg["mode"]
@@ -403,6 +441,7 @@ class CameraWorker(threading.Thread):
             "id": self.cam_id, "url": self.url, "players": self.players,
             "connected": self.connected, "fps": round(self.fps, 1),
             "detections": self.detections, "error": self.error,
+            "model": self.detector.error if (self.detector and not self.detector.ready) else "",
         }
 
 

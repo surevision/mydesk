@@ -8,6 +8,8 @@ h_regiontest.py
     行1:     -      -     EX1     -     EX2     -      -
     行2:    场地   前场1  前场2  前场3  前场4  前场5  墓地
     行3:    额外   后场1  后场2  后场3  后场4  后场5  卡组
+
+尺寸判断：按 ROI 宽度比例，不依赖绝对像素。
 """
 
 import os
@@ -22,17 +24,29 @@ MAX_SIDE = 1920
 # ============================================================
 # 方块检测参数
 # ============================================================
-WHITE_MIN_V = 120
-WHITE_MAX_S = 160
-SIDE_MIN = 60
-SIDE_MAX = 120
+# 尺寸：占 ROI 宽度的比例（不依赖绝对像素）
+SIDE_MIN_RATIO = 0.04        # 最小边长 = ROI 宽的 4%
+SIDE_MAX_RATIO = 0.10        # 最大边长 = ROI 宽的 10%
+
 SQUARE_MIN = 0.75
 SQUARE_MAX = 1.35
+
+# 白占比
 WHITE_RATIO_MIN = 0.05
-WHITE_RATIO_MAX = 0.85       # 过滤反光块（纯白 wr > 0.85）
-INNER_BLACK_MIN = 0.0        # 关闭内部黑约束
+WHITE_RATIO_MAX = 0.85
+
+# 内部黑（关闭）
+INNER_BLACK_MIN = 0.0
 INNER_MARGIN = 0.30
+
+# 灰度 std
 STD_MIN = 15
+
+# HSV 阈值
+WHITE_MIN_V = 120
+WHITE_MAX_S = 160
+
+# CLAHE / 腐蚀
 CLAHE_CLIP = 4.0
 ERODE_KERNEL = 5
 
@@ -178,15 +192,15 @@ def filter_by_quadrant(marks, rect):
 def find_markers_in_rect(img_bgr, rect):
     """
     在 ROI 里找定位方块。
-    流程：
-        ① 灰度化 + CLAHE
-        ② HSV 阈值 + 灰度阈值 → 白色掩膜
-        ③ 闭运算 + 腐蚀
-        ④ 逐轮廓过滤（边长、宽高比、四边形、凸、白占比、std）
-        ⑤ 象限筛选
+    尺寸判断用"占 ROI 宽度的比例"，不依赖绝对像素。
     """
     rx0, ry0, rx1, ry1 = rect
     sub = img_bgr[ry0:ry1, rx0:rx1]
+
+    # ---------- 根据 ROI 宽度，算出实际像素范围 ----------
+    roi_w = rx1 - rx0
+    side_min = int(roi_w * SIDE_MIN_RATIO)
+    side_max = int(roi_w * SIDE_MAX_RATIO)
 
     gray = cv2.cvtColor(sub, cv2.COLOR_BGR2GRAY)
     clahe = cv2.createCLAHE(clipLimit=CLAHE_CLIP, tileGridSize=(8, 8))
@@ -210,8 +224,9 @@ def find_markers_in_rect(img_bgr, rect):
     for c in contours:
         bx, by, bw, bh = cv2.boundingRect(c)
 
-        # 过滤 1：边长 60~120
-        if not (SIDE_MIN <= bw <= SIDE_MAX and SIDE_MIN <= bh <= SIDE_MAX):
+        # 过滤 1：边长（按比例）
+        if not (side_min <= bw <= side_max and
+                side_min <= bh <= side_max):
             continue
         # 过滤 2：宽高比 0.75~1.35
         ratio = bw / float(bh)
@@ -225,9 +240,9 @@ def find_markers_in_rect(img_bgr, rect):
         if not cv2.isContourConvex(approx):
             continue
         # 过滤 4：白占比 0.05~0.85
-        roi_w = mask_white[by:by + bh, bx:bx + bw]
+        roi_w_mask = mask_white[by:by + bh, bx:bx + bw]
         total = bw * bh
-        wr = cv2.countNonZero(roi_w) / float(total)
+        wr = cv2.countNonZero(roi_w_mask) / float(total)
         if wr < WHITE_RATIO_MIN or wr > WHITE_RATIO_MAX:
             continue
         # 过滤 5：内部黑（已关闭）

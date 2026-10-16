@@ -1,0 +1,19 @@
+{
+  "host": "0.0.0.0",
+  "port": 8080,
+  "quality": 70,
+  "cameras": [
+    {
+      "index": 0,
+      "width": 1280,
+      "height": 720,
+      "fps": 30
+    },
+    {
+      "index": 1,
+      "width": 1280,
+      "height": 720,
+      "fps": 30
+    }
+  ]
+}
