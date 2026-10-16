@@ -18,6 +18,7 @@ import time
 
 import config as config_mod
 import http_server
+from calib import CalibrationStore
 from recognize import RecognitionManager
 from state import BattlefieldStore
 from ws_server import WebSocketServer
@@ -39,7 +40,8 @@ def main():
 
     store = BattlefieldStore()
     ws = WebSocketServer(cfg["ws_host"], cfg["ws_port"])
-    recognition = RecognitionManager(store, cfg)
+    calib = CalibrationStore()
+    recognition = RecognitionManager(store, cfg, calib)
 
     def broadcast_change(kind, data):
         if kind == "battlefield":
@@ -82,7 +84,7 @@ def main():
     ws.on_message = on_message
     ws.on_connect = on_connect
 
-    app = http_server.AdminApp(cfg, store, recognition, ws, config_mod.save_config)
+    app = http_server.AdminApp(cfg, store, recognition, ws, config_mod.save_config, calib)
     httpd = http_server.create_server(app, cfg["http_host"], cfg["http_port"])
 
     ws.start()

@@ -1,7 +1,7 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="120" height="168" viewBox="0 0 120 168">
   <!-- 卡背：纯色块，后续替换为真实卡背 -->
-  <rect width="120" height="168" fill="#3a0f33"/>
-  <rect x="4" y="4" width="112" height="160" fill="none" stroke="#ff3ca8" stroke-opacity="0.7"/>
-  <circle cx="60" cy="84" r="30" fill="none" stroke="#ff85d6" stroke-opacity="0.5" stroke-width="2"/>
-  <text x="60" y="90" fill="#ff85d6" font-family="monospace" font-size="12" text-anchor="middle">BACK</text>
+  <rect width="120" height="168" fill="#2b3038"/>
+  <rect x="4" y="4" width="112" height="160" fill="none" stroke="#aab4c0" stroke-opacity="0.7"/>
+  <circle cx="60" cy="84" r="30" fill="none" stroke="#c9d2db" stroke-opacity="0.5" stroke-width="2"/>
+  <text x="60" y="90" fill="#e2e8f0" font-family="monospace" font-size="12" text-anchor="middle">BACK</text>
 </svg>

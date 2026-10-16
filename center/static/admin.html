@@ -103,6 +103,19 @@
     </section>
 
     <section class="panel">
+      <h2>定位 / 校准 <small>（框选玩家区域 → 定位方块 → 7×3 网格）</small></h2>
+      <p class="hint">在每路画面上拖拽框选玩家区域（单摄像头需框两次：player1、player2；双摄像头每路框一次）。</p>
+      <div id="calib-previews" class="previews"></div>
+      <div class="actions">
+        <button type="button" id="calib-run">开始定位</button>
+        <button type="button" id="calib-clear" class="ghost">清除框选</button>
+        <button type="button" id="guide-show">显示定位方块</button>
+        <button type="button" id="guide-hide" class="ghost">隐藏定位方块</button>
+        <span id="calib-msg"></span>
+      </div>
+    </section>
+
+    <section class="panel">
       <h2>运行状态</h2>
       <pre id="status-json">…</pre>
     </section>

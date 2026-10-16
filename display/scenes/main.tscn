@@ -6,15 +6,16 @@
 [ext_resource type="Texture2D" uid="uid://vd4vsoo727fu" path="res://static/ground/blue3.png" id="3_jyhfs"]
 [ext_resource type="Texture2D" uid="uid://bcpujwonefavw" path="res://static/ground/blue.png" id="3_sugp2"]
 [ext_resource type="Texture2D" uid="uid://c2niy85dr6hf2" path="res://static/ground/red4.png" id="3_tbgi4"]
-[ext_resource type="Texture2D" uid="uid://bpld284o557i8" path="res://static/picture_test/card/10000.jpg" id="4_dp3eg"]
 [ext_resource type="Texture2D" uid="uid://cjqphkrm027nb" path="res://ui_themes/cyberpunk/images/lp1.png" id="5_tipki"]
 [ext_resource type="Texture2D" uid="uid://c2qk7igwcpgr4" path="res://static/ground/blue4.png" id="6_tefeu"]
 [ext_resource type="Texture2D" uid="uid://dgcqxsk1jewco" path="res://ui_themes/cyberpunk/images/lp2.png" id="9_85g3d"]
 [ext_resource type="Texture2D" uid="uid://d04hl5w46xgwo" path="res://static/ground/bg1.png" id="10_a8y0u"]
-[ext_resource type="Texture2D" uid="uid://cdgpawnp8f7jo" path="res://static/picture_test/closeup/10000.png" id="10_choun"]
 [ext_resource type="Script" uid="uid://bnq4hj0tm5qeg" path="res://scripts/nodes/CardShowNode.cs" id="11_ya4ey"]
-[ext_resource type="Texture2D" uid="uid://bts8f8jdtmear" path="res://static/picture_test/hd_card/50755.jpg" id="12_eb6dy"]
+[ext_resource type="Texture2D" uid="uid://cu14vtwkvitw1" path="res://static/common/front_placeholder.png" id="13_0ld40"]
 [ext_resource type="Texture2D" uid="uid://1tte6hrmr68f" path="res://static/picture_test/field/17255673.jpg" id="13_trceg"]
+[ext_resource type="Texture2D" uid="uid://dyix72e8ant06" path="res://static/common/sword.png" id="14_dp3eg"]
+[ext_resource type="Texture2D" uid="uid://dlk863ik8nhen" path="res://static/common/back_placeholder.png" id="15_0ld40"]
+[ext_resource type="Texture2D" uid="uid://ct13614wsfudl" path="res://static/common/shield.png" id="15_gqmmt"]
 [ext_resource type="Texture2D" uid="uid://dsa0xkg87yo70" path="res://ui_themes/cyberpunk/images/frame_square_round.png" id="15_jkv2x"]
 [ext_resource type="Texture2D" uid="uid://cw1t4x8xp68s4" path="res://static/ground/cardbg1.png" id="15_muem4"]
 [ext_resource type="Script" uid="uid://ct70fpbpcxntr" path="res://scripts/nodes/ExDeckGlowParticle.cs" id="16_glow"]
@@ -126,6 +127,42 @@ offset_bottom = 96.0
 grow_vertical = 0
 texture = ExtResource("1_o5qli")
 
+[node name="ColorRect4" type="ColorRect" parent="ui/player1/back/deck" unique_id=2033452995]
+layout_mode = 0
+offset_left = -53.0
+offset_top = 82.0
+offset_right = 7.0
+offset_bottom = 142.0
+
+[node name="ColorRect" type="ColorRect" parent="ui/player1/back/deck/ColorRect4" unique_id=782688275]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -20.0
+offset_top = -20.0
+offset_right = 20.0
+offset_bottom = 20.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0, 0, 0, 1)
+
+[node name="ColorRect" type="ColorRect" parent="ui/player1/back/deck/ColorRect4/ColorRect" unique_id=2001758689]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -10.0
+offset_top = -10.0
+offset_right = 10.0
+offset_bottom = 10.0
+grow_horizontal = 2
+grow_vertical = 2
+
 [node name="exdeck" type="TextureRect" parent="ui/player1/back" unique_id=837757041]
 custom_minimum_size = Vector2(102, 102)
 custom_maximum_size = Vector2(102, 102)
@@ -133,6 +170,42 @@ layout_mode = 1
 offset_top = -102.0
 offset_right = 102.0
 texture = ExtResource("1_o5qli")
+
+[node name="ColorRect4" type="ColorRect" parent="ui/player1/back/exdeck" unique_id=209105642]
+layout_mode = 0
+offset_left = -52.0
+offset_top = -40.0
+offset_right = 8.0
+offset_bottom = 20.0
+
+[node name="ColorRect" type="ColorRect" parent="ui/player1/back/exdeck/ColorRect4" unique_id=277569972]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -20.0
+offset_top = -20.0
+offset_right = 20.0
+offset_bottom = 20.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0, 0, 0, 1)
+
+[node name="ColorRect" type="ColorRect" parent="ui/player1/back/exdeck/ColorRect4/ColorRect" unique_id=1500700518]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -10.0
+offset_top = -10.0
+offset_right = 10.0
+offset_bottom = 10.0
+grow_horizontal = 2
+grow_vertical = 2
 
 [node name="back1" type="TextureRect" parent="ui/player1/back" unique_id=713328039]
 custom_minimum_size = Vector2(102, 102)
@@ -197,6 +270,42 @@ offset_top = -102.0
 offset_right = 102.0
 texture = ExtResource("1_o5qli")
 
+[node name="ColorRect4" type="ColorRect" parent="ui/player1/front/field" unique_id=290776899]
+layout_mode = 0
+offset_left = 156.0
+offset_top = -41.0
+offset_right = 216.0
+offset_bottom = 19.0
+
+[node name="ColorRect" type="ColorRect" parent="ui/player1/front/field/ColorRect4" unique_id=39353068]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -20.0
+offset_top = -20.0
+offset_right = 20.0
+offset_bottom = 20.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0, 0, 0, 1)
+
+[node name="ColorRect" type="ColorRect" parent="ui/player1/front/field/ColorRect4/ColorRect" unique_id=2076851013]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -10.0
+offset_top = -10.0
+offset_right = 10.0
+offset_bottom = 10.0
+grow_horizontal = 2
+grow_vertical = 2
+
 [node name="grave" type="TextureRect" parent="ui/player1/front" unique_id=24927926]
 custom_minimum_size = Vector2(102, 102)
 custom_maximum_size = Vector2(102, 102)
@@ -210,6 +319,42 @@ offset_bottom = 96.0
 grow_vertical = 0
 texture = ExtResource("1_o5qli")
 
+[node name="ColorRect4" type="ColorRect" parent="ui/player1/front/grave" unique_id=1409350892]
+layout_mode = 0
+offset_left = 157.0
+offset_top = 80.0
+offset_right = 217.0
+offset_bottom = 140.0
+
+[node name="ColorRect" type="ColorRect" parent="ui/player1/front/grave/ColorRect4" unique_id=615393070]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -20.0
+offset_top = -20.0
+offset_right = 20.0
+offset_bottom = 20.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0, 0, 0, 1)
+
+[node name="ColorRect" type="ColorRect" parent="ui/player1/front/grave/ColorRect4/ColorRect" unique_id=157490332]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -10.0
+offset_top = -10.0
+offset_right = 10.0
+offset_bottom = 10.0
+grow_horizontal = 2
+grow_vertical = 2
+
 [node name="front1" type="TextureRect" parent="ui/player1/front" unique_id=2067645883]
 custom_minimum_size = Vector2(102, 102)
 custom_maximum_size = Vector2(102, 102)
@@ -217,12 +362,6 @@ layout_mode = 0
 offset_right = 102.0
 offset_bottom = 102.0
 texture = ExtResource("2_0wfyh")
-
-[node name="Sprite2D" type="Sprite2D" parent="ui/player1/front/front1" unique_id=1552098724]
-position = Vector2(51, 51)
-rotation = 1.5707964
-scale = Vector2(0.135, 0.135)
-texture = ExtResource("4_dp3eg")
 
 [node name="front2" type="TextureRect" parent="ui/player1/front" unique_id=163530103]
 custom_minimum_size = Vector2(102, 102)
@@ -233,12 +372,6 @@ offset_right = 102.0
 offset_bottom = 204.0
 texture = ExtResource("2_0wfyh")
 
-[node name="Sprite2D" type="Sprite2D" parent="ui/player1/front/front2" unique_id=901511468]
-position = Vector2(51, 51)
-rotation = 1.5707964
-scale = Vector2(0.135, 0.135)
-texture = ExtResource("4_dp3eg")
-
 [node name="front3" type="TextureRect" parent="ui/player1/front" unique_id=1221657649]
 custom_minimum_size = Vector2(102, 102)
 custom_maximum_size = Vector2(102, 102)
@@ -247,12 +380,6 @@ offset_top = 204.0
 offset_right = 102.0
 offset_bottom = 306.0
 texture = ExtResource("2_0wfyh")
-
-[node name="Sprite2D" type="Sprite2D" parent="ui/player1/front/front3" unique_id=1149358958]
-position = Vector2(51, 51)
-rotation = 1.5707964
-scale = Vector2(0.135, 0.135)
-texture = ExtResource("4_dp3eg")
 
 [node name="front4" type="TextureRect" parent="ui/player1/front" unique_id=800069327]
 custom_minimum_size = Vector2(102, 102)
@@ -263,12 +390,6 @@ offset_right = 102.0
 offset_bottom = 408.0
 texture = ExtResource("2_0wfyh")
 
-[node name="Sprite2D" type="Sprite2D" parent="ui/player1/front/front4" unique_id=1298218071]
-position = Vector2(51, 51)
-rotation = 1.5707964
-scale = Vector2(0.135, 0.135)
-texture = ExtResource("4_dp3eg")
-
 [node name="front5" type="TextureRect" parent="ui/player1/front" unique_id=561329829]
 custom_minimum_size = Vector2(102, 102)
 custom_maximum_size = Vector2(102, 102)
@@ -277,11 +398,6 @@ offset_top = 408.0
 offset_right = 102.0
 offset_bottom = 510.0
 texture = ExtResource("2_0wfyh")
-
-[node name="Sprite2D" type="Sprite2D" parent="ui/player1/front/front5" unique_id=1413852309]
-position = Vector2(51, 51)
-scale = Vector2(0.135, 0.135)
-texture = ExtResource("4_dp3eg")
 
 [node name="ex" type="Control" parent="ui/player1" unique_id=464733938]
 layout_mode = 1
@@ -315,7 +431,7 @@ offset_bottom = 408.0
 texture = ExtResource("3_tbgi4")
 
 [node name="bling" type="CPUParticles2D" parent="ui/player1" unique_id=1420587361 node_paths=PackedStringArray("targetNode")]
-position = Vector2(0, 151)
+position = Vector2(-259, 151)
 amount = 64
 texture = SubResource("GradientTexture2D_glowdot_p2")
 lifetime = 1.2
@@ -338,8 +454,8 @@ offset_bottom = 40.0
 
 [node name="Panel" type="Panel" parent="ui/player1" unique_id=1290365672]
 layout_mode = 1
-offset_left = 328.0
-offset_right = 648.0
+offset_left = 844.0
+offset_right = 1128.0
 offset_bottom = 128.0
 rotation = 1.5707964
 theme_override_styles/panel = SubResource("StyleBoxTexture_85g3d")
@@ -402,6 +518,42 @@ offset_left = -102.0
 offset_top = -102.0
 texture = ExtResource("3_jyhfs")
 
+[node name="ColorRect4" type="ColorRect" parent="ui/player2/back/exdeck" unique_id=375573167]
+layout_mode = 0
+offset_left = 95.0
+offset_top = -39.0
+offset_right = 155.0
+offset_bottom = 21.0
+
+[node name="ColorRect" type="ColorRect" parent="ui/player2/back/exdeck/ColorRect4" unique_id=2032786812]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -20.0
+offset_top = -20.0
+offset_right = 20.0
+offset_bottom = 20.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0, 0, 0, 1)
+
+[node name="ColorRect" type="ColorRect" parent="ui/player2/back/exdeck/ColorRect4/ColorRect" unique_id=275530231]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -10.0
+offset_top = -10.0
+offset_right = 10.0
+offset_bottom = 10.0
+grow_horizontal = 2
+grow_vertical = 2
+
 [node name="deck" type="TextureRect" parent="ui/player2/back" unique_id=857363402]
 custom_minimum_size = Vector2(102, 102)
 custom_maximum_size = Vector2(102, 102)
@@ -414,6 +566,42 @@ offset_top = -6.0
 offset_bottom = 96.0
 grow_vertical = 0
 texture = ExtResource("3_jyhfs")
+
+[node name="ColorRect4" type="ColorRect" parent="ui/player2/back/deck" unique_id=433185757]
+layout_mode = 0
+offset_left = 92.0
+offset_top = 80.0
+offset_right = 152.0
+offset_bottom = 140.0
+
+[node name="ColorRect" type="ColorRect" parent="ui/player2/back/deck/ColorRect4" unique_id=537036823]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -20.0
+offset_top = -20.0
+offset_right = 20.0
+offset_bottom = 20.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0, 0, 0, 1)
+
+[node name="ColorRect" type="ColorRect" parent="ui/player2/back/deck/ColorRect4/ColorRect" unique_id=1736158442]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -10.0
+offset_top = -10.0
+offset_right = 10.0
+offset_bottom = 10.0
+grow_horizontal = 2
+grow_vertical = 2
 
 [node name="back1" type="TextureRect" parent="ui/player2/back" unique_id=1630506923]
 custom_minimum_size = Vector2(102, 102)
@@ -481,6 +669,42 @@ offset_left = -102.0
 offset_top = -102.0
 texture = ExtResource("3_jyhfs")
 
+[node name="ColorRect4" type="ColorRect" parent="ui/player2/front/field" unique_id=1446341713]
+layout_mode = 0
+offset_left = -116.0
+offset_top = -39.0
+offset_right = -56.0
+offset_bottom = 21.0
+
+[node name="ColorRect" type="ColorRect" parent="ui/player2/front/field/ColorRect4" unique_id=991779507]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -20.0
+offset_top = -20.0
+offset_right = 20.0
+offset_bottom = 20.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0, 0, 0, 1)
+
+[node name="ColorRect" type="ColorRect" parent="ui/player2/front/field/ColorRect4/ColorRect" unique_id=1087919031]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -10.0
+offset_top = -10.0
+offset_right = 10.0
+offset_bottom = 10.0
+grow_horizontal = 2
+grow_vertical = 2
+
 [node name="grave" type="TextureRect" parent="ui/player2/front" unique_id=301878386]
 custom_minimum_size = Vector2(102, 102)
 custom_maximum_size = Vector2(102, 102)
@@ -494,6 +718,42 @@ offset_right = 4.0
 offset_bottom = 96.0
 grow_vertical = 0
 texture = ExtResource("3_jyhfs")
+
+[node name="ColorRect4" type="ColorRect" parent="ui/player2/front/grave" unique_id=444371542]
+layout_mode = 0
+offset_left = -116.0
+offset_top = 96.0
+offset_right = -56.0
+offset_bottom = 156.0
+
+[node name="ColorRect" type="ColorRect" parent="ui/player2/front/grave/ColorRect4" unique_id=687545997]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -20.0
+offset_top = -20.0
+offset_right = 20.0
+offset_bottom = 20.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0, 0, 0, 1)
+
+[node name="ColorRect" type="ColorRect" parent="ui/player2/front/grave/ColorRect4/ColorRect" unique_id=212400485]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -10.0
+offset_top = -10.0
+offset_right = 10.0
+offset_bottom = 10.0
+grow_horizontal = 2
+grow_vertical = 2
 
 [node name="front1" type="TextureRect" parent="ui/player2/front" unique_id=1086708143]
 custom_minimum_size = Vector2(102, 102)
@@ -574,7 +834,7 @@ texture = ExtResource("6_tefeu")
 flip_h = true
 
 [node name="bling" type="CPUParticles2D" parent="ui/player2" unique_id=1420587362 node_paths=PackedStringArray("targetNode")]
-position = Vector2(0, 159)
+position = Vector2(284, 159)
 amount = 64
 texture = SubResource("GradientTexture2D_jbj1t")
 lifetime = 1.2
@@ -590,32 +850,14 @@ color_ramp = SubResource("Gradient_glowramp_p2")
 script = ExtResource("16_glow")
 targetNode = NodePath("../back/back1")
 
-[node name="bling2" type="CPUParticles2D" parent="ui/player2" unique_id=1636769186 node_paths=PackedStringArray("targetNode")]
-position = Vector2(0, 159)
-amount = 64
-texture = SubResource("GradientTexture2D_jbj1t")
-lifetime = 1.2
-preprocess = 1.2
-randomness = 0.1
-direction = Vector2(0, -1)
-spread = 180.0
-gravity = Vector2(0, 0)
-initial_velocity_max = 2.0
-scale_amount_min = 0.15
-scale_amount_max = 0.4
-color_ramp = SubResource("Gradient_glowramp_p2")
-script = ExtResource("16_glow")
-targetNode = NodePath("../front/front1")
-rotate = true
-
 [node name="Panel" type="Panel" parent="ui/player2" unique_id=1769051334]
 layout_mode = 1
 anchors_preset = 2
 anchor_top = 1.0
 anchor_bottom = 1.0
-offset_left = -327.0
+offset_left = -844.0
 offset_top = -2.0
-offset_right = -7.0
+offset_right = -560.0
 offset_bottom = 126.0
 grow_vertical = 0
 rotation = -1.5707964
@@ -645,7 +887,7 @@ anchor_mode = 0
 [node name="Camera3D" type="Camera3D" parent="showfield" unique_id=1639057473]
 environment = SubResource("Environment_jyhfs")
 current = true
-fov = 60.0
+fov = 50.0
 
 [node name="middle" type="Node3D" parent="showfield" unique_id=641317255]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -23.47902)
@@ -667,32 +909,82 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.7782327, 0, 0)
 [node name="card1" type="Sprite3D" parent="showfield/middle/cards/player1/front" unique_id=1510176661]
 transform = Transform3D(-4.371139e-08, 0.9999999, 0, -1, -4.3711385e-08, 8.2904493e-16, 8.2904504e-16, 3.6238705e-23, 0.9999999, 0, 7.9, 0)
 pixel_size = 0.008
-texture = ExtResource("10_choun")
+texture = ExtResource("13_0ld40")
 script = ExtResource("11_ya4ey")
+
+[node name="state_attack" type="Sprite3D" parent="showfield/middle/cards/player1/front/card1" unique_id=716245587]
+transform = Transform3D(1, -1.4210855e-14, 0, 1.4210855e-14, 1, 0, 0, 0, 1, 1.2112093, 1.1686754, 0.4)
+pixel_size = 0.005
+texture = ExtResource("14_dp3eg")
+
+[node name="state_defense" type="Sprite3D" parent="showfield/middle/cards/player1/front/card1" unique_id=1558491982]
+transform = Transform3D(1, -1.4210855e-14, 0, 1.4210855e-14, 1, 0, 0, 0, 1, 1.2112093, 1.1686754, 0.4)
+pixel_size = 0.005
+texture = ExtResource("15_gqmmt")
 
 [node name="card2" type="Sprite3D" parent="showfield/middle/cards/player1/front" unique_id=1085392372]
 transform = Transform3D(-4.371139e-08, 0.9999999, 0, -1, -4.3711385e-08, 8.2904493e-16, 8.2904504e-16, 3.6238705e-23, 0.9999999, 0, 4, 0)
 pixel_size = 0.008
-texture = ExtResource("10_choun")
+texture = ExtResource("13_0ld40")
 script = ExtResource("11_ya4ey")
+
+[node name="state_attack" type="Sprite3D" parent="showfield/middle/cards/player1/front/card2" unique_id=1840911292]
+transform = Transform3D(1, -1.4210855e-14, 0, 1.4210855e-14, 1, 0, 0, 0, 1, 1.2112093, 1.1686754, 0.4)
+pixel_size = 0.005
+texture = ExtResource("14_dp3eg")
+
+[node name="state_defense" type="Sprite3D" parent="showfield/middle/cards/player1/front/card2" unique_id=1178758926]
+transform = Transform3D(1, -1.4210855e-14, 0, 1.4210855e-14, 1, 0, 0, 0, 1, 1.2112093, 1.1686754, 0.4)
+pixel_size = 0.005
+texture = ExtResource("15_gqmmt")
 
 [node name="card3" type="Sprite3D" parent="showfield/middle/cards/player1/front" unique_id=87671002]
 transform = Transform3D(-4.371139e-08, 0.9999999, 0, -1, -4.3711385e-08, 8.2904493e-16, 8.2904504e-16, 3.6238705e-23, 0.9999999, 0, 0, 0)
 pixel_size = 0.008
-texture = ExtResource("10_choun")
+texture = ExtResource("13_0ld40")
 script = ExtResource("11_ya4ey")
+
+[node name="state_attack" type="Sprite3D" parent="showfield/middle/cards/player1/front/card3" unique_id=603729562]
+transform = Transform3D(1, -1.4210855e-14, 0, 1.4210855e-14, 1, 0, 0, 0, 1, 1.2112093, 1.1686754, 0.4)
+pixel_size = 0.005
+texture = ExtResource("14_dp3eg")
+
+[node name="state_defense" type="Sprite3D" parent="showfield/middle/cards/player1/front/card3" unique_id=28777180]
+transform = Transform3D(1, -1.4210855e-14, 0, 1.4210855e-14, 1, 0, 0, 0, 1, 1.2112093, 1.1686754, 0.4)
+pixel_size = 0.005
+texture = ExtResource("15_gqmmt")
 
 [node name="card4" type="Sprite3D" parent="showfield/middle/cards/player1/front" unique_id=133287110]
 transform = Transform3D(-4.371139e-08, 0.9999999, 0, -1, -4.3711385e-08, 8.2904493e-16, 8.2904504e-16, 3.6238705e-23, 0.9999999, 0, -4, 0)
 pixel_size = 0.008
-texture = ExtResource("10_choun")
+texture = ExtResource("13_0ld40")
 script = ExtResource("11_ya4ey")
+
+[node name="state_attack" type="Sprite3D" parent="showfield/middle/cards/player1/front/card4" unique_id=753229974]
+transform = Transform3D(1, -1.4210855e-14, 0, 1.4210855e-14, 1, 0, 0, 0, 1, 1.2112093, 1.1686754, 0.4)
+pixel_size = 0.005
+texture = ExtResource("14_dp3eg")
+
+[node name="state_defense" type="Sprite3D" parent="showfield/middle/cards/player1/front/card4" unique_id=548219789]
+transform = Transform3D(1, -1.4210855e-14, 0, 1.4210855e-14, 1, 0, 0, 0, 1, 1.2112093, 1.1686754, 0.4)
+pixel_size = 0.005
+texture = ExtResource("15_gqmmt")
 
 [node name="card5" type="Sprite3D" parent="showfield/middle/cards/player1/front" unique_id=1356987116]
 transform = Transform3D(-4.371139e-08, 0.9999999, 0, -1, -4.3711385e-08, 8.2904493e-16, 8.2904504e-16, 3.6238705e-23, 0.9999999, 0, -7.9, 0)
 pixel_size = 0.008
-texture = ExtResource("10_choun")
+texture = ExtResource("13_0ld40")
 script = ExtResource("11_ya4ey")
+
+[node name="state_attack" type="Sprite3D" parent="showfield/middle/cards/player1/front/card5" unique_id=1898753012]
+transform = Transform3D(1, -1.4210855e-14, 0, 1.4210855e-14, 1, 0, 0, 0, 1, 1.2112093, 1.1686754, 0.4)
+pixel_size = 0.005
+texture = ExtResource("14_dp3eg")
+
+[node name="state_defense" type="Sprite3D" parent="showfield/middle/cards/player1/front/card5" unique_id=131601501]
+transform = Transform3D(1, -1.4210855e-14, 0, 1.4210855e-14, 1, 0, 0, 0, 1, 1.2112093, 1.1686754, 0.4)
+pixel_size = 0.005
+texture = ExtResource("15_gqmmt")
 
 [node name="back" type="Node3D" parent="showfield/middle/cards/player1" unique_id=1141383708]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -4.3, 0, -0.01)
@@ -700,27 +992,27 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -4.3, 0, -0.01)
 [node name="card1" type="Sprite3D" parent="showfield/middle/cards/player1/back" unique_id=184460647]
 transform = Transform3D(-4.371139e-08, 0.9999999, 0, -1, -4.3711385e-08, 0, 0, 0, 0.9999999, 0, 7.9, 0)
 pixel_size = 0.005
-texture = ExtResource("12_eb6dy")
+texture = ExtResource("15_0ld40")
 
 [node name="card2" type="Sprite3D" parent="showfield/middle/cards/player1/back" unique_id=581892095]
 transform = Transform3D(-4.371139e-08, 0.9999999, 0, -1, -4.3711385e-08, 0, 0, 0, 0.9999999, 0, 4, 0)
 pixel_size = 0.005
-texture = ExtResource("12_eb6dy")
+texture = ExtResource("15_0ld40")
 
 [node name="card3" type="Sprite3D" parent="showfield/middle/cards/player1/back" unique_id=516354292]
 transform = Transform3D(-4.371139e-08, 0.9999999, 0, -1, -4.3711385e-08, 0, 0, 0, 0.9999999, 0, 0, 0)
 pixel_size = 0.005
-texture = ExtResource("12_eb6dy")
+texture = ExtResource("15_0ld40")
 
 [node name="card4" type="Sprite3D" parent="showfield/middle/cards/player1/back" unique_id=201912604]
 transform = Transform3D(-4.371139e-08, 0.9999999, 0, -1, -4.3711385e-08, 0, 0, 0, 0.9999999, 0, -4, 0)
 pixel_size = 0.005
-texture = ExtResource("12_eb6dy")
+texture = ExtResource("15_0ld40")
 
 [node name="card5" type="Sprite3D" parent="showfield/middle/cards/player1/back" unique_id=44634409]
 transform = Transform3D(-4.371139e-08, 0.9999999, 0, -1, -4.3711385e-08, 0, 0, 0, 0.9999999, 0, -7.9, 0)
 pixel_size = 0.005
-texture = ExtResource("12_eb6dy")
+texture = ExtResource("15_0ld40")
 
 [node name="player2" type="Node3D" parent="showfield/middle/cards" unique_id=1659188369]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.9704413, 0, -0.23999977)
@@ -738,37 +1030,87 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.77, 0, 0)
 [node name="card1" type="Sprite3D" parent="showfield/middle/cards/player2/front" unique_id=1773410876]
 transform = Transform3D(-4.371139e-08, -0.9999999, 0, 1, -4.3711385e-08, 3.5538887e-16, -3.5538893e-16, 1.5534542e-23, 0.9999999, 0, 7.9, 0)
 pixel_size = 0.008
-texture = ExtResource("10_choun")
+texture = ExtResource("13_0ld40")
 script = ExtResource("11_ya4ey")
 reverse = true
+
+[node name="state_attack" type="Sprite3D" parent="showfield/middle/cards/player2/front/card1" unique_id=1292350575]
+transform = Transform3D(1, -1.4210855e-14, 0, 1.4210855e-14, 1, 0, 0, 0, 1, 1.2112093, 1.1686754, 0.4)
+pixel_size = 0.005
+texture = ExtResource("14_dp3eg")
+
+[node name="state_defense" type="Sprite3D" parent="showfield/middle/cards/player2/front/card1" unique_id=886506168]
+transform = Transform3D(1, -1.4210855e-14, 0, 1.4210855e-14, 1, 0, 0, 0, 1, 1.2112093, 1.1686754, 0.4)
+pixel_size = 0.005
+texture = ExtResource("15_gqmmt")
 
 [node name="card2" type="Sprite3D" parent="showfield/middle/cards/player2/front" unique_id=1908560890]
 transform = Transform3D(-4.371139e-08, -0.9999999, 0, 1, -4.3711385e-08, 3.5538887e-16, -3.5538893e-16, 1.5534542e-23, 0.9999999, 0, 4, 0)
 pixel_size = 0.008
-texture = ExtResource("10_choun")
+texture = ExtResource("13_0ld40")
 script = ExtResource("11_ya4ey")
 reverse = true
+
+[node name="state_attack" type="Sprite3D" parent="showfield/middle/cards/player2/front/card2" unique_id=1415494923]
+transform = Transform3D(1, -1.4210855e-14, 0, 1.4210855e-14, 1, 0, 0, 0, 1, 1.2112093, 1.1686754, 0.4)
+pixel_size = 0.005
+texture = ExtResource("14_dp3eg")
+
+[node name="state_defense" type="Sprite3D" parent="showfield/middle/cards/player2/front/card2" unique_id=1202061020]
+transform = Transform3D(1, -1.4210855e-14, 0, 1.4210855e-14, 1, 0, 0, 0, 1, 1.2112093, 1.1686754, 0.4)
+pixel_size = 0.005
+texture = ExtResource("15_gqmmt")
 
 [node name="card3" type="Sprite3D" parent="showfield/middle/cards/player2/front" unique_id=1641824374]
 transform = Transform3D(-4.371139e-08, -0.9999999, 0, 1, -4.3711385e-08, 3.5538887e-16, -3.5538893e-16, 1.5534542e-23, 0.9999999, 0, 0, 0)
 pixel_size = 0.008
-texture = ExtResource("10_choun")
+texture = ExtResource("13_0ld40")
 script = ExtResource("11_ya4ey")
 reverse = true
+
+[node name="state_attack" type="Sprite3D" parent="showfield/middle/cards/player2/front/card3" unique_id=987526602]
+transform = Transform3D(1, -1.4210855e-14, 0, 1.4210855e-14, 1, 0, 0, 0, 1, 1.2112093, 1.1686754, 0.4)
+pixel_size = 0.005
+texture = ExtResource("14_dp3eg")
+
+[node name="state_defense" type="Sprite3D" parent="showfield/middle/cards/player2/front/card3" unique_id=1693788138]
+transform = Transform3D(1, -1.4210855e-14, 0, 1.4210855e-14, 1, 0, 0, 0, 1, 1.2112093, 1.1686754, 0.4)
+pixel_size = 0.005
+texture = ExtResource("15_gqmmt")
 
 [node name="card4" type="Sprite3D" parent="showfield/middle/cards/player2/front" unique_id=101742703]
 transform = Transform3D(-4.371139e-08, -0.9999999, 0, 1, -4.3711385e-08, 3.5538887e-16, -3.5538893e-16, 1.5534542e-23, 0.9999999, 0, -4, 0)
 pixel_size = 0.008
-texture = ExtResource("10_choun")
+texture = ExtResource("13_0ld40")
 script = ExtResource("11_ya4ey")
 reverse = true
+
+[node name="state_attack" type="Sprite3D" parent="showfield/middle/cards/player2/front/card4" unique_id=402778531]
+transform = Transform3D(1, -1.4210855e-14, 0, 1.4210855e-14, 1, 0, 0, 0, 1, 1.2112093, 1.1686754, 0.4)
+pixel_size = 0.005
+texture = ExtResource("14_dp3eg")
+
+[node name="state_defense" type="Sprite3D" parent="showfield/middle/cards/player2/front/card4" unique_id=1497154954]
+transform = Transform3D(1, -1.4210855e-14, 0, 1.4210855e-14, 1, 0, 0, 0, 1, 1.2112093, 1.1686754, 0.4)
+pixel_size = 0.005
+texture = ExtResource("15_gqmmt")
 
 [node name="card5" type="Sprite3D" parent="showfield/middle/cards/player2/front" unique_id=2117955786]
 transform = Transform3D(-4.371139e-08, -0.9999999, 0, 1, -4.3711385e-08, 3.5538887e-16, -3.5538893e-16, 1.5534542e-23, 0.9999999, 0, -7.9, 0)
 pixel_size = 0.008
-texture = ExtResource("10_choun")
+texture = ExtResource("13_0ld40")
 script = ExtResource("11_ya4ey")
 reverse = true
+
+[node name="state_attack" type="Sprite3D" parent="showfield/middle/cards/player2/front/card5" unique_id=865852610]
+transform = Transform3D(1, -1.4210855e-14, 0, 1.4210855e-14, 1, 0, 0, 0, 1, 1.2112093, 1.1686754, 0.4)
+pixel_size = 0.005
+texture = ExtResource("14_dp3eg")
+
+[node name="state_defense" type="Sprite3D" parent="showfield/middle/cards/player2/front/card5" unique_id=715239272]
+transform = Transform3D(1, -1.4210855e-14, 0, 1.4210855e-14, 1, 0, 0, 0, 1, 1.2112093, 1.1686754, 0.4)
+pixel_size = 0.005
+texture = ExtResource("15_gqmmt")
 
 [node name="back" type="Node3D" parent="showfield/middle/cards/player2" unique_id=1469687014]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4.3, 0, -0.01)
@@ -776,27 +1118,27 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4.3, 0, -0.01)
 [node name="card1" type="Sprite3D" parent="showfield/middle/cards/player2/back" unique_id=1583354879]
 transform = Transform3D(-4.371139e-08, -0.9999999, 0, 1, -4.3711385e-08, 0, 0, 0, 0.9999999, 0, 7.9, 0)
 pixel_size = 0.005
-texture = ExtResource("12_eb6dy")
+texture = ExtResource("15_0ld40")
 
 [node name="card2" type="Sprite3D" parent="showfield/middle/cards/player2/back" unique_id=633505002]
 transform = Transform3D(-4.371139e-08, -0.9999999, 0, 1, -4.3711385e-08, 0, 0, 0, 0.9999999, 0, 4, 0)
 pixel_size = 0.005
-texture = ExtResource("12_eb6dy")
+texture = ExtResource("15_0ld40")
 
 [node name="card3" type="Sprite3D" parent="showfield/middle/cards/player2/back" unique_id=380332222]
 transform = Transform3D(-4.371139e-08, -0.9999999, 0, 1, -4.3711385e-08, 0, 0, 0, 0.9999999, 0, 0, 0)
 pixel_size = 0.005
-texture = ExtResource("12_eb6dy")
+texture = ExtResource("15_0ld40")
 
 [node name="card4" type="Sprite3D" parent="showfield/middle/cards/player2/back" unique_id=2107877969]
 transform = Transform3D(-4.371139e-08, -0.9999999, 0, 1, -4.3711385e-08, 0, 0, 0, 0.9999999, 0, -4, 0)
 pixel_size = 0.005
-texture = ExtResource("12_eb6dy")
+texture = ExtResource("15_0ld40")
 
 [node name="card5" type="Sprite3D" parent="showfield/middle/cards/player2/back" unique_id=1627076248]
 transform = Transform3D(-4.371139e-08, -0.9999999, 0, 1, -4.3711385e-08, 0, 0, 0, 0.9999999, 0, -7.9, 0)
 pixel_size = 0.005
-texture = ExtResource("12_eb6dy")
+texture = ExtResource("15_0ld40")
 
 [node name="ex" type="Node3D" parent="showfield/middle/cards" unique_id=44043659]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -0.24)
@@ -814,15 +1156,35 @@ texture = ExtResource("15_muem4")
 [node name="card1" type="Sprite3D" parent="showfield/middle/cards/ex" unique_id=942378478]
 transform = Transform3D(-4.371139e-08, -0.9999999, 0, 1, -4.3711385e-08, 0, 0, 0, 0.9999999, 0, -4, 0)
 pixel_size = 0.008
-texture = ExtResource("10_choun")
+texture = ExtResource("13_0ld40")
 script = ExtResource("11_ya4ey")
 reverse = true
+
+[node name="state_attack" type="Sprite3D" parent="showfield/middle/cards/ex/card1" unique_id=159730840]
+transform = Transform3D(1, -1.4210855e-14, 0, 1.4210855e-14, 1, 0, 0, 0, 1, 1.2112093, 1.1686754, 0.4)
+pixel_size = 0.005
+texture = ExtResource("14_dp3eg")
+
+[node name="state_defense" type="Sprite3D" parent="showfield/middle/cards/ex/card1" unique_id=1504754021]
+transform = Transform3D(1, -1.4210855e-14, 0, 1.4210855e-14, 1, 0, 0, 0, 1, 1.2112093, 1.1686754, 0.4)
+pixel_size = 0.005
+texture = ExtResource("15_gqmmt")
 
 [node name="card2" type="Sprite3D" parent="showfield/middle/cards/ex" unique_id=1408297250]
 transform = Transform3D(-4.371139e-08, 0.9999999, 0, -1, -4.3711385e-08, 8.2904493e-16, 8.2904504e-16, 3.6238705e-23, 0.9999999, 0, 4, 0)
 pixel_size = 0.008
-texture = ExtResource("10_choun")
+texture = ExtResource("13_0ld40")
 script = ExtResource("11_ya4ey")
+
+[node name="state_attack" type="Sprite3D" parent="showfield/middle/cards/ex/card2" unique_id=885361644]
+transform = Transform3D(1, -1.4210855e-14, 0, 1.4210855e-14, 1, 0, 0, 0, 1, 1.2112093, 1.1686754, 0.4)
+pixel_size = 0.005
+texture = ExtResource("14_dp3eg")
+
+[node name="state_defense" type="Sprite3D" parent="showfield/middle/cards/ex/card2" unique_id=404070681]
+transform = Transform3D(1, -1.4210855e-14, 0, 1.4210855e-14, 1, 0, 0, 0, 1, 1.2112093, 1.1686754, 0.4)
+pixel_size = 0.005
+texture = ExtResource("15_gqmmt")
 
 [node name="field" type="Node3D" parent="showfield/middle" unique_id=446012806]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -16)
@@ -831,7 +1193,6 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -16)
 
 [node name="card" type="Sprite3D" parent="showfield/middle/field/player1" unique_id=631772562]
 transform = Transform3D(-4.371139e-08, 1, 0, -1, -4.371139e-08, 0, 0, 0, 1, 0, 0, 0)
-visible = false
 pixel_size = 0.08
 texture = ExtResource("13_trceg")
 

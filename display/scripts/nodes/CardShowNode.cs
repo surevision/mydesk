@@ -12,6 +12,8 @@ public partial class CardShowNode : Node3D
     private double baseV = 0.0;
     private double newV = 0.0;
 
+    public bool stop = false;   // 守备状态不动
+
     public override void _Ready()
     {
         base._Ready();
@@ -32,7 +34,14 @@ public partial class CardShowNode : Node3D
             newV = moveDistance * direction;
             direction *= -1;
         }
-        this.Position = new Vector3((float)(baseV + newV), this.Position.Y, this.Position.Z);
+        if (!stop)
+        {
+            this.Position = new Vector3((float)(baseV + newV), this.Position.Y, this.Position.Z);   
+        }
+        else
+        {
+            this.Position = new Vector3((float)baseV, this.Position.Y, this.Position.Z);
+        }
     }
 
 }

@@ -37,7 +37,8 @@ conda run -n ygodesk python center.py
 | `config.py` / `config.json` | 配置读写（首次运行自动生成 config.json） |
 | `ws_server.py` | 纯标准库 WebSocket 服务端（RFC6455），无第三方依赖 |
 | `state.py` | 战场状态存储（人工优先、识别补充） |
-| `gridmap.py` | 画面坐标 → (玩家, 格子) 的映射 |
+| `gridmap.py` | 画面坐标 → (玩家, 格子) 的映射（未定位时的回退方案） |
+| `calib.py` | 定位/校准：4 个定位方块 → 单应变换 → 正空间格子（纵向移植自 test/regiontest.py，横向移植自 test/h_regiontest.py） |
 | `recognize.py` | 摄像头线程 + YOLO/ONNX 识别流水线 |
 | `http_server.py` | 管理页面、接口、MJPEG 预览 |
 | `static/` | 管理页面（admin.html/js/css） |
@@ -54,26 +55,25 @@ conda run -n ygodesk python center.py
 - **单摄像头 `single`**：一台摄像头横向拍摄双方场地；画面左右各属一名玩家，`player1_side` 决定 player1 在左还是右。
 - **双摄像头 `dual`**：每台拍一名玩家；`cameras[i].player` 指定对应玩家，`swap` 可整体交换。
 
-识别到的卡牌用**中心坐标**落到格子：先确定属于哪名玩家区域，再在区域内按 `layout` 各格子的归一化矩形判断。
+识别到的卡牌用**中心坐标**落到格子：若已做过定位（见下），走校准的单应映射；否则回退到「玩家区域矩形 + `layout` 归一化矩形」。
 
-## 格子布局与校准
+## 定位 / 校准
 
-`config.json` 的 `layout` 是「某名玩家区域内」各格子的归一化矩形（0-1）：
+用场地四角的 **4 个「二维码角块」样式定位方块**做透视矫正，替代「左右各半」的粗略划分：
 
-- `back`（魔陷 5）、`front`（怪兽 5）、`ex`（额外怪兽 2）、`field` / `grave` / `deck` / `exdeck`（各 1）。
+1. 管理页「定位 / 校准」面板中，在每路画面上**框选玩家区域**（单摄像头框两次：player1、player2；双摄像头每路框一次）。
+2. 点「开始定位」：在这些 ROI 内检测定位方块 → 分配 tl/tr/br/bl（2/3 点用平行四边形约束推算）→ 求「画面 → 正空间」单应矩阵。**检测不到 4 个方块会报错并要求重新框选。**
+3. 正空间里按 7×3 网格切分：**单摄像头**为纵向 7 行×3 列（`regiontest.py` 参数），**双摄像头**每路为一方玩家的横向图、3 行×7 列（`h_regiontest.py` 参数，定位方块更大、关闭内部黑约束）。卡牌中心经单应映射后查格子。
+4. 「显示 / 隐藏定位方块」按钮会经 WebSocket 向 display 发送 `on_marker_guide` 消息（display 端处理函数目前留空）。
 
-管理页面的视频预览会把当前布局以黄框**叠加**在画面上，方便对照实拍调整这些数字。
+定位结果**仅保存在内存**，`center` 重启后需重新框选；定位成功后会自动重发一次当前战场快照给 control / display。
 
-### 是否需要定位识别物？
+相关接口：
 
-**建议使用**。当前方案基于「拍摄区域正好覆盖卡牌区域」的假设，直接用归一化坐标映射；只要摄像头固定且摆正即可工作。
-
-若摄像头有透视/倾斜、或会移动，建议在场地四角放置 **4 个标记物（ArUco / AprilTag）**：
-
-- 用 4 个角点计算单应矩阵做透视矫正，可显著提升落格准确率与鲁棒性；
-- 后续可在此基础上增加自动标定（无需手调 layout 数字）。
-
-如需该功能请告知，可在 `recognize.py` 中接入（依赖 `opencv-contrib-python` 的 `cv2.aruco`）。
+- `GET  /api/calib`：当前定位结果。
+- `POST /api/calibrate` `{cam_id, rois:{player:[x0,y0,x1,y1]}}`：执行定位。
+- `POST /api/guide` `{show:true|false}`：显示/隐藏 display 上的定位方块。
+- `GET  /raw/<cam_id>`、`GET /rawsnap/<cam_id>`：原始帧预览（不带格子叠加，供框选）。
 
 ## 人工优先策略
 

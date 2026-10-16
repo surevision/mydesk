@@ -100,6 +100,10 @@ class BattlefieldStore:
         if changed:
             self._emit("battlefield")
 
+    def rebroadcast(self):
+        """重新广播当前战场快照（状态不变），用于重新定位后刷新各端。"""
+        self._emit("battlefield")
+
     def set_lp(self, player, lp):
         with self._lock:
             p = self._bf["players"].get(str(player))

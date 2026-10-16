@@ -200,6 +200,10 @@ public partial class Connection : Node
                 on_phase_anim(GetString(data, "phase_index"));
                 break;
 
+            case "on_marker_guide":
+                on_marker_guide(GetBool(data, "show"));
+                break;
+
             case "on_play_bgm":
                 on_play_bgm(GetString(data, "bgm_filename"));
                 break;
@@ -319,6 +323,12 @@ public partial class Connection : Node
     /// <summary>播放阶段切换动画。</summary>
     /// <param name="phase_index">阶段："draw"、"standby"、"main1"、"battle"、"main2"、"end"。</param>
     public void on_phase_anim(string phase_index)
+    {
+    }
+
+    /// <summary>显示/隐藏定位方块（校准用）。</summary>
+    /// <param name="show">true=显示，false=隐藏。</param>
+    public void on_marker_guide(bool show)
     {
     }
 

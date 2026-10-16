@@ -225,7 +225,8 @@ class Models:
 
 
 class CameraWorker(threading.Thread):
-    def __init__(self, cam_id, url, players, store, models, cfg, frames):
+    def __init__(self, cam_id, url, players, store, models, cfg, frames,
+                 calib=None, raw_frames=None):
         super().__init__(name=f"cam-{cam_id}", daemon=True)
         self.cam_id = cam_id
         self.url = url
@@ -233,7 +234,9 @@ class CameraWorker(threading.Thread):
         self.store = store
         self.models = models
         self.cfg = cfg
-        self.frames = frames            # {cam_id: jpeg bytes}
+        self.frames = frames            # {cam_id: jpeg bytes} 预览（带叠加）
+        self.calib = calib              # CalibrationStore 或 None
+        self.raw_frames = raw_frames    # {cam_id: bgr frame} 原始帧（校准用）
         self._stop = threading.Event()
         self.connected = False
         self.fps = 0.0
@@ -313,11 +316,17 @@ class CameraWorker(threading.Thread):
         swap = self.cfg["dual"].get("swap", False)
         h, w = frame.shape[:2]
         for d in dets:
-            nx, ny = d["cx"] / w, d["cy"] / h
             hit = None
             for p in self.players:
-                area = gridmap.player_area(mode, p1_side, p, swap)
-                cell = gridmap.map_point(layout, nx, ny, area)
+                pc = self.calib.get(self.cam_id, p) if self.calib is not None else None
+                if pc is not None:
+                    # 已校准：卡牌中心（像素）经单应映射到正空间 → 查格子
+                    cell = pc.map_point(d["cx"], d["cy"])
+                else:
+                    # 未校准：回退旧的「玩家区域矩形 + 归一化 layout」映射
+                    nx, ny = d["cx"] / w, d["cy"] / h
+                    area = gridmap.player_area(mode, p1_side, p, swap)
+                    cell = gridmap.map_point(layout, nx, ny, area)
                 if cell:
                     hit = (p, cell)
                     break
@@ -338,6 +347,8 @@ class CameraWorker(threading.Thread):
 
     def _publish(self, frame, dets):
         cv2 = self.models.cv2
+        if self.raw_frames is not None:
+            self.raw_frames[self.cam_id] = frame     # 原始帧（不带叠加），供校准取样
         img = frame.copy()
         if self.cfg.get("_overlay", True):
             self._draw_layout(img)
@@ -357,12 +368,24 @@ class CameraWorker(threading.Thread):
 
     def _draw_layout(self, img):
         cv2 = self.models.cv2
+        np = self.models.np
         h, w = img.shape[:2]
         layout = self.cfg["layout"]
         mode = self.cfg["mode"]
         p1_side = self.cfg["single"]["player1_side"]
         swap = self.cfg["dual"].get("swap", False)
         for p in self.players:
+            pc = self.calib.get(self.cam_id, p) if self.calib is not None else None
+            if pc is not None:
+                # 已校准：把正空间格子映射回画面画多边形
+                for zone, index, poly in pc.polygons():
+                    pts = np.array(poly, dtype=np.int32).reshape((-1, 1, 2))
+                    cv2.polylines(img, [pts], True, (0, 255, 255), 1)
+                    cx = int(sum(pt[0] for pt in poly) / len(poly))
+                    cy = int(sum(pt[1] for pt in poly) / len(poly))
+                    cv2.putText(img, f"{zone}{index if index is not None else ''}",
+                                (cx - 12, cy), cv2.FONT_HERSHEY_SIMPLEX, 0.4, (0, 255, 255), 1)
+                continue
             x0, y0, x1, y1 = gridmap.player_area(mode, p1_side, p, swap)
             ax, ay = x0 * w, y0 * h
             aw, ah = (x1 - x0) * w, (y1 - y0) * h
@@ -384,12 +407,14 @@ class CameraWorker(threading.Thread):
 
 
 class RecognitionManager:
-    def __init__(self, store, cfg):
+    def __init__(self, store, cfg, calib=None):
         self.store = store
         self.cfg = cfg
+        self.calib = calib
         self.models = Models(cfg)
         self.workers = []
         self.frames = {}
+        self.raw_frames = {}
         self._lock = threading.Lock()
 
     def start(self):
@@ -412,10 +437,12 @@ class RecognitionManager:
                     if swap:
                         player = 2 if str(player) == "1" else 1
                     self.workers.append(CameraWorker(
-                        f"cam{i+1}", cam["url"], [player], self.store, self.models, self.cfg, self.frames))
+                        f"cam{i+1}", cam["url"], [player], self.store, self.models, self.cfg,
+                        self.frames, self.calib, self.raw_frames))
             else:
                 self.workers.append(CameraWorker(
-                    "single", self.cfg["single"]["url"], [1, 2], self.store, self.models, self.cfg, self.frames))
+                    "single", self.cfg["single"]["url"], [1, 2], self.store, self.models, self.cfg,
+                    self.frames, self.calib, self.raw_frames))
             for w in self.workers:
                 w.start()
 
@@ -427,6 +454,10 @@ class RecognitionManager:
 
     def get_frame(self, cam_id):
         return self.frames.get(cam_id)
+
+    def get_raw_frame(self, cam_id):
+        """原始帧（不带叠加），用于校准取样。"""
+        return self.raw_frames.get(cam_id)
 
     def status(self):
         with self._lock:
