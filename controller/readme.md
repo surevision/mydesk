@@ -21,6 +21,8 @@
 
 ### 运行
 
+仅用 Python 标准库，无需安装第三方依赖（`requirements.txt` 为空占位）。
+
 ```bash
 cd controller
 python server.py          # 默认监听 0.0.0.0:8000

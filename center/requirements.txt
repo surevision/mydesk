@@ -1,0 +1,15 @@
+# center 主控端依赖
+# 安装： conda activate ygodesk  &&  pip install -r requirements.txt
+# 只做预览/中转可不装（缺少的库会自动降级并提示）；完整识别需要全部。
+
+# 图像处理
+numpy
+opencv-python
+
+# 目标检测（YOLO OBB：正面/卡背）+ 卡名识别（ONNX）
+ultralytics
+pydantic>=2.7.0
+# onnxruntime
+
+# GPU 提速（可选，与上面的 onnxruntime 二选一）：让卡名 ONNX 走 CUDA
+onnxruntime-gpu

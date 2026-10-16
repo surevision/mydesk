@@ -9,6 +9,13 @@
 
 ## 运行
 
+首次使用先装依赖（识别需要 cv2/ultralytics/onnxruntime）：
+
+```powershell
+conda activate ygodesk
+pip install -r requirements.txt      # 见 center/requirements.txt；GPU 可换 onnxruntime-gpu
+```
+
 ```powershell
 cd D:\Git\mydesk\center
 # 识别需要 cv2/ultralytics/onnxruntime，请用装好这些库的环境（如 conda ygodesk）

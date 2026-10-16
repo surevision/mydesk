@@ -50,16 +50,18 @@ DEFAULT_CONFIG = {
 
     # 单摄像头模式
     "single": {
-        "url": "http://10.10.1.105:8080/video",
+        # monitor 采集端的多路地址：单路用 /video/0
+        "url": "http://10.10.1.105:8080/video/0",
         "player1_side": "left",   # left：画面左半为 player1；right：右半为 player1
     },
 
     # 双摄像头模式
     "dual": {
         "swap": False,            # 交换两个摄像头与玩家的对应
+        # 两路必须填不同的地址（monitor 的 /video/0、/video/1）
         "cameras": [
-            {"url": "http://10.10.1.105:8080/video", "player": 1},
-            {"url": "http://10.10.1.105:8080/video", "player": 2},
+            {"url": "http://10.10.1.105:8080/video/0", "player": 1},
+            {"url": "http://10.10.1.105:8080/video/1", "player": 2},
         ],
     },
 

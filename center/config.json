@@ -5,18 +5,18 @@
   "ws_port": 8765,
   "mode": "single",
   "single": {
-    "url": "http://10.10.1.105:8080/video",
+    "url": "http://10.10.1.105:8080/video/0",
     "player1_side": "left"
   },
   "dual": {
     "swap": false,
     "cameras": [
       {
-        "url": "http://10.10.1.105:8080/video",
+        "url": "http://10.10.1.105:8080/video/0",
         "player": 1
       },
       {
-        "url": "http://10.10.1.105:8080/video",
+        "url": "http://10.10.1.105:8080/video/1",
         "player": 2
       }
     ]
