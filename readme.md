@@ -70,3 +70,13 @@ pip install ultralytics
 pip install onnxruntime
 pip install onnxruntime-gpu
 ```
+
+
+如果cuda找不到
+```
+# 1. 卸载 CPU 版（如果同时有 conda 装的，也一并清理）
+pip uninstall torch torchvision torchaudio -y
+
+# 2. 安装 CUDA 12.4 版本（3060 Ti 完全兼容）
+pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu124
+```

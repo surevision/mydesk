@@ -409,6 +409,24 @@ export function openDicePanel(onApply) {
   });
 }
 
+export function openCoinPanel(onApply) {
+  const player = select([{ value: 0, label: "公用" }, { value: 1, label: "P1" }, { value: 2, label: "P2" }], 0);
+  openModal({
+    title: "投硬币", badge: "// COIN",
+    body: el("div", { class: "form" }, [
+      fieldRow("所属", player),
+      el("p", { class: "hint", text: "正面 = heads，反面 = tails" }),
+    ]),
+    buttons: [{
+      label: "TOSS", class: "cy-btn--exec", onClick: () => {
+        const value = Math.random() < 0.5 ? 1 : 0; // 1=正面，0=反面
+        onApply({ player: Number(player.value), value });
+        closeModal();
+      },
+    }],
+  });
+}
+
 export function openImportPanel(player, onPick) {
   const fileIn = el("input", { type: "file", accept: ".ydk,.txt", class: "cy-input" });
   openModal({

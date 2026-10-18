@@ -137,6 +137,10 @@ function buildMiddle() {
       <span class="mid-label">DICE</span>
       <b id="dice-name">-</b>
     </div>
+    <div class="mid-info">
+      <span class="mid-label">COIN</span>
+      <b id="coin-name">-</b>
+    </div>
   `;
   return mid;
 }
@@ -167,6 +171,8 @@ export function renderBoard(bf) {
   if (turnName) turnName.textContent = bf.turn_player ? `P${bf.turn_player}` : "-";
   const diceName = document.getElementById("dice-name");
   if (diceName) diceName.textContent = bf.dice ? `${bf.dice.value}` : "-";
+  const coinName = document.getElementById("coin-name");
+  if (coinName) coinName.textContent = bf.coin ? (Number(bf.coin.value) === 1 ? "正" : "反") : "-";
 }
 
 function renderCell(cell, card) {

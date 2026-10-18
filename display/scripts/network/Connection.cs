@@ -222,6 +222,14 @@ public partial class Connection : Node
                     GetInt(data, "to_cell_index"));
                 break;
 
+            case "on_dice":
+                on_dice(GetInt(data, "player"), GetInt(data, "value"));
+                break;
+
+            case "on_coin":
+                on_coin(GetInt(data, "player"), GetInt(data, "value"));
+                break;
+
             case "ping":
                 // 服务器心跳探测，回复 pong
                 SendPong();
@@ -291,6 +299,7 @@ public partial class Connection : Node
     /// <param name="battlefield">战场情况的 JSON 字符串。</param>
     public void on_battlefield_change(string battlefield)
     {
+        GD.Print(battlefield);
     }
 
     /// <summary>播放召唤动画。</summary>
@@ -353,6 +362,20 @@ public partial class Connection : Node
     /// <param name="to_cell_index">终点格子索引。</param>
     public void on_card_relate_effect(int from_player, string from_cell_type, int from_cell_index,
         int to_player, string to_cell_type, int to_cell_index)
+    {
+    }
+
+    /// <summary>掷骰子结果。</summary>
+    /// <param name="player">所属玩家：0=公用，1=P1，2=P2。</param>
+    /// <param name="value">点数 1-6。</param>
+    public void on_dice(int player, int value)
+    {
+    }
+
+    /// <summary>投硬币结果。</summary>
+    /// <param name="player">所属玩家：0=公用，1=P1，2=P2。</param>
+    /// <param name="value">1=正面(heads)，0=反面(tails)。</param>
+    public void on_coin(int player, int value)
     {
     }
 }

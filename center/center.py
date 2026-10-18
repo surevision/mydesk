@@ -23,8 +23,6 @@ from recognize import RecognitionManager
 from state import BattlefieldStore
 from ws_server import WebSocketServer
 
-PHASE_INDEX = ["draw", "standby", "main1", "battle", "main2", "end"]
-
 
 def main():
     parser = argparse.ArgumentParser(description="YGO 投影系统 center 主控端")
@@ -50,9 +48,8 @@ def main():
         elif kind == "lp":
             ws.broadcast({"type": "on_lp_change", **data})
         elif kind == "phase":
-            key = data.get("phase")
-            idx = PHASE_INDEX.index(key) if key in PHASE_INDEX else 0
-            ws.broadcast({"type": "on_phase_anim", "phase_index": idx})
+            # phase_index 用阶段字符串（draw/standby/main1/battle/main2/end），与 display 约定一致
+            ws.broadcast({"type": "on_phase_anim", "phase_index": data.get("phase")})
 
     store.on_change = broadcast_change
 
@@ -73,6 +70,10 @@ def main():
             return
         if t == "on_phase_anim":
             store.set_phase(obj.get("phase_index", obj.get("phase")))
+            return
+        # 骰子 / 硬币：转发给其它端（display 播放对应动画/音效）
+        if t in ("on_dice", "on_coin"):
+            ws.broadcast(obj, exclude=client)
             return
         # 其余动画/音效/导入等信息原样转发给其它端（主要是 display）
         ws.broadcast(obj, exclude=client)

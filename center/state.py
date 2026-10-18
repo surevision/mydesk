@@ -34,7 +34,7 @@ def empty_player():
 
 def empty_battlefield():
     return {
-        "phase": "main1", "turn_player": 0, "dice": None,
+        "phase": "main1", "turn_player": 0, "dice": None, "coin": None,
         "players": {"1": empty_player(), "2": empty_player()},
     }
 
@@ -94,6 +94,9 @@ class BattlefieldStore:
                 changed = True
             if "dice" in bf and not _eq(bf.get("dice"), mine.get("dice")):
                 mine["dice"] = bf.get("dice")
+                changed = True
+            if "coin" in bf and not _eq(bf.get("coin"), mine.get("coin")):
+                mine["coin"] = bf.get("coin")
                 changed = True
             if changed:
                 self._bump()

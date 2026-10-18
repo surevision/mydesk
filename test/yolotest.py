@@ -138,10 +138,13 @@ def analyze_card(corners, xywhr, img, debug=False):
 print("\n加载 DRAW2 (ygo_yolo)...")
 model_draw = YOLO("../src/models/ygo_yolo.pt")
 print("加载 cardback...")
-model_cap = YOLO("../src/models/cardback_best.pt")
+# model_cap = YOLO("../src/models/cardback_best.pt")
+model_cap = YOLO("../src/models/cardcaptor_v3_best.pt")
+
 
 # ========== 2. 图片列表 ==========
 images = [
+    "img.jpg",
     "timg.png",
     "QQ截图20261015170608.png",
     "10000.jpg",

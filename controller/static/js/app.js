@@ -9,7 +9,7 @@ import {
   getCell, setCell, cloneBattlefield,
 } from "./state.js";
 import { buildBoard, renderBoard } from "./render.js";
-import { initModals, openModal, closeModal, el, openConfigPanel, openLpPanel, openPhasePanel, openSummonPanel, openDestroyPanel, openAttackPanel, openRelatePanel, openBgmPanel, openSePanel, openDicePanel, openImportPanel, openCardPanel } from "./panels.js";
+import { initModals, openModal, closeModal, el, openConfigPanel, openLpPanel, openPhasePanel, openSummonPanel, openDestroyPanel, openAttackPanel, openRelatePanel, openBgmPanel, openSePanel, openDicePanel, openCoinPanel, openImportPanel, openCardPanel } from "./panels.js";
 import { getConfig, saveConfig, uploadYdk } from "./api.js";
 import { CenterClient } from "./center.js";
 
@@ -168,6 +168,11 @@ function wireButtons() {
     battle.dice = { player: d.player, value: d.value, ts: Date.now() };
     renderBoard(battle);
     sendMsg(MSG.DICE, d);
+  }));
+  on("btn-coin", () => openCoinPanel((c) => {
+    battle.coin = { player: c.player, value: c.value, ts: Date.now() };
+    renderBoard(battle);
+    sendMsg(MSG.COIN, c);
   }));
 
   // LP 变更：点击 LP 数字

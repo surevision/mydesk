@@ -77,6 +77,7 @@ export function makeBattlefield() {
     phase: "draw",
     turn_player: 1,
     dice: null,
+    coin: null,
     players: { "1": makePlayer(), "2": makePlayer() },
   };
 }
@@ -91,6 +92,7 @@ export function normalizeBattlefield(raw) {
     bf.turn_player = raw.turn_player;
   }
   bf.dice = raw.dice || null;
+  bf.coin = raw.coin || null;
 
   for (const p of ["1", "2"]) {
     const src = raw.players && raw.players[p];

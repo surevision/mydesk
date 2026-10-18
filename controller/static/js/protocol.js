@@ -16,13 +16,15 @@
  *   on_card_relate_effect  { from_player, from_cell_type, from_cell_index,
  *                            to_player, to_cell_type, to_cell_index }    卡片关联
  *   on_import_ydk          { player, ids, main, extra, side }            导入卡组
- *   on_dice                { player, value }                             掷骰子（display 待支持）
+ *   on_dice                { player, value }                             掷骰子（value 1-6）
+ *   on_coin                { player, value }                             投硬币（value 1=正面, 0=反面）
  *
  * battlefield JSON 结构（由 controller 拟定，后续按需调整）：
  * {
  *   "phase": "main1",            // 当前阶段: draw/standby/main1/battle/main2/end
  *   "turn_player": 1,            // 当前回合玩家 1/2（0 未知）
  *   "dice": null | { "player": 1, "value": 4, "ts": 1699999999999 },
+ *   "coin": null | { "player": 1, "value": 1, "ts": 1699999999999 },
  *   "players": {
  *     "1": {
  *       "lp": 8000,
@@ -211,6 +213,7 @@ export const MSG = {
   RELATE: "on_card_relate_effect",
   IMPORT_YDK: "on_import_ydk",
   DICE: "on_dice",
+  COIN: "on_coin",
 };
 
 // 辅助：按 key 取 label
