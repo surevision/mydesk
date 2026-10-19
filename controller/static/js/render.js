@@ -293,6 +293,6 @@ function displayName(card) {
 
 function cardImageSrc(card) {
   if (!card.face_up) return "assets/card_back.svg";
-  if (card.id >= 0) return `assets/cards/${card.id}.png`;
+  if (card.id >= 0) return `assets/cards/${card.id}.jpg`;
   return "assets/card_placeholder.svg";
 }

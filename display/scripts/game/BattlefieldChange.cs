@@ -1,3 +1,4 @@
+using Godot;
 using System.Collections.Generic;
 using System.Text.Json;
 using System.Text.Json.Serialization;
@@ -266,6 +267,46 @@ public class BattlefieldChange
         }
         // 卡组全是背面，没有改变的情况
 
+
+        // 打印这次比较检测到的所有变化，便于调试
+        void dump(int player, PlayerData add, PlayerData remove)
+        {
+            string text(CardData c)
+            {
+                if (c == null)
+                {
+                    return "null";
+                }
+                return string.IsNullOrEmpty(c.Name) ? c.Id.ToString() : c.Name;
+            }
+
+            for (int i = 0; i < add.Ex.Count; i += 1)
+            {
+                if (add.Ex[i] != null) GD.Print($"[change] P{player} ex[{i + 1}] 出现: {text(add.Ex[i])}");
+                if (remove.Ex[i] != null) GD.Print($"[change] P{player} ex[{i + 1}] 移除: {text(remove.Ex[i])}");
+            }
+            for (int i = 0; i < add.Front.Count; i += 1)
+            {
+                if (add.Front[i] != null) GD.Print($"[change] P{player} front[{i + 1}] 出现: {text(add.Front[i])}");
+                if (remove.Front[i] != null) GD.Print($"[change] P{player} front[{i + 1}] 移除: {text(remove.Front[i])}");
+            }
+            for (int i = 0; i < add.Back.Count; i += 1)
+            {
+                if (add.Back[i] != null) GD.Print($"[change] P{player} back[{i + 1}] 出现: {text(add.Back[i])}");
+                if (remove.Back[i] != null) GD.Print($"[change] P{player} back[{i + 1}] 移除: {text(remove.Back[i])}");
+            }
+            if (add.Field != null) GD.Print($"[change] P{player} field 出现: {text(add.Field)}");
+            if (remove.Field != null) GD.Print($"[change] P{player} field 移除: {text(remove.Field)}");
+            if (add.ExDeck != null) GD.Print($"[change] P{player} exdeck 出现: {text(add.ExDeck)}");
+            if (remove.ExDeck != null) GD.Print($"[change] P{player} exdeck 移除: {text(remove.ExDeck)}");
+            if (add.Grave != null) GD.Print($"[change] P{player} grave 出现: {text(add.Grave)}");
+            if (remove.Grave != null) GD.Print($"[change] P{player} grave 移除: {text(remove.Grave)}");
+            if (add.Deck != null) GD.Print($"[change] P{player} deck 出现: {text(add.Deck)}");
+            if (remove.Deck != null) GD.Print($"[change] P{player} deck 移除: {text(remove.Deck)}");
+        }
+
+        dump(1, changeData.player1CardsNew, changeData.player1CardsRemove);
+        dump(2, changeData.player2CardsNew, changeData.player2CardsRemove);
 
         return changeData;
     }

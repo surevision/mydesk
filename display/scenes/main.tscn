@@ -918,11 +918,13 @@ script = ExtResource("11_ya4ey")
 
 [node name="state_attack" type="Sprite3D" parent="showfield/middle/cards/player1/front/card1" unique_id=716245587]
 transform = Transform3D(1, -1.4210855e-14, 0, 1.4210855e-14, 1, 0, 0, 0, 1, 1.2112093, 1.1686754, 0.4)
+visible = false
 pixel_size = 0.005
 texture = ExtResource("14_dp3eg")
 
 [node name="state_defense" type="Sprite3D" parent="showfield/middle/cards/player1/front/card1" unique_id=1558491982]
 transform = Transform3D(1, -1.4210855e-14, 0, 1.4210855e-14, 1, 0, 0, 0, 1, 1.2112093, 1.1686754, 0.4)
+visible = false
 pixel_size = 0.005
 texture = ExtResource("15_gqmmt")
 
@@ -933,11 +935,13 @@ script = ExtResource("11_ya4ey")
 
 [node name="state_attack" type="Sprite3D" parent="showfield/middle/cards/player1/front/card2" unique_id=1840911292]
 transform = Transform3D(1, -1.4210855e-14, 0, 1.4210855e-14, 1, 0, 0, 0, 1, 1.2112093, 1.1686754, 0.4)
+visible = false
 pixel_size = 0.005
 texture = ExtResource("14_dp3eg")
 
 [node name="state_defense" type="Sprite3D" parent="showfield/middle/cards/player1/front/card2" unique_id=1178758926]
 transform = Transform3D(1, -1.4210855e-14, 0, 1.4210855e-14, 1, 0, 0, 0, 1, 1.2112093, 1.1686754, 0.4)
+visible = false
 pixel_size = 0.005
 texture = ExtResource("15_gqmmt")
 
@@ -948,11 +952,13 @@ script = ExtResource("11_ya4ey")
 
 [node name="state_attack" type="Sprite3D" parent="showfield/middle/cards/player1/front/card3" unique_id=603729562]
 transform = Transform3D(1, -1.4210855e-14, 0, 1.4210855e-14, 1, 0, 0, 0, 1, 1.2112093, 1.1686754, 0.4)
+visible = false
 pixel_size = 0.005
 texture = ExtResource("14_dp3eg")
 
 [node name="state_defense" type="Sprite3D" parent="showfield/middle/cards/player1/front/card3" unique_id=28777180]
 transform = Transform3D(1, -1.4210855e-14, 0, 1.4210855e-14, 1, 0, 0, 0, 1, 1.2112093, 1.1686754, 0.4)
+visible = false
 pixel_size = 0.005
 texture = ExtResource("15_gqmmt")
 
@@ -963,11 +969,13 @@ script = ExtResource("11_ya4ey")
 
 [node name="state_attack" type="Sprite3D" parent="showfield/middle/cards/player1/front/card4" unique_id=753229974]
 transform = Transform3D(1, -1.4210855e-14, 0, 1.4210855e-14, 1, 0, 0, 0, 1, 1.2112093, 1.1686754, 0.4)
+visible = false
 pixel_size = 0.005
 texture = ExtResource("14_dp3eg")
 
 [node name="state_defense" type="Sprite3D" parent="showfield/middle/cards/player1/front/card4" unique_id=548219789]
 transform = Transform3D(1, -1.4210855e-14, 0, 1.4210855e-14, 1, 0, 0, 0, 1, 1.2112093, 1.1686754, 0.4)
+visible = false
 pixel_size = 0.005
 texture = ExtResource("15_gqmmt")
 
@@ -978,11 +986,13 @@ script = ExtResource("11_ya4ey")
 
 [node name="state_attack" type="Sprite3D" parent="showfield/middle/cards/player1/front/card5" unique_id=1898753012]
 transform = Transform3D(1, -1.4210855e-14, 0, 1.4210855e-14, 1, 0, 0, 0, 1, 1.2112093, 1.1686754, 0.4)
+visible = false
 pixel_size = 0.005
 texture = ExtResource("14_dp3eg")
 
 [node name="state_defense" type="Sprite3D" parent="showfield/middle/cards/player1/front/card5" unique_id=131601501]
 transform = Transform3D(1, -1.4210855e-14, 0, 1.4210855e-14, 1, 0, 0, 0, 1, 1.2112093, 1.1686754, 0.4)
+visible = false
 pixel_size = 0.005
 texture = ExtResource("15_gqmmt")
 
@@ -1030,11 +1040,13 @@ reverse = true
 
 [node name="state_attack" type="Sprite3D" parent="showfield/middle/cards/player2/front/card1" unique_id=1292350575]
 transform = Transform3D(1, -1.4210855e-14, 0, 1.4210855e-14, 1, 0, 0, 0, 1, 1.2112093, 1.1686754, 0.4)
+visible = false
 pixel_size = 0.005
 texture = ExtResource("14_dp3eg")
 
 [node name="state_defense" type="Sprite3D" parent="showfield/middle/cards/player2/front/card1" unique_id=886506168]
 transform = Transform3D(1, -1.4210855e-14, 0, 1.4210855e-14, 1, 0, 0, 0, 1, 1.2112093, 1.1686754, 0.4)
+visible = false
 pixel_size = 0.005
 texture = ExtResource("15_gqmmt")
 
@@ -1046,11 +1058,13 @@ reverse = true
 
 [node name="state_attack" type="Sprite3D" parent="showfield/middle/cards/player2/front/card2" unique_id=1415494923]
 transform = Transform3D(1, -1.4210855e-14, 0, 1.4210855e-14, 1, 0, 0, 0, 1, 1.2112093, 1.1686754, 0.4)
+visible = false
 pixel_size = 0.005
 texture = ExtResource("14_dp3eg")
 
 [node name="state_defense" type="Sprite3D" parent="showfield/middle/cards/player2/front/card2" unique_id=1202061020]
 transform = Transform3D(1, -1.4210855e-14, 0, 1.4210855e-14, 1, 0, 0, 0, 1, 1.2112093, 1.1686754, 0.4)
+visible = false
 pixel_size = 0.005
 texture = ExtResource("15_gqmmt")
 
@@ -1062,11 +1076,13 @@ reverse = true
 
 [node name="state_attack" type="Sprite3D" parent="showfield/middle/cards/player2/front/card3" unique_id=987526602]
 transform = Transform3D(1, -1.4210855e-14, 0, 1.4210855e-14, 1, 0, 0, 0, 1, 1.2112093, 1.1686754, 0.4)
+visible = false
 pixel_size = 0.005
 texture = ExtResource("14_dp3eg")
 
 [node name="state_defense" type="Sprite3D" parent="showfield/middle/cards/player2/front/card3" unique_id=1693788138]
 transform = Transform3D(1, -1.4210855e-14, 0, 1.4210855e-14, 1, 0, 0, 0, 1, 1.2112093, 1.1686754, 0.4)
+visible = false
 pixel_size = 0.005
 texture = ExtResource("15_gqmmt")
 
@@ -1078,11 +1094,13 @@ reverse = true
 
 [node name="state_attack" type="Sprite3D" parent="showfield/middle/cards/player2/front/card4" unique_id=402778531]
 transform = Transform3D(1, -1.4210855e-14, 0, 1.4210855e-14, 1, 0, 0, 0, 1, 1.2112093, 1.1686754, 0.4)
+visible = false
 pixel_size = 0.005
 texture = ExtResource("14_dp3eg")
 
 [node name="state_defense" type="Sprite3D" parent="showfield/middle/cards/player2/front/card4" unique_id=1497154954]
 transform = Transform3D(1, -1.4210855e-14, 0, 1.4210855e-14, 1, 0, 0, 0, 1, 1.2112093, 1.1686754, 0.4)
+visible = false
 pixel_size = 0.005
 texture = ExtResource("15_gqmmt")
 
@@ -1094,11 +1112,13 @@ reverse = true
 
 [node name="state_attack" type="Sprite3D" parent="showfield/middle/cards/player2/front/card5" unique_id=865852610]
 transform = Transform3D(1, -1.4210855e-14, 0, 1.4210855e-14, 1, 0, 0, 0, 1, 1.2112093, 1.1686754, 0.4)
+visible = false
 pixel_size = 0.005
 texture = ExtResource("14_dp3eg")
 
 [node name="state_defense" type="Sprite3D" parent="showfield/middle/cards/player2/front/card5" unique_id=715239272]
 transform = Transform3D(1, -1.4210855e-14, 0, 1.4210855e-14, 1, 0, 0, 0, 1, 1.2112093, 1.1686754, 0.4)
+visible = false
 pixel_size = 0.005
 texture = ExtResource("15_gqmmt")
 
@@ -1146,11 +1166,13 @@ reverse = true
 
 [node name="state_attack" type="Sprite3D" parent="showfield/middle/cards/ex/card1" unique_id=159730840]
 transform = Transform3D(1, -1.4210855e-14, 0, 1.4210855e-14, 1, 0, 0, 0, 1, 1.2112093, 1.1686754, 0.4)
+visible = false
 pixel_size = 0.005
 texture = ExtResource("14_dp3eg")
 
 [node name="state_defense" type="Sprite3D" parent="showfield/middle/cards/ex/card1" unique_id=1504754021]
 transform = Transform3D(1, -1.4210855e-14, 0, 1.4210855e-14, 1, 0, 0, 0, 1, 1.2112093, 1.1686754, 0.4)
+visible = false
 pixel_size = 0.005
 texture = ExtResource("15_gqmmt")
 
@@ -1161,11 +1183,13 @@ script = ExtResource("11_ya4ey")
 
 [node name="state_attack" type="Sprite3D" parent="showfield/middle/cards/ex/card2" unique_id=885361644]
 transform = Transform3D(1, -1.4210855e-14, 0, 1.4210855e-14, 1, 0, 0, 0, 1, 1.2112093, 1.1686754, 0.4)
+visible = false
 pixel_size = 0.005
 texture = ExtResource("14_dp3eg")
 
 [node name="state_defense" type="Sprite3D" parent="showfield/middle/cards/ex/card2" unique_id=404070681]
 transform = Transform3D(1, -1.4210855e-14, 0, 1.4210855e-14, 1, 0, 0, 0, 1, 1.2112093, 1.1686754, 0.4)
+visible = false
 pixel_size = 0.005
 texture = ExtResource("15_gqmmt")
 
@@ -1186,7 +1210,7 @@ visible = false
 pixel_size = 0.08
 
 [node name="bg" type="Sprite3D" parent="showfield/middle/field" unique_id=283280955]
-transform = Transform3D(50, 0, 0, 0, 50, 0, 0, 0, 50, 0, 0, 2)
+transform = Transform3D(50, 0, 0, 0, 50, 0, 0, 0, 50, 0, -9.536743e-07, 2)
 modulate = Color(1, 1, 1, 0.5803922)
 pixel_size = 0.1
 texture = ExtResource("15_jkv2x")
