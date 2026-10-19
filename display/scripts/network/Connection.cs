@@ -300,7 +300,7 @@ public partial class Connection : Node
     public void on_battlefield_change(string battlefield)
     {
         GD.Print(battlefield);
-        
+        BattleManager.getInstance().showField(battlefield);
     }
 
     /// <summary>播放召唤动画。</summary>

@@ -5,6 +5,12 @@ using System.IO;
 public partial class MainUI : Node3D
 {
     Battlefield currField = new Battlefield();
+    public override void _Ready()
+    {
+        base._Ready();
+        BattleManager.getInstance().mainUI = this;
+    }
+
     /// <summary>
     /// 展示场地情况
     /// </summary>
@@ -12,6 +18,7 @@ public partial class MainUI : Node3D
     public void showField(Battlefield field)
     {
         BattlefieldChange battlefieldChange = BattlefieldChange.compareField(currField, field);
+        currField = field;
         // 先处理移除的卡
         // EX
         for (int i = 0; i <= 1; i += 1)
@@ -216,7 +223,8 @@ public partial class MainUI : Node3D
         }
 
         // 卡图
-        string baseDir = OS.GetExecutablePath().GetBaseDir();
+        // string baseDir = OS.GetExecutablePath().GetBaseDir();
+        string baseDir = "D:/Git/ygodesk/display";
         if (cardData.FaceUp)
         {
             // 正面，加载卡图
@@ -275,15 +283,15 @@ public partial class MainUI : Node3D
                     // 采用默认图
                     if (zoneType == ZoneType.Ex)
                     {
-                        filePath = Path.Combine(baseDir, "static", "common", "closeup", "front_placeholder.png");
+                        filePath = Path.Combine(baseDir, "static", "common", "front_placeholder.png");
                     }
                     if (zoneType == ZoneType.Front)
                     {
-                        filePath = Path.Combine(baseDir, "static", "common", "closeup", "front_placeholder.png");
+                        filePath = Path.Combine(baseDir, "static", "common", "front_placeholder.png");
                     }
                     if (zoneType == ZoneType.Back)
                     {
-                        filePath = Path.Combine(baseDir, "static", "common", "closeup", "back_placeholder.png");
+                        filePath = Path.Combine(baseDir, "static", "common", "back_placeholder.png");
                     }
                 }
                 Image image = Image.LoadFromFile(filePath);
@@ -321,7 +329,7 @@ public partial class MainUI : Node3D
                 string nodePath = "";
                 if (zoneType == ZoneType.Ex)
                 {
-                    filePath = Path.Combine(baseDir, "static", "common", "closeup", "front_placeholder.png");
+                    filePath = Path.Combine(baseDir, "static", "common", "front_placeholder.png");
                     if (player == 1)
                     {
                         if (index == 0)
@@ -347,12 +355,12 @@ public partial class MainUI : Node3D
                 }
                 if (zoneType == ZoneType.Front)
                 {
-                    filePath = Path.Combine(baseDir, "static", "common", "closeup", "front_placeholder.png");
+                    filePath = Path.Combine(baseDir, "static", "common", "front_placeholder.png");
                     nodePath = string.Format("showfield/middle/cards/player{0}/front/card{1}", player, index + 1);
                 }
                 if (zoneType == ZoneType.Back)
                 {
-                    filePath = Path.Combine(baseDir, "static", "common", "closeup", "back_placeholder.png");
+                    filePath = Path.Combine(baseDir, "static", "common", "back_placeholder.png");
                 }
                 if (File.Exists(filePath))
                 {
