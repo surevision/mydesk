@@ -28,14 +28,14 @@
     "names_json": "D:\\Git\\mydesk\\src\\models\\cardnames_onnx.json"
   },
   "detect": {
-    "front_conf": 0.1,
+    "front_conf": 0.05,
     "back_conf": 0.5,
-    "name_thr": 0.1,
+    "name_thr": 0.05,
     "interval": 0.1,
     "min_side": 30,
     "device": 0,
     "track": true,
-    "name_cache_ttl": 3.0
+    "name_cache_ttl": 3
   },
   "layout": {
     "col_count": 5,

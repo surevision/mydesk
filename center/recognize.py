@@ -30,6 +30,86 @@ def _log(*a):
     print("[recog]", *a)
 
 
+def _as_int(v, default=-1):
+    """卡号统一成 int。cardnames_onnx.json 里 card_id 是字符串（如 "12580477"）。"""
+    try:
+        return int(v)
+    except (TypeError, ValueError):
+        return default
+
+
+# ---- ONNX 检测（移植 draw2 网页版 docs/scripts/pipeline.js）----------------
+def onnx_letterbox(cv2, np, frame, size):
+    """等比缩放 + 黑边填充到 size×size，BGR→RGB、/255、NCHW。返回 (tensor, scale, padx, pady)。"""
+    h, w = frame.shape[:2]
+    scale = min(size / w, size / h)
+    nw, nh = max(1, int(round(w * scale))), max(1, int(round(h * scale)))
+    padx, pady = (size - nw) // 2, (size - nh) // 2
+    canvas = np.zeros((size, size, 3), dtype=np.float32)
+    canvas[pady:pady + nh, padx:padx + nw] = cv2.resize(frame, (nw, nh), interpolation=cv2.INTER_LINEAR)
+    chw = canvas[:, :, ::-1].transpose(2, 0, 1)[None]
+    return np.ascontiguousarray(chw, dtype=np.float32) / 255.0, scale, padx, pady
+
+
+def obb_corners(np, cx, cy, w, h, angle):
+    """(cx,cy,w,h,angle) → 4 个角点（环形顺序），angle 为弧度。"""
+    cos, sin = float(np.cos(angle)), float(np.sin(angle))
+    hw, hh = float(w) / 2.0, float(h) / 2.0
+    pts = np.array([[-hw, -hh], [hw, -hh], [hw, hh], [-hw, hh]], dtype=np.float32)
+    R = np.array([[cos, -sin], [sin, cos]], dtype=np.float32)
+    return pts @ R.T + np.array([cx, cy], dtype=np.float32)
+
+
+def iou_xyxy(a, b):
+    """两个 [x0,y0,x1,y1] 框的 IoU。"""
+    iw = max(0.0, min(a[2], b[2]) - max(a[0], b[0]))
+    ih = max(0.0, min(a[3], b[3]) - max(a[1], b[1]))
+    inter = iw * ih
+    ua = (a[2] - a[0]) * (a[3] - a[1]) + (b[2] - b[0]) * (b[3] - b[1]) - inter
+    return float(inter / ua) if ua > 0 else 0.0
+
+
+def parse_onnx_obb(np, out, scale, padx, pady, conf_thr, nms_iou=0.5):
+    """
+    解析 ONNX 输出为检测列表。输出为 [6, N]（x,y,w,h,conf,angle）或 [N, 6]，
+    conf 已是 0-1 概率，angle 为弧度；坐标在 640 黑边空间 → 还原到原图。
+    """
+    feats_first = out.shape[0] < out.shape[1]
+    rows = out.shape[1] if feats_first else out.shape[0]
+    dets = []
+    for i in range(rows):
+        if feats_first:
+            xc, yc, w, h, conf, ang = (out[0, i], out[1, i], out[2, i],
+                                       out[3, i], out[4, i], out[5, i])
+        else:
+            xc, yc, w, h, conf, ang = (out[i, 0], out[i, 1], out[i, 2],
+                                       out[i, 3], out[i, 4], out[i, 5])
+        if float(conf) < conf_thr:
+            continue
+        x, y = (float(xc) - padx) / scale, (float(yc) - pady) / scale
+        bw, bh = float(w) / scale, float(h) / scale
+        dets.append({"corners": obb_corners(np, x, y, bw, bh, float(ang)),
+                     "xywhr": np.array([x, y, bw, bh, float(ang)], dtype=np.float32),
+                     "conf": float(conf)})
+    return nms_obb(np, dets, iou_thr=nms_iou)
+
+
+def nms_obb(np, dets, iou_thr=0.5):
+    """按置信度贪心 NMS（用四边形外接框的近似 IoU）。"""
+    dets = sorted(dets, key=lambda d: -d["conf"])
+    keep = []
+    for d in dets:
+        c = d["corners"]
+        bb = (float(c[:, 0].min()), float(c[:, 1].min()),
+              float(c[:, 0].max()), float(c[:, 1].max()))
+        if all(iou_xyxy(bb, k["_bb"]) <= iou_thr for k in keep):
+            d["_bb"] = bb
+            keep.append(d)
+    for d in keep:
+        d.pop("_bb", None)
+    return keep
+
+
 # 探测 torch 的 CUDA 可用性（只探一次），返回 (可用, 卡数, 说明)
 _torch_state = None
 
@@ -87,6 +167,7 @@ class Models:
         self.oname = None
         self.names = None
         self.providers = []
+        self.decks = None        # DeckStore：已导入卡组（卡名识别候选约束），可空
         self.ok = False          # 共享识别链路可用（cv2/numpy + ONNX + 卡名库）
         self.ready = False       # 至少 cv2 可用（能取流预览）
         self.reason = "未加载"
@@ -157,25 +238,55 @@ class Detector:
         self.iname = models.iname
         self.oname = models.oname
         self.names = models.names
+        self.decks = models.decks      # DeckStore（卡名识别候选约束），可空
         self.front = None
         self.back = None
+        self.front_onnx = False        # 正面检测是否用 ONNX（draw2 网页版同款）
+        self.front_sess = None
+        self.front_iname = None
+        self.front_oname = None
+        self.imgsz = 640
         self.ready = False
         self.error = ""
         self._frame = None
         self._cache = {}         # tid -> info | None
         self._seen = {}          # tid -> 最近出现时间
         self.timing = {}         # 上次 detect 各段耗时（秒）
+        # ONNX 无内置跟踪器，用简单的 IoU 跟踪维持稳定 id（卡名缓存的键）
+        self._tracks = {}        # tid -> (bbox[x0,y0,x1,y1], 最近时间)
+        self._next_tid = 0
+        # 移植 draw2：把卡矫正成 224×224 方图；只残余 0°/180° 歧义
+        self.crop_size = int(self.cfg["detect"].get("crop_size", 224))
+        self.flip_low = float(self.cfg["detect"].get("flip_low", 0.15))
+        self.flip_margin = float(self.cfg["detect"].get("flip_margin", 1.25))
+        self.nms_iou = float(self.cfg["detect"].get("nms_iou", 0.5))
+        self.track_iou = float(self.cfg["detect"].get("track_iou", 0.3))
+        self.track_ttl = float(self.cfg["detect"].get("track_ttl", 1.0))
         # 推理设备：按配置 + 环境自动决定（无 CUDA 时回退 CPU）
         self.device, self.device_note = _resolve_device(self.cfg["detect"].get("device", 0))
+        m = self.cfg["models"]
         try:
+            if str(m["yolo_front"]).lower().endswith(".onnx"):
+                import onnxruntime as ort
+                self.front_sess = ort.InferenceSession(
+                    m["yolo_front"], providers=models.providers or None)
+                self.front_iname = self.front_sess.get_inputs()[0].name
+                self.front_oname = self.front_sess.get_outputs()[0].name
+                shp = self.front_sess.get_inputs()[0].shape
+                if len(shp) == 4 and isinstance(shp[2], int):
+                    self.imgsz = int(shp[2])
+                self.front_onnx = True
+                _log(f"正面检测使用 ONNX：{os.path.basename(m['yolo_front'])} "
+                     f"（{self.imgsz}px，{'/'.join(self.front_sess.get_providers())}）")
+            else:
+                from ultralytics import YOLO
+                self.front = YOLO(m["yolo_front"])
             from ultralytics import YOLO
-            m = self.cfg["models"]
-            self.front = YOLO(m["yolo_front"])
             self.back = YOLO(m["yolo_back"])
             self.ready = True
             _log(f"识别器就绪，设备 {self.device}（{self.device_note}）")
         except Exception as e:  # noqa: BLE001
-            self.error = f"YOLO 加载失败: {e}"
+            self.error = f"检测模型加载失败: {e}"
             _log(self.error)
 
     # ---- 卡名识别（带缓存）------------------------------------------------
@@ -184,54 +295,99 @@ class Detector:
         if card_bgr is None or card_bgr.size == 0:
             return None
         rgb = cv2.cvtColor(card_bgr, cv2.COLOR_BGR2RGB)
-        im = cv2.resize(rgb, (224, 224), interpolation=cv2.INTER_CUBIC)
+        s = self.crop_size
+        im = rgb if (rgb.shape[0] == s and rgb.shape[1] == s) \
+            else cv2.resize(rgb, (s, s), interpolation=cv2.INTER_CUBIC)
         x = ((im.astype(np.float32) / 255.0 - 0.5) / 0.5).transpose(2, 0, 1)[None]
         logits = self.sess.run([self.oname], {self.iname: x})[0][0]
         e = np.exp(logits - logits.max())
         prob = e / e.sum()
+
+        # 卡组约束（借鉴 draw2 的 --deck-list）：已导入卡组时，在前 top_k 候选中
+        # 只接受 id 落在卡组并集里的那一个，从而抑制相近卡混淆；无卡组则退化为 top-1。
+        deck = self.decks.all_ids() if self.decks is not None else None
+        if deck:
+            deck_str = {str(c) for c in deck}
+            k = min(int(self.cfg["detect"].get("top_k", 15)), int(prob.shape[0]))
+            for idx in np.argsort(prob)[::-1][:k]:
+                if float(prob[idx]) < thr:
+                    break                     # 已按概率降序，后面更低
+                info = self.names.get(str(int(idx)))
+                if info and info.get("card_id") in deck_str:
+                    return {"card_id": _as_int(info.get("card_id")),
+                            "name": info.get("EN", ""), "score": float(prob[idx])}
+            return None
+
         idx = int(np.argmax(prob))
         if float(prob[idx]) < thr:
             return None
         info = self.names[str(idx)]
-        return {"card_id": info.get("card_id", -1), "name": info.get("EN", ""),
+        return {"card_id": _as_int(info.get("card_id")), "name": info.get("EN", ""),
                 "score": float(prob[idx])}
 
     def name_for(self, tid, crop, thr):
         if tid in self._cache:
             return self._cache[tid]
+        cv2 = self.cv2
+        # 移植 draw2：矫正后只剩 0°/180° 歧义。先用卡面上下亮度猜（正立时
+        # 卡名条在下半部更亮，实测正立卡下半 15% 平均亮度更高），置信度太低
+        # 再试另一方向，且必须明显更好（1.25×）才采纳，避免两张低分互换。
+        if crop is not None and crop.size:
+            gray = cv2.cvtColor(crop, cv2.COLOR_BGR2GRAY)
+            h, w = gray.shape[:2]
+            m = max(1, int(round(h * 0.15)))
+            gx = max(1, int(round(w * 0.15)))
+            top = float(gray[:m, gx:w - gx].mean())
+            bot = float(gray[h - m:, gx:w - gx].mean())
+            if top > bot:
+                crop = cv2.rotate(crop, cv2.ROTATE_180)
         info = self._card_name(crop, thr)
+        if (info is None or info["score"] < self.flip_low) and crop is not None:
+            base = info["score"] if info else 0.0
+            alt = self._card_name(cv2.rotate(crop, cv2.ROTATE_180), thr)
+            if alt is not None and alt["score"] > base * self.flip_margin \
+                    and (info is None or alt["score"] > info["score"]):
+                info = alt
         self._cache[tid] = info
         return info
 
-    # ---- 透视矫正 + 正反面 + 朝向（参考 videotest.py）---------------------
+    # ---- 透视矫正 + 正反面 + 朝向（移植 draw2：长边竖直 + 224 方图）-------
     def analyze_card(self, corners, xywhr):
         cv2, np = self.cv2, self.np
         w_real = float(xywhr[2])
         h_real = float(xywhr[3])
         if w_real < 30 or h_real < 30:
             return None, "未知", None
-        if w_real > h_real:
-            orientation = "横向"
-            W, H = int(round(h_real)), int(round(w_real))
-        else:
-            orientation = "纵向"
-            W, H = int(round(w_real)), int(round(h_real))
+        orientation = "横向" if w_real > h_real else "纵向"
+        # 单摄像头画面相对双摄旋转 90°，纵横相反：只翻转朝向标记
+        if self.cfg.get("mode") == "single":
+            orientation = "纵向" if orientation == "横向" else "横向"
 
-        pts = corners.astype(np.float32)
-        order = np.argsort(pts[:, 1])
-        top2 = pts[order[:2]]
-        bot2 = pts[order[2:]]
-        top2 = top2[np.argsort(top2[:, 0])]
-        bot2 = bot2[np.argsort(bot2[:, 0])]
-        ordered = np.array([top2[0], top2[1], bot2[1], bot2[0]], dtype=np.float32)
+        # 角点重排：先统一绕向（与目标同向，避免镜像），再从「短边」起，
+        # 使卡片长边竖直 —— ViT 只会看到正立或倒置，不会被压扁/横躺。
+        P = np.asarray(corners, dtype=np.float32).reshape(4, 2)
+        if not np.all(np.isfinite(P)):
+            return None, orientation, None
+        area = float(np.sum(P[:, 0] * np.roll(P[:, 1], -1)
+                            - np.roll(P[:, 0], -1) * P[:, 1]))
+        if abs(area) < 1e-3:                     # 退化为一条线
+            return None, orientation, None
+        if area < 0:
+            P = P[::-1].copy()
+        edges = np.linalg.norm(np.roll(P, -1, axis=0) - P, axis=1)
+        ordered = np.roll(P, -int(np.argmin(edges)), axis=0)
 
-        dst = np.array([[0, 0], [W - 1, 0], [W - 1, H - 1], [0, H - 1]], dtype=np.float32)
-        M = cv2.getPerspectiveTransform(ordered, dst)
-        crop = cv2.warpPerspective(self._frame, M, (W, H))
+        S = self.crop_size
+        dst = np.array([[0, 0], [S - 1, 0], [S - 1, S - 1], [0, S - 1]], dtype=np.float32)
+        try:
+            M = cv2.getPerspectiveTransform(ordered, dst)
+            crop = cv2.warpPerspective(self._frame, M, (S, S))
+        except cv2.error:  # noqa: BLE001  个别奇异四边形
+            return None, orientation, None
         hsv = cv2.cvtColor(crop, cv2.COLOR_BGR2HSV)
         h_ch, _s, v_ch = cv2.split(hsv)
-        cx0, cx1 = int(W * 0.25), int(W * 0.75)
-        cy0, cy1 = int(H * 0.25), int(H * 0.75)
+        cx0, cx1 = int(S * 0.25), int(S * 0.75)
+        cy0, cy1 = int(S * 0.25), int(S * 0.75)
         center_v = v_ch[cy0:cy1, cx0:cx1]
         dark = float(np.sum(center_v < 60) / center_v.size) if center_v.size else 0
         mean_v = float(np.mean(center_v)) if center_v.size else 0
@@ -251,12 +407,17 @@ class Detector:
         _t = time.perf_counter
         t_all = _t()
         t0 = _t()
-        front = self._infer(self.front, frame, cfg["front_conf"], 0)
+        if self.front_onnx:
+            front = self._infer_onnx(frame, cfg["front_conf"])
+        else:
+            front = self._infer(self.front, frame, cfg["front_conf"], 0)
         t_front = _t() - t0
         t0 = _t()
         back = self._infer(self.back, frame, cfg["back_conf"], 100000)
         t_back = _t() - t0
         now = time.time()
+        if self.front_onnx:
+            self._assign_tids(front, now)
         for d in front:
             side, ori, crop = self.analyze_card(d["corners"], d["xywhr"])
             if side != "正面":
@@ -304,6 +465,41 @@ class Detector:
         return [{"corners": c.copy(), "xywhr": b.copy(), "tid": int(t)}
                 for c, b, t in zip(pts, xywhr, ids)]
 
+    # ---- ONNX 检测（draw2 网页版写法）-------------------------------------
+    def _infer_onnx(self, frame, conf):
+        try:
+            tensor, scale, padx, pady = onnx_letterbox(self.cv2, self.np, frame, self.imgsz)
+            out = self.front_sess.run([self.front_oname], {self.front_iname: tensor})[0][0]
+        except Exception as e:  # noqa: BLE001
+            _log(f"ONNX 推理失败: {e}")
+            return []
+        return parse_onnx_obb(self.np, out, scale, padx, pady, conf, self.nms_iou)
+
+    def _assign_tids(self, dets, now):
+        """简单 IoU 跟踪：给 ONNX 检测分配稳定 id（卡名缓存的键）。就地写 d['tid']。"""
+        np = self.np
+        for tid in [t for t, (_, ts) in self._tracks.items() if now - ts > self.track_ttl]:
+            self._tracks.pop(tid, None)
+        used = set()
+        for d in dets:
+            c = d["corners"]
+            bb = np.array([c[:, 0].min(), c[:, 1].min(), c[:, 0].max(), c[:, 1].max()],
+                          dtype=np.float32)
+            best, best_iou = None, self.track_iou
+            for tid, (tb, _) in self._tracks.items():
+                if tid in used:
+                    continue
+                i = iou_xyxy(bb, tb)
+                if i > best_iou:
+                    best, best_iou = tid, i
+            if best is None:
+                best = self._next_tid
+                self._next_tid += 1
+            used.add(best)
+            self._tracks[best] = (bb, now)
+            d["tid"] = int(best)
+        return dets
+
     def _make(self, d, side, ori, info, np):
         cx, cy = float(d["xywhr"][0]), float(d["xywhr"][1])
         return {
@@ -333,6 +529,7 @@ class CameraWorker(threading.Thread):
         self.fps = 0.0
         self.detections = 0
         self.error = ""
+        self._last_reco = None          # 上次打印的识别结果（变化时才打印）
 
     def stop(self):
         self._stop.set()
@@ -463,14 +660,35 @@ class CameraWorker(threading.Thread):
             card = empty_card(
                 face_up=(d["side"] == "front"), orientation=d["orientation"])
             if d["info"]:
-                card["id"] = d["info"]["card_id"]
+                card["id"] = _as_int(d["info"].get("card_id"))
                 card["name"] = d["info"]["name"]
                 card["extra"] = {"score": d["info"]["score"]}
             by_player[p][(zone, index)] = card
         for p in self.players:
             self.store.apply_recognition(p, by_player[p])
         self.detections = sum(len(v) for v in by_player.values())
+        self._log_reco(by_player)
         return dets
+
+    def _log_reco(self, by_player):
+        """打印卡名识别结果（内容变化时才打印，避免每个识别周期刷屏）。"""
+        def sort_key(kv):
+            zone, index = kv[0]
+            return (zone, index if index is not None else -1)
+
+        items = []
+        for p in self.players:
+            for (zone, index), card in sorted(by_player[p].items(), key=sort_key):
+                loc = f"P{p} {zone}{index + 1 if index else ''}"
+                if card.get("name"):
+                    items.append(f"{loc} {card['name']}({card['id']}) "
+                                 f"{card.get('extra', {}).get('score', 0):.2f}")
+                else:
+                    items.append(f"{loc} {'卡背' if not card.get('face_up') else '未识别'}")
+        txt = " | ".join(items)
+        if txt != self._last_reco:
+            self._last_reco = txt
+            _log(f"[{self.cam_id}] 识别 {txt or '（无）'}")
 
     def _publish(self, frame, dets):
         cv2 = self.models.cv2
@@ -522,11 +740,13 @@ class CameraWorker(threading.Thread):
 
 
 class RecognitionManager:
-    def __init__(self, store, cfg, calib=None):
+    def __init__(self, store, cfg, calib=None, decks=None):
         self.store = store
         self.cfg = cfg
         self.calib = calib
+        self.decks = decks               # DeckStore（卡名识别候选约束），可空
         self.models = Models(cfg)
+        self.models.decks = decks
         self.workers = []
         self.frames = {}
         self.raw_frames = {}
@@ -583,6 +803,7 @@ class RecognitionManager:
             "models_ready": self.models.ready,
             "models_reason": self.models.reason,
             "cameras": workers,
+            "decks": self.decks.summary() if self.decks is not None else {},
         }
         st.update(self.models.device_info())
         return st

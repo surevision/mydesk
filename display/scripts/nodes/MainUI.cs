@@ -18,7 +18,7 @@ public partial class MainUI : Node3D
     public void showField(Battlefield field)
     {
         BattlefieldChange battlefieldChange = BattlefieldChange.compareField(currField, field);
-        currField = field;
+        currField = field.Clone();
         // 先处理移除的卡
         // EX
         for (int i = 0; i <= 1; i += 1)
@@ -231,6 +231,7 @@ public partial class MainUI : Node3D
         // 卡图
         // string baseDir = OS.GetExecutablePath().GetBaseDir();
         string baseDir = "D:/Git/mydesk/display";
+        int exRotate90 = 90;
         if (cardData.FaceUp)
         {
             // 正面，加载卡图
@@ -257,9 +258,10 @@ public partial class MainUI : Node3D
                     }
                     if (player == 1)
                     {
+                        exRotate90 = -90;
                         if (index == 0)
                         {
-                            nodePath = "showfield/middle/cards/ex/card2";   
+                            nodePath = "showfield/middle/cards/ex/card2";
                         }
                         if (index == 1)
                         {
@@ -268,6 +270,7 @@ public partial class MainUI : Node3D
                     }
                     if (player == 2)
                     {
+                        exRotate90 = 90;
                         if (index == 0)
                         {
                             nodePath = "showfield/middle/cards/ex/card1";   
@@ -335,6 +338,10 @@ public partial class MainUI : Node3D
                     {
                         sprite.Texture = texture;   
                     }
+                    if (zoneType == ZoneType.Ex)
+                    {
+                        sprite.GlobalRotation = new Vector3(0, 0, exRotate90);
+                    }
                     // 攻击防御图标
                     
                     if (zoneType == ZoneType.Front || zoneType == ZoneType.Ex)
@@ -362,6 +369,7 @@ public partial class MainUI : Node3D
                     filePath = Path.Combine(baseDir, "static", "common", "front_placeholder.png");
                     if (player == 1)
                     {
+                        exRotate90 = -90;
                         if (index == 0)
                         {
                             nodePath = "showfield/middle/cards/ex/card2";   
@@ -373,6 +381,7 @@ public partial class MainUI : Node3D
                     }
                     if (player == 2)
                     {
+                        exRotate90 = 90;
                         if (index == 0)
                         {
                             nodePath = "showfield/middle/cards/ex/card1";   
@@ -406,6 +415,10 @@ public partial class MainUI : Node3D
 
                     var sprite = GetNode<Sprite3D>(nodePath);
                     sprite.Texture = texture;
+                    if (zoneType == ZoneType.Ex)
+                    {
+                        sprite.GlobalRotation = new Vector3(0, 0, exRotate90);
+                    }
                     if (zoneType == ZoneType.Front || zoneType == ZoneType.Ex)
                     {
                         string iconPath = cardData.Orientation == Orientation.Vertical ? "state_attack" : "state_defense";

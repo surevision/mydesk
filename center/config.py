@@ -71,8 +71,9 @@ DEFAULT_CONFIG = {
 
     # 模型路径（相对项目根目录或绝对路径皆可）
     "models": {
-        "yolo_front": os.path.join(MODELS_DIR, "ygo_yolo.pt"),      # DRAW2 正面卡检测
-        "yolo_back": os.path.join(MODELS_DIR, "cardback_best.pt"),  # 卡背检测
+        # 正面：.onnx 走纯 ONNX（draw2 网页版同款，无需 ultralytics）；.pt 走 ultralytics
+        "yolo_front": os.path.join(MODELS_DIR, "ygo_yolo.onnx"),
+        "yolo_back": os.path.join(MODELS_DIR, "cardback_best.pt"),  # 卡背检测（暂用 ultralytics .pt）
         "name_onnx": os.path.join(MODELS_DIR, "vit_fp32.onnx"),     # 卡名识别 ONNX
         "names_json": os.path.join(MODELS_DIR, "cardnames_onnx.json"),
     },
@@ -82,11 +83,19 @@ DEFAULT_CONFIG = {
         "front_conf": 0.1,      # 正面检测置信度阈值
         "back_conf": 0.5,       # 卡背置信度阈值
         "name_thr": 0.1,        # 卡名识别置信度阈值（低于则视为未识别，id=-1）
+        "top_k": 15,            # 卡名识别候选数（有卡组时在前 top_k 中按卡组约束挑选）
         "interval": 0.1,        # 识别间隔（秒）
         "min_side": 30,         # 卡最小边长（像素），过小忽略
         "device": 0,            # 推理设备：0=第一块 GPU；"cpu"=CPU
         "track": True,          # 使用 OBB 跟踪（稳定身份 + 卡名缓存）
         "name_cache_ttl": 3.0,  # 卡名缓存存活时间（秒）
+        # 移植 draw2：透视矫正成 crop_size×crop_size 方图，只残余 0°/180°
+        "crop_size": 224,       # ViT 输入边长（方图，与训练分布一致）
+        "flip_low": 0.15,       # 置信度低于此值才尝试 180° 翻转
+        "flip_margin": 1.25,    # 翻转需比原方向好这么多倍才采纳
+        "nms_iou": 0.5,         # ONNX 检测的 OBB NMS 阈值（网页版 0.5）
+        "track_iou": 0.3,       # ONNX 无跟踪器：自建 IoU 跟踪的重叠阈值
+        "track_ttl": 1.0,       # 跟踪丢失多久后回收 id（秒）
     },
 
     # 每玩家区域的格子布局

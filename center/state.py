@@ -165,6 +165,46 @@ class BattlefieldStore:
             print(f"[state] on_change 出错: {e}")
 
 
+class DeckStore:
+    """
+    保存各玩家已导入卡组的卡号（ydk passcode）。
+    卡名识别时用其并集作为候选约束（借鉴 draw2 的 --deck-list 优化）：
+    分类器 top-k 候选中只接受 id 落在已导入卡组里的那一个，从而抑制相近卡混淆。
+    """
+
+    def __init__(self):
+        self._lock = threading.Lock()
+        self._decks = {}          # "1"/"2" -> set[int]
+
+    def set(self, player, ids):
+        try:
+            cleaned = {int(x) for x in (ids or [])}
+        except (TypeError, ValueError):
+            cleaned = set()
+        with self._lock:
+            self._decks[str(player)] = cleaned
+        return len(cleaned)
+
+    def clear(self, player=None):
+        with self._lock:
+            if player is None:
+                self._decks.clear()
+            else:
+                self._decks.pop(str(player), None)
+
+    def all_ids(self):
+        """所有玩家卡号的并集（无卡组时返回空集合）。"""
+        with self._lock:
+            out = set()
+            for s in self._decks.values():
+                out |= s
+            return out
+
+    def summary(self):
+        with self._lock:
+            return {p: len(s) for p, s in self._decks.items()}
+
+
 def _get_cell(pd, z, i):
     return pd[z][i] if i is not None else pd[z]
 

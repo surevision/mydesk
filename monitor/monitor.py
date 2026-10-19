@@ -44,8 +44,8 @@ DEFAULT_CONFIG = {
     "quality": 70,             # JPEG 质量（1-100）
     "cameras": [
         # 默认 5fps：采集端性能不佳时降低帧率，减小负载与带宽
-        {"index": 0, "width": 1280, "height": 720, "fps": 5},
-        {"index": 1, "width": 1280, "height": 720, "fps": 5},
+        {"index": 0, "width": 1920, "height": 1080, "fps": 5},
+        {"index": 1, "width": 1920, "height": 1080, "fps": 5},
     ],
 }
 

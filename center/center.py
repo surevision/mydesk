@@ -20,7 +20,7 @@ import config as config_mod
 import http_server
 from calib import CalibrationStore
 from recognize import RecognitionManager
-from state import BattlefieldStore
+from state import BattlefieldStore, DeckStore
 from ws_server import WebSocketServer
 
 
@@ -39,7 +39,8 @@ def main():
     store = BattlefieldStore()
     ws = WebSocketServer(cfg["ws_host"], cfg["ws_port"])
     calib = CalibrationStore()
-    recognition = RecognitionManager(store, cfg, calib)
+    decks = DeckStore()                      # 已导入卡组：卡名识别候选约束
+    recognition = RecognitionManager(store, cfg, calib, decks)
 
     def broadcast_change(kind, data):
         if kind == "battlefield":
@@ -70,6 +71,12 @@ def main():
             return
         if t == "on_phase_anim":
             store.set_phase(obj.get("phase_index", obj.get("phase")))
+            return
+        # 导入卡组：记录卡号（供卡名识别做候选约束），再转发给其它端
+        if t == "on_import_ydk":
+            n = decks.set(obj.get("player", 1), obj.get("ids", []))
+            print(f"[center] 记录 P{obj.get('player', 1)} 卡组 {n} 张（用于卡名识别约束）")
+            ws.broadcast(obj, exclude=client)
             return
         # 骰子 / 硬币：转发给其它端（display 播放对应动画/音效）
         if t in ("on_dice", "on_coin"):

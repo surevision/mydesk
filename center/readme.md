@@ -30,10 +30,13 @@ conda run -n ygodesk python center.py
 ## 识别实现（参考 test/videotest.py、test/yolotest.py）
 
 - **cv2** 取流（`CAP_PROP_BUFFERSIZE=1`，读帧失败自动重连）。
-- **ultralytics YOLO(OBB)**：正面 `ygo_yolo.pt`、卡背 `cardback_best.pt`。推理设备 `detect.device` 默认 `0`，但会**自动判断**：`torch.cuda.is_available()` 为假（如 CPU 版 torch）时回退 `cpu`，卡号越界也会纠正；显式设 `cpu` 则强制 CPU。实际使用的设备在运行状态里显示。
-- **onnxruntime GPU**：卡名识别 `vit_fp32.onnx`，`providers` 依次尝试 `CUDAExecutionProvider`→`CPUExecutionProvider`（实际使用的提供者在状态里显示）。
-- 朝向/尺寸用 OBB 的 `xywhr` 判断（与 videotest 一致）；正反面用 HSV 暗区/色相方差判定。
-- 使用 **OBB 跟踪 id + 卡名缓存（TTL）**，避免每帧重复跑卡名 ONNX。
+- **正面检测走纯 ONNX**（`models.yolo_front` 以 `.onnx` 结尾时）：`ygo_yolo.onnx`（draw2 网页版同款 YOLO11s-obb，输入 640、单类）。自己做 letterbox → onnxruntime 推理 → 解析 `[6,N]`(x,y,w,h,conf,angle) → OBB 近似 IoU NMS（`nms_iou`）。路径为 `.pt` 时仍走 **ultralytics YOLO(OBB)**。**卡背检测**暂仍用 ultralytics `cardback_best.pt`（如需纯 ONNX，可提供它的 onnx 导出）。
+- **ultralytics** 推理设备 `detect.device` 默认 `0`，但会**自动判断**：`torch.cuda.is_available()` 为假（如 CPU 版 torch）时回退 `cpu`，卡号越界也会纠正；显式设 `cpu` 则强制 CPU。实际使用的设备在运行状态里显示。
+- **onnxruntime**：卡名识别 `vit_fp32.onnx`（带 `.onnx` 正面检测时复用同一批 `providers`），依次尝试 `CUDAExecutionProvider`→`CPUExecutionProvider`（实际使用的提供者在状态里显示）。
+- ONNX 模型**无内置跟踪器**，用自建 **IoU 跟踪**（`track_iou`/`track_ttl`）维持稳定 id；`.pt` 路径仍用 ultralytics 跟踪。
+- 朝向/尺寸用 OBB 的 `xywhr` 判断；正反面用 HSV 暗区/色相方差判定。
+- 卡裁切移植 draw2：四个 OBB 角点先统一绕向、再从**短边**起重排，单应矫正成 `detect.crop_size`（默认 224）**方图**，使卡片长边始终竖直（横置/守备卡不再被压扁）。矫正后只剩 0°/180° 歧义：先用卡面上下亮度猜（正立时下半部更亮），置信度低于 `flip_low` 再试另一方向，且需比原方向好 `flip_margin` 倍才采纳。
+- 跟踪 id + **卡名缓存（TTL）**，避免每帧重复跑卡名 ONNX；卡名候选可用已导入卡组约束（`on_import_ydk` → `DeckStore`，前 `top_k` 个里挑选）。
 - 中心坐标 → `(玩家, 格子)`，落格结果写入战场（人工格优先）。
 
 ## 文件

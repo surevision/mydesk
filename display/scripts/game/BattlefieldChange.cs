@@ -277,7 +277,7 @@ public class BattlefieldChange
                 {
                     return "null";
                 }
-                return string.IsNullOrEmpty(c.Name) ? c.Id.ToString() : c.Name;
+                return string.IsNullOrEmpty(c.Name) ? c.Id.ToString() : $"{c.Name}({c.Id})";
             }
 
             for (int i = 0; i < add.Ex.Count; i += 1)
