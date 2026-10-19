@@ -16,12 +16,15 @@ center 的管理页面 + 接口 + 视频预览。
   GET  /rawsnap/<cam_id> 单帧 JPEG（原始帧，定位用）
   POST /api/calibrate    按 ROI 框选执行定位
   POST /api/guide        显示/隐藏 display 上的定位方块
+  POST /api/monitor_fps  通知采集端 monitor 修改采集帧率
 """
 
 import json
 import os
 import threading
 import time
+import urllib.parse
+import urllib.request
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 from calib import calibrate_player
@@ -49,6 +52,49 @@ class AdminApp:
         self.ws_server = ws_server
         self.save_config_fn = save_config_fn
         self.calib = calib
+
+    def _monitor_bases(self):
+        """从当前摄像头地址里取出唯一的采集端 monitor 基地址（scheme://host:port）。"""
+        mode = self.cfg.get("mode", "single")
+        if mode == "dual":
+            urls = [c.get("url", "") for c in self.cfg.get("dual", {}).get("cameras", [])]
+        else:
+            urls = [self.cfg.get("single", {}).get("url", "")]
+        bases = []
+        for u in urls:
+            if not u or str(u).isdigit():   # 本地摄像头索引，无 monitor 可通知
+                continue
+            p = urllib.parse.urlsplit(str(u))
+            if p.scheme and p.netloc:
+                base = f"{p.scheme}://{p.netloc}"
+                if base not in bases:
+                    bases.append(base)
+        return bases
+
+    def set_monitor_fps(self, fps):
+        """通知采集端 monitor 修改目标帧率（POST {base}/api/fps）。"""
+        try:
+            fps = int(fps)
+        except (TypeError, ValueError):
+            raise RuntimeError("帧率必须是整数")
+        if fps < 1:
+            raise RuntimeError("帧率需 ≥ 1")
+        bases = self._monitor_bases()
+        if not bases:
+            raise RuntimeError("没有可通知的采集端地址（本地摄像头无法远程改帧率）")
+        results, errors = {}, {}
+        for base in bases:
+            try:
+                req = urllib.request.Request(
+                    base + "/api/fps",
+                    data=json.dumps({"fps": fps}).encode("utf-8"),
+                    headers={"Content-Type": "application/json"},
+                    method="POST")
+                with urllib.request.urlopen(req, timeout=3) as resp:
+                    results[base] = json.loads(resp.read().decode("utf-8") or "{}")
+            except Exception as e:  # noqa: BLE001
+                errors[base] = str(e)
+        return {"ok": not errors, "fps": fps, "results": results, "errors": errors}
 
     def status(self):
         st = self.recognition.status()
@@ -185,6 +231,10 @@ class Handler(BaseHTTPRequestHandler):
                 return self._json(200, self.app.calibrate(cam_id, rois))
             if path == "/api/guide":
                 return self._json(200, self.app.set_guide(data.get("show", False)))
+            if path == "/api/monitor_fps":
+                if "fps" not in data:
+                    return self._json(400, {"error": "缺少 fps"})
+                return self._json(200, self.app.set_monitor_fps(data.get("fps")))
             return self._json(404, {"error": "not found"})
         except Exception as e:  # noqa: BLE001
             return self._json(500, {"error": str(e)})

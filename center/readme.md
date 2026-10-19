@@ -22,7 +22,7 @@ cd D:\Git\mydesk\center
 conda run -n ygodesk python center.py
 ```
 
-启动输出管理页面地址（默认 `http://0.0.0.0:8080/`）与 WebSocket 地址（默认 `ws://0.0.0.0:8765`）。
+启动输出管理页面地址（默认 `http://0.0.0.0:4580/`）与 WebSocket 地址（默认 `ws://0.0.0.0:4560`）。
 只需预览/中转、不做识别时，任意 Python 3 均可直接 `python center.py`（缺少的库会自动降级并提示）。
 
 可用 `--http-port` / `--ws-port` 覆盖端口。
@@ -30,7 +30,7 @@ conda run -n ygodesk python center.py
 ## 识别实现（参考 test/videotest.py、test/yolotest.py）
 
 - **cv2** 取流（`CAP_PROP_BUFFERSIZE=1`，读帧失败自动重连）。
-- **ultralytics YOLO(OBB)**：正面 `ygo_yolo.pt`、卡背 `cardback_best.pt`；走 **GPU**（`detect.device`，默认 `0`；设 `cpu` 则用 CPU）。
+- **ultralytics YOLO(OBB)**：正面 `ygo_yolo.pt`、卡背 `cardback_best.pt`。推理设备 `detect.device` 默认 `0`，但会**自动判断**：`torch.cuda.is_available()` 为假（如 CPU 版 torch）时回退 `cpu`，卡号越界也会纠正；显式设 `cpu` 则强制 CPU。实际使用的设备在运行状态里显示。
 - **onnxruntime GPU**：卡名识别 `vit_fp32.onnx`，`providers` 依次尝试 `CUDAExecutionProvider`→`CPUExecutionProvider`（实际使用的提供者在状态里显示）。
 - 朝向/尺寸用 OBB 的 `xywhr` 判断（与 videotest 一致）；正反面用 HSV 暗区/色相方差判定。
 - 使用 **OBB 跟踪 id + 卡名缓存（TTL）**，避免每帧重复跑卡名 ONNX。
@@ -41,7 +41,7 @@ conda run -n ygodesk python center.py
 | 文件 | 说明 |
 | --- | --- |
 | `center.py` | 入口：串起 HTTP + WebSocket + 识别，并做消息路由 |
-| `config.py` / `config.json` | 配置读写（首次运行自动生成 config.json） |
+| `config.py` / `config/` | 配置读写；`config/config_default.json` 为提交的默认模板，首次运行复制生成 `config/config.json`（本机配置，可加入 .gitignore） |
 | `ws_server.py` | 纯标准库 WebSocket 服务端（RFC6455），无第三方依赖 |
 | `state.py` | 战场状态存储（人工优先、识别补充） |
 | `gridmap.py` | 画面坐标 → (玩家, 格子) 的映射（未定位时的回退方案） |
@@ -65,6 +65,10 @@ conda run -n ygodesk python center.py
 - 双摄像头要填**两个不同**的视频流地址（如采集端 monitor 的 `/video/0`、`/video/1`）；若两路填同一地址，实际只有一路画面。
 
 识别到的卡牌用**中心坐标**落到格子：若已做过定位（见下），走校准的单应映射；否则回退到「玩家区域矩形 + `layout` 归一化矩形」。
+
+## 采集端（monitor）帧率
+
+采集端性能不足时，在管理页「采集端 monitor」区域填 fps →「下发到采集端」：center 会把 `POST /api/monitor_fps {fps}` 转发到当前配置里各摄像头地址所在的采集端（`scheme://host:port`）的 `/api/fps`，采集端据此限帧并写回其 config.json。本地摄像头索引地址（纯数字）不会转发。
 
 ## 定位 / 校准
 

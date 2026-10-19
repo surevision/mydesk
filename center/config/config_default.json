@@ -1,0 +1,146 @@
+{
+  "http_host": "0.0.0.0",
+  "http_port": 4580,
+  "ws_host": "0.0.0.0",
+  "ws_port": 4560,
+  "mode": "single",
+  "single": {
+    "url": "http://127.0.0.1:4581/video/0",
+    "player1_side": "left"
+  },
+  "dual": {
+    "swap": false,
+    "cameras": [
+      {
+        "url": "http://127.0.0.1:4581/video/0",
+        "player": 1
+      },
+      {
+        "url": "http://127.0.0.1:4581/video/1",
+        "player": 2
+      }
+    ]
+  },
+  "models": {
+    "yolo_front": "D:\\Git\\ygodesk\\src\\models\\ygo_yolo.pt",
+    "yolo_back": "D:\\Git\\ygodesk\\src\\models\\cardback_best.pt",
+    "name_onnx": "D:\\Git\\ygodesk\\src\\models\\vit_fp32.onnx",
+    "names_json": "D:\\Git\\ygodesk\\src\\models\\cardnames_onnx.json"
+  },
+  "detect": {
+    "front_conf": 0.1,
+    "back_conf": 0.5,
+    "name_thr": 0.1,
+    "interval": 0.1,
+    "min_side": 30,
+    "device": 0,
+    "track": true,
+    "name_cache_ttl": 3.0
+  },
+  "layout": {
+    "col_count": 5,
+    "back": [
+      {
+        "x": 0.14,
+        "y": 0.1,
+        "w": 0.13,
+        "h": 0.28
+      },
+      {
+        "x": 0.28800000000000003,
+        "y": 0.1,
+        "w": 0.13,
+        "h": 0.28
+      },
+      {
+        "x": 0.436,
+        "y": 0.1,
+        "w": 0.13,
+        "h": 0.28
+      },
+      {
+        "x": 0.584,
+        "y": 0.1,
+        "w": 0.13,
+        "h": 0.28
+      },
+      {
+        "x": 0.732,
+        "y": 0.1,
+        "w": 0.13,
+        "h": 0.28
+      }
+    ],
+    "front": [
+      {
+        "x": 0.14,
+        "y": 0.42,
+        "w": 0.13,
+        "h": 0.28
+      },
+      {
+        "x": 0.28800000000000003,
+        "y": 0.42,
+        "w": 0.13,
+        "h": 0.28
+      },
+      {
+        "x": 0.436,
+        "y": 0.42,
+        "w": 0.13,
+        "h": 0.28
+      },
+      {
+        "x": 0.584,
+        "y": 0.42,
+        "w": 0.13,
+        "h": 0.28
+      },
+      {
+        "x": 0.732,
+        "y": 0.42,
+        "w": 0.13,
+        "h": 0.28
+      }
+    ],
+    "ex": [
+      {
+        "x": 0.005,
+        "y": 0.42,
+        "w": 0.105,
+        "h": 0.28
+      },
+      {
+        "x": 0.89,
+        "y": 0.42,
+        "w": 0.105,
+        "h": 0.28
+      }
+    ],
+    "field": {
+      "x": 0.005,
+      "y": 0.1,
+      "w": 0.115,
+      "h": 0.28
+    },
+    "grave": {
+      "x": 0.88,
+      "y": 0.1,
+      "w": 0.115,
+      "h": 0.28
+    },
+    "exdeck": {
+      "x": 0.005,
+      "y": 0.73,
+      "w": 0.115,
+      "h": 0.25
+    },
+    "deck": {
+      "x": 0.88,
+      "y": 0.73,
+      "w": 0.115,
+      "h": 0.25
+    }
+  },
+  "recognition_enabled": true
+}

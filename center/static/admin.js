@@ -126,7 +126,7 @@ async function poll() {
       .join(" | ");
     statusLine.textContent =
       `WS客户端 ${st.ws_clients} | 模型 ${st.models_ok ? "就绪" : "未就绪"}（${st.models_reason}）`
-      + ` | 设备 ${st.device} (${(st.providers || []).join("/") || "-"})`
+      + ` | 设备 ${st.device}${st.device_note ? "（" + st.device_note + "）" : ""} (${(st.providers || []).join("/") || "-"})`
       + (cams ? ` | ${cams}` : "");
     statusJson.textContent = JSON.stringify(st, null, 2);
   } catch (err) {
@@ -136,6 +136,36 @@ async function poll() {
 
 loadConfig().then(poll);
 setInterval(poll, 1500);
+
+/* ---------------- 采集端 monitor ---------------- */
+
+const monitorFpsEl = document.getElementById("monitor-fps");
+const monitorFpsMsg = document.getElementById("monitor-fps-msg");
+
+document.getElementById("monitor-fps-send").addEventListener("click", async () => {
+  const fps = parseInt(monitorFpsEl.value, 10);
+  if (!(fps >= 1)) { monitorFpsMsg.textContent = "帧率需 ≥ 1 的整数"; return; }
+  monitorFpsMsg.textContent = "下发中…";
+  try {
+    const r = await fetch("/api/monitor_fps", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ fps }),
+    });
+    const data = await r.json();
+    if (!r.ok) throw new Error(data.error || r.statusText);
+    if (data.ok) {
+      monitorFpsMsg.textContent = `已下发 ${data.fps}fps → ${Object.keys(data.results).join(", ")}`;
+    } else {
+      const errs = Object.entries(data.errors || {}).map(([k, v]) => `${k}: ${v}`);
+      const oks = Object.keys(data.results || {});
+      monitorFpsMsg.textContent =
+        `部分成功${oks.length ? "（" + oks.join(", ") + "）" : ""}；失败：${errs.join("；")}`;
+    }
+  } catch (err) {
+    monitorFpsMsg.textContent = "失败：" + err.message;
+  }
+});
 
 /* ---------------- 定位 / 校准 ---------------- */
 

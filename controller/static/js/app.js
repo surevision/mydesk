@@ -6,17 +6,21 @@
 import { MSG } from "./protocol.js";
 import {
   makeBattlefield, normalizeBattlefield, normalizeCard,
-  getCell, setCell, cloneBattlefield,
+  getCell, setCell, cloneBattlefield, zoneSize, ZONE_LABEL,
 } from "./state.js";
-import { buildBoard, renderBoard } from "./render.js";
-import { initModals, openModal, closeModal, el, openConfigPanel, openLpPanel, openPhasePanel, openSummonPanel, openDestroyPanel, openAttackPanel, openRelatePanel, openBgmPanel, openSePanel, openDicePanel, openCoinPanel, openImportPanel, openCardPanel } from "./panels.js";
+import { buildBoard, renderBoard, setSelection } from "./render.js";
+import { initModals, openModal, closeModal, el, openConfigPanel, openLpPanel, openPhasePanel, openSummonPanel, openDestroyPanel, openAttackPanel, openRelatePanel, openBgmPanel, openSePanel, openDicePanel, openCoinPanel, openImportPanel, openCardPanel, openCardActionPanel } from "./panels.js";
 import { getConfig, saveConfig, uploadYdk } from "./api.js";
 import { CenterClient } from "./center.js";
 
 // ---- 全局状态 ----
 let battle = makeBattlefield();
-let config = { center_ip: "127.0.0.1", center_port: 8765 };
+let config = { center_ip: "127.0.0.1", center_port: 4560 };
 const center = new CenterClient();
+
+// 攻击 / 被攻击：点击卡片后记录，二者都可被后续选择覆盖
+let attacker = null; // { player, zone, index }
+let target = null;   // { player, zone, index }
 
 // ---------------------------------------------------------------------------
 // 启动
@@ -103,6 +107,21 @@ function updateStatus(status, url) {
 // ---------------------------------------------------------------------------
 function onCellClick(player, zone, index) {
   const card = getCell(battle, player, zone, index);
+  openCardActionPanel(
+    { player, zone, index, card },
+    {
+      onDetail: () => openCardDetailPanel(player, zone, index),
+      onDirect: () => selectDirectAttack(player, zone, index),
+      onAttack: () => selectAttacker(player, zone, index),
+      onDefend: () => selectTarget(player, zone, index),
+    },
+    { attacker, target }
+  );
+}
+
+// 卡牌详情 / 编辑面板（原点击卡片直接打开的面板）
+function openCardDetailPanel(player, zone, index) {
+  const card = getCell(battle, player, zone, index);
   const readonly = zone === "deck"; // deck 不支持手动设置
   openCardPanel(
     { player, zone, index, card, readonly },
@@ -114,6 +133,62 @@ function onCellClick(player, zone, index) {
       onClear: () => clearCell(player, zone, index),
     }
   );
+}
+
+// 选择「直接攻击」：该卡直接攻击对方玩家，立即推送 on_attack_anim（is_direct=true），不记录攻击者
+function selectDirectAttack(player, zone, index) {
+  const from = { player: Number(player), zone, index: Number(index) };
+  sendMsg(MSG.ATTACK, {
+    ...cellPayload(from, "from"),
+    to_player: 0,
+    to_cell_type: "",
+    to_cell_index: 0,
+    is_direct: true,
+  });
+  toast(`直接攻击：P${from.player} ${cellLabel(from)} → 对方玩家`, "success");
+}
+
+// 选择「攻击」：记录攻击者（可被后续选择覆盖）
+function selectAttacker(player, zone, index) {
+  attacker = { player: Number(player), zone, index: Number(index) };
+  syncSelection();
+  toast(`攻击者：P${player} ${cellLabel(attacker)}`, "success");
+}
+
+// 选择「被攻击」：记录被攻击者；若已选攻击者，则推送 on_attack_anim 给 center
+function selectTarget(player, zone, index) {
+  target = { player: Number(player), zone, index: Number(index) };
+  syncSelection();
+  if (!attacker) {
+    toast(`被攻击者：P${player} ${cellLabel(target)}（尚未选择攻击者）`, "info");
+    return;
+  }
+  sendMsg(MSG.ATTACK, {
+    ...cellPayload(attacker, "from"),
+    ...cellPayload(target, "to"),
+    is_direct: false,
+  });
+  toast(`攻击：P${attacker.player} ${cellLabel(attacker)} → P${target.player} ${cellLabel(target)}`, "success");
+}
+
+// 刷新棋盘上的攻击/被攻击高亮
+function syncSelection() {
+  setSelection({ attackFrom: attacker, attackTo: target });
+  renderBoard(battle);
+}
+
+// 把 {player, zone, index} 转成协议字段（from_/to_ 前缀）
+function cellPayload(cell, p) {
+  return {
+    [`${p}_player`]: cell.player,
+    [`${p}_cell_type`]: cell.zone,
+    [`${p}_cell_index`]: cell.index,
+  };
+}
+
+function cellLabel(cell) {
+  const n = zoneSize(cell.zone) > 1 ? cell.index + 1 : "";
+  return `${ZONE_LABEL[cell.zone] || cell.zone}${n}`;
 }
 
 function setCard(player, zone, index, cardData) {

@@ -20,7 +20,7 @@ public partial class Connection : Node
 
     /// <summary>服务器端口。</summary>
     [Export]
-    public int server_port = 8765;
+    public int server_port = 4560;
 
     /// <summary>断线后是否自动重连。</summary>
     [Export]
@@ -300,6 +300,7 @@ public partial class Connection : Node
     public void on_battlefield_change(string battlefield)
     {
         GD.Print(battlefield);
+        
     }
 
     /// <summary>播放召唤动画。</summary>

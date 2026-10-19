@@ -25,11 +25,11 @@
 
 ```bash
 cd controller
-python server.py          # 默认监听 0.0.0.0:8000
-python server.py 8000     # 指定端口
+python server.py          # 默认监听 0.0.0.0:4582
+python server.py 4582     # 指定端口
 ```
 
-用 Pad 浏览器打开 `http://<中心端IP>:8000/`。页面右上角「配置」可设置 center 的 ip/端口，
+用 Pad 浏览器打开 `http://<中心端IP>:4582/`。页面右上角「配置」可设置 center 的 ip/端口，
 保存后自动重连。
 
 ### 目录
@@ -57,7 +57,7 @@ controller/
 | 方法 | 路径          | 说明 |
 |------|---------------|------|
 | GET  | `/api/config` | 读取 center 的 ip/端口配置 |
-| POST | `/api/config` | 保存配置，body: `{ "center_ip": "...", "center_port": 8000 }` |
+| POST | `/api/config` | 保存配置，body: `{ "center_ip": "...", "center_port": 4560 }` |
 | POST | `/api/ydk`    | 上传并解析 ydk。multipart 字段 `player` + `file`，或 JSON `{player, content}` |
 
 `/api/ydk` 返回：`{ ok, player, main: [...], extra: [...], side: [...], ids: [...] }`

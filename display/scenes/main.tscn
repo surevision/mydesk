@@ -1,5 +1,6 @@
 [gd_scene format=3 uid="uid://5xtd3pe3cv8g"]
 
+[ext_resource type="Script" uid="uid://bsus0iypv8fs7" path="res://scripts/nodes/MainUI.cs" id="1_gqmmt"]
 [ext_resource type="Texture2D" uid="uid://bbwadsvjp8xne" path="res://static/ground/red3.png" id="1_o5qli"]
 [ext_resource type="Theme" uid="uid://hvoqjp4bicl6" path="res://ui_themes/cyberpunk/cyberpunk.tres" id="1_o6xl0"]
 [ext_resource type="Texture2D" uid="uid://dnndo8ouulqjn" path="res://static/ground/red.png" id="2_0wfyh"]
@@ -11,14 +12,25 @@
 [ext_resource type="Texture2D" uid="uid://dgcqxsk1jewco" path="res://ui_themes/cyberpunk/images/lp2.png" id="9_85g3d"]
 [ext_resource type="Texture2D" uid="uid://d04hl5w46xgwo" path="res://static/ground/bg1.png" id="10_a8y0u"]
 [ext_resource type="Script" uid="uid://bnq4hj0tm5qeg" path="res://scripts/nodes/CardShowNode.cs" id="11_ya4ey"]
-[ext_resource type="Texture2D" uid="uid://cu14vtwkvitw1" path="res://static/common/front_placeholder.png" id="13_0ld40"]
-[ext_resource type="Texture2D" uid="uid://1tte6hrmr68f" path="res://static/picture_test/field/17255673.jpg" id="13_trceg"]
 [ext_resource type="Texture2D" uid="uid://dyix72e8ant06" path="res://static/common/sword.png" id="14_dp3eg"]
-[ext_resource type="Texture2D" uid="uid://dlk863ik8nhen" path="res://static/common/back_placeholder.png" id="15_0ld40"]
 [ext_resource type="Texture2D" uid="uid://ct13614wsfudl" path="res://static/common/shield.png" id="15_gqmmt"]
 [ext_resource type="Texture2D" uid="uid://dsa0xkg87yo70" path="res://ui_themes/cyberpunk/images/frame_square_round.png" id="15_jkv2x"]
 [ext_resource type="Texture2D" uid="uid://cw1t4x8xp68s4" path="res://static/ground/cardbg1.png" id="15_muem4"]
 [ext_resource type="Script" uid="uid://ct70fpbpcxntr" path="res://scripts/nodes/ExDeckGlowParticle.cs" id="16_glow"]
+
+[sub_resource type="StyleBoxTexture" id="StyleBoxTexture_85g3d"]
+texture = ExtResource("5_tipki")
+texture_margin_left = 32.0
+texture_margin_top = 48.0
+texture_margin_right = 32.0
+texture_margin_bottom = 48.0
+
+[sub_resource type="StyleBoxTexture" id="StyleBoxTexture_choun"]
+texture = ExtResource("9_85g3d")
+texture_margin_left = 32.0
+texture_margin_top = 48.0
+texture_margin_right = 32.0
+texture_margin_bottom = 48.0
 
 [sub_resource type="Gradient" id="Gradient_glowdot_p2"]
 offsets = PackedFloat32Array(0, 0.35, 1)
@@ -35,13 +47,6 @@ fill_to = Vector2(1, 0.5)
 [sub_resource type="Gradient" id="Gradient_glowramp"]
 colors = PackedColorArray(1, 1, 1, 1, 1, 0.23529412, 0.65882355, 0)
 
-[sub_resource type="StyleBoxTexture" id="StyleBoxTexture_85g3d"]
-texture = ExtResource("5_tipki")
-texture_margin_left = 32.0
-texture_margin_top = 48.0
-texture_margin_right = 32.0
-texture_margin_bottom = 48.0
-
 [sub_resource type="Gradient" id="Gradient_jbj1t"]
 offsets = PackedFloat32Array(0, 0.35, 1)
 colors = PackedColorArray(1, 1, 1, 1, 0.16470589, 0.83137256, 1, 1, 0.16470589, 0.83137256, 1, 0)
@@ -57,13 +62,6 @@ fill_to = Vector2(1, 0.5)
 [sub_resource type="Gradient" id="Gradient_glowramp_p2"]
 colors = PackedColorArray(1, 1, 1, 1, 0.16470589, 0.83137256, 1, 0)
 
-[sub_resource type="StyleBoxTexture" id="StyleBoxTexture_choun"]
-texture = ExtResource("9_85g3d")
-texture_margin_left = 32.0
-texture_margin_top = 48.0
-texture_margin_right = 32.0
-texture_margin_bottom = 48.0
-
 [sub_resource type="PanoramaSkyMaterial" id="PanoramaSkyMaterial_tefeu"]
 panorama = ExtResource("3_jyhfs")
 
@@ -75,6 +73,7 @@ background_mode = 1
 sky = SubResource("Sky_tbgi4")
 
 [node name="main" type="Node3D" unique_id=356765844]
+script = ExtResource("1_gqmmt")
 
 [node name="ui" type="Control" parent="." unique_id=129540259]
 layout_mode = 3
@@ -430,29 +429,12 @@ offset_right = 204.0
 offset_bottom = 408.0
 texture = ExtResource("3_tbgi4")
 
-[node name="bling" type="CPUParticles2D" parent="ui/player1" unique_id=1420587361 node_paths=PackedStringArray("targetNode")]
-position = Vector2(-259, 151)
-amount = 64
-texture = SubResource("GradientTexture2D_glowdot_p2")
-lifetime = 1.2
-preprocess = 1.2
-randomness = 0.1
-direction = Vector2(0, -1)
-spread = 180.0
-gravity = Vector2(0, 0)
-initial_velocity_max = 2.0
-scale_amount_min = 0.15
-scale_amount_max = 0.4
-color_ramp = SubResource("Gradient_glowramp")
-script = ExtResource("16_glow")
-targetNode = NodePath("../back/back1")
-
 [node name="TextureRect" type="TextureRect" parent="ui/player1" unique_id=230863672]
 layout_mode = 0
 offset_right = 40.0
 offset_bottom = 40.0
 
-[node name="Panel" type="Panel" parent="ui/player1" unique_id=1290365672]
+[node name="lp" type="Panel" parent="ui/player1" unique_id=1290365672]
 layout_mode = 1
 offset_left = 844.0
 offset_right = 1128.0
@@ -460,7 +442,7 @@ offset_bottom = 128.0
 rotation = 1.5707964
 theme_override_styles/panel = SubResource("StyleBoxTexture_85g3d")
 
-[node name="Label" type="Label" parent="ui/player1/Panel" unique_id=1685929245]
+[node name="val" type="Label" parent="ui/player1/lp" unique_id=1685929245]
 layout_mode = 1
 anchors_preset = 8
 anchor_left = 0.5
@@ -833,24 +815,7 @@ offset_bottom = 408.0
 texture = ExtResource("6_tefeu")
 flip_h = true
 
-[node name="bling" type="CPUParticles2D" parent="ui/player2" unique_id=1420587362 node_paths=PackedStringArray("targetNode")]
-position = Vector2(284, 159)
-amount = 64
-texture = SubResource("GradientTexture2D_jbj1t")
-lifetime = 1.2
-preprocess = 1.2
-randomness = 0.1
-direction = Vector2(0, -1)
-spread = 180.0
-gravity = Vector2(0, 0)
-initial_velocity_max = 2.0
-scale_amount_min = 0.15
-scale_amount_max = 0.4
-color_ramp = SubResource("Gradient_glowramp_p2")
-script = ExtResource("16_glow")
-targetNode = NodePath("../back/back1")
-
-[node name="Panel" type="Panel" parent="ui/player2" unique_id=1769051334]
+[node name="lp" type="Panel" parent="ui/player2" unique_id=1769051334]
 layout_mode = 1
 anchors_preset = 2
 anchor_top = 1.0
@@ -863,7 +828,7 @@ grow_vertical = 0
 rotation = -1.5707964
 theme_override_styles/panel = SubResource("StyleBoxTexture_choun")
 
-[node name="Label" type="Label" parent="ui/player2/Panel" unique_id=1172822913]
+[node name="val" type="Label" parent="ui/player2/lp" unique_id=1172822913]
 layout_mode = 1
 anchors_preset = 8
 anchor_left = 0.5
@@ -881,6 +846,46 @@ text = "8000"
 
 [node name="Camera2D" type="Camera2D" parent="ui" unique_id=2040473244]
 anchor_mode = 0
+
+[node name="ring" type="Node2D" parent="ui" unique_id=979893456]
+
+[node name="temmplate" type="Node2D" parent="ui/ring" unique_id=1437633778]
+
+[node name="bling_p1" type="CPUParticles2D" parent="ui/ring/temmplate" unique_id=225350416]
+visible = false
+position = Vector2(-259, 151)
+amount = 64
+texture = SubResource("GradientTexture2D_glowdot_p2")
+lifetime = 1.2
+preprocess = 1.2
+randomness = 0.1
+direction = Vector2(0, -1)
+spread = 180.0
+gravity = Vector2(0, 0)
+initial_velocity_max = 2.0
+scale_amount_min = 0.15
+scale_amount_max = 0.4
+color_ramp = SubResource("Gradient_glowramp")
+script = ExtResource("16_glow")
+
+[node name="bling_p2" type="CPUParticles2D" parent="ui/ring/temmplate" unique_id=867719500]
+visible = false
+position = Vector2(284, 159)
+amount = 64
+texture = SubResource("GradientTexture2D_jbj1t")
+lifetime = 1.2
+preprocess = 1.2
+randomness = 0.1
+direction = Vector2(0, -1)
+spread = 180.0
+gravity = Vector2(0, 0)
+initial_velocity_max = 2.0
+scale_amount_min = 0.15
+scale_amount_max = 0.4
+color_ramp = SubResource("Gradient_glowramp_p2")
+script = ExtResource("16_glow")
+
+[node name="items" type="Node2D" parent="ui/ring" unique_id=1829413270]
 
 [node name="showfield" type="Node3D" parent="." unique_id=276305112]
 
@@ -909,7 +914,6 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.7782327, 0, 0)
 [node name="card1" type="Sprite3D" parent="showfield/middle/cards/player1/front" unique_id=1510176661]
 transform = Transform3D(-4.371139e-08, 0.9999999, 0, -1, -4.3711385e-08, 8.2904493e-16, 8.2904504e-16, 3.6238705e-23, 0.9999999, 0, 7.9, 0)
 pixel_size = 0.008
-texture = ExtResource("13_0ld40")
 script = ExtResource("11_ya4ey")
 
 [node name="state_attack" type="Sprite3D" parent="showfield/middle/cards/player1/front/card1" unique_id=716245587]
@@ -925,7 +929,6 @@ texture = ExtResource("15_gqmmt")
 [node name="card2" type="Sprite3D" parent="showfield/middle/cards/player1/front" unique_id=1085392372]
 transform = Transform3D(-4.371139e-08, 0.9999999, 0, -1, -4.3711385e-08, 8.2904493e-16, 8.2904504e-16, 3.6238705e-23, 0.9999999, 0, 4, 0)
 pixel_size = 0.008
-texture = ExtResource("13_0ld40")
 script = ExtResource("11_ya4ey")
 
 [node name="state_attack" type="Sprite3D" parent="showfield/middle/cards/player1/front/card2" unique_id=1840911292]
@@ -941,7 +944,6 @@ texture = ExtResource("15_gqmmt")
 [node name="card3" type="Sprite3D" parent="showfield/middle/cards/player1/front" unique_id=87671002]
 transform = Transform3D(-4.371139e-08, 0.9999999, 0, -1, -4.3711385e-08, 8.2904493e-16, 8.2904504e-16, 3.6238705e-23, 0.9999999, 0, 0, 0)
 pixel_size = 0.008
-texture = ExtResource("13_0ld40")
 script = ExtResource("11_ya4ey")
 
 [node name="state_attack" type="Sprite3D" parent="showfield/middle/cards/player1/front/card3" unique_id=603729562]
@@ -957,7 +959,6 @@ texture = ExtResource("15_gqmmt")
 [node name="card4" type="Sprite3D" parent="showfield/middle/cards/player1/front" unique_id=133287110]
 transform = Transform3D(-4.371139e-08, 0.9999999, 0, -1, -4.3711385e-08, 8.2904493e-16, 8.2904504e-16, 3.6238705e-23, 0.9999999, 0, -4, 0)
 pixel_size = 0.008
-texture = ExtResource("13_0ld40")
 script = ExtResource("11_ya4ey")
 
 [node name="state_attack" type="Sprite3D" parent="showfield/middle/cards/player1/front/card4" unique_id=753229974]
@@ -973,7 +974,6 @@ texture = ExtResource("15_gqmmt")
 [node name="card5" type="Sprite3D" parent="showfield/middle/cards/player1/front" unique_id=1356987116]
 transform = Transform3D(-4.371139e-08, 0.9999999, 0, -1, -4.3711385e-08, 8.2904493e-16, 8.2904504e-16, 3.6238705e-23, 0.9999999, 0, -7.9, 0)
 pixel_size = 0.008
-texture = ExtResource("13_0ld40")
 script = ExtResource("11_ya4ey")
 
 [node name="state_attack" type="Sprite3D" parent="showfield/middle/cards/player1/front/card5" unique_id=1898753012]
@@ -992,27 +992,22 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -4.3, 0, -0.01)
 [node name="card1" type="Sprite3D" parent="showfield/middle/cards/player1/back" unique_id=184460647]
 transform = Transform3D(-4.371139e-08, 0.9999999, 0, -1, -4.3711385e-08, 0, 0, 0, 0.9999999, 0, 7.9, 0)
 pixel_size = 0.005
-texture = ExtResource("15_0ld40")
 
 [node name="card2" type="Sprite3D" parent="showfield/middle/cards/player1/back" unique_id=581892095]
 transform = Transform3D(-4.371139e-08, 0.9999999, 0, -1, -4.3711385e-08, 0, 0, 0, 0.9999999, 0, 4, 0)
 pixel_size = 0.005
-texture = ExtResource("15_0ld40")
 
 [node name="card3" type="Sprite3D" parent="showfield/middle/cards/player1/back" unique_id=516354292]
 transform = Transform3D(-4.371139e-08, 0.9999999, 0, -1, -4.3711385e-08, 0, 0, 0, 0.9999999, 0, 0, 0)
 pixel_size = 0.005
-texture = ExtResource("15_0ld40")
 
 [node name="card4" type="Sprite3D" parent="showfield/middle/cards/player1/back" unique_id=201912604]
 transform = Transform3D(-4.371139e-08, 0.9999999, 0, -1, -4.3711385e-08, 0, 0, 0, 0.9999999, 0, -4, 0)
 pixel_size = 0.005
-texture = ExtResource("15_0ld40")
 
 [node name="card5" type="Sprite3D" parent="showfield/middle/cards/player1/back" unique_id=44634409]
 transform = Transform3D(-4.371139e-08, 0.9999999, 0, -1, -4.3711385e-08, 0, 0, 0, 0.9999999, 0, -7.9, 0)
 pixel_size = 0.005
-texture = ExtResource("15_0ld40")
 
 [node name="player2" type="Node3D" parent="showfield/middle/cards" unique_id=1659188369]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.9704413, 0, -0.23999977)
@@ -1030,7 +1025,6 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.77, 0, 0)
 [node name="card1" type="Sprite3D" parent="showfield/middle/cards/player2/front" unique_id=1773410876]
 transform = Transform3D(-4.371139e-08, -0.9999999, 0, 1, -4.3711385e-08, 3.5538887e-16, -3.5538893e-16, 1.5534542e-23, 0.9999999, 0, 7.9, 0)
 pixel_size = 0.008
-texture = ExtResource("13_0ld40")
 script = ExtResource("11_ya4ey")
 reverse = true
 
@@ -1047,7 +1041,6 @@ texture = ExtResource("15_gqmmt")
 [node name="card2" type="Sprite3D" parent="showfield/middle/cards/player2/front" unique_id=1908560890]
 transform = Transform3D(-4.371139e-08, -0.9999999, 0, 1, -4.3711385e-08, 3.5538887e-16, -3.5538893e-16, 1.5534542e-23, 0.9999999, 0, 4, 0)
 pixel_size = 0.008
-texture = ExtResource("13_0ld40")
 script = ExtResource("11_ya4ey")
 reverse = true
 
@@ -1064,7 +1057,6 @@ texture = ExtResource("15_gqmmt")
 [node name="card3" type="Sprite3D" parent="showfield/middle/cards/player2/front" unique_id=1641824374]
 transform = Transform3D(-4.371139e-08, -0.9999999, 0, 1, -4.3711385e-08, 3.5538887e-16, -3.5538893e-16, 1.5534542e-23, 0.9999999, 0, 0, 0)
 pixel_size = 0.008
-texture = ExtResource("13_0ld40")
 script = ExtResource("11_ya4ey")
 reverse = true
 
@@ -1081,7 +1073,6 @@ texture = ExtResource("15_gqmmt")
 [node name="card4" type="Sprite3D" parent="showfield/middle/cards/player2/front" unique_id=101742703]
 transform = Transform3D(-4.371139e-08, -0.9999999, 0, 1, -4.3711385e-08, 3.5538887e-16, -3.5538893e-16, 1.5534542e-23, 0.9999999, 0, -4, 0)
 pixel_size = 0.008
-texture = ExtResource("13_0ld40")
 script = ExtResource("11_ya4ey")
 reverse = true
 
@@ -1098,7 +1089,6 @@ texture = ExtResource("15_gqmmt")
 [node name="card5" type="Sprite3D" parent="showfield/middle/cards/player2/front" unique_id=2117955786]
 transform = Transform3D(-4.371139e-08, -0.9999999, 0, 1, -4.3711385e-08, 3.5538887e-16, -3.5538893e-16, 1.5534542e-23, 0.9999999, 0, -7.9, 0)
 pixel_size = 0.008
-texture = ExtResource("13_0ld40")
 script = ExtResource("11_ya4ey")
 reverse = true
 
@@ -1118,27 +1108,22 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4.3, 0, -0.01)
 [node name="card1" type="Sprite3D" parent="showfield/middle/cards/player2/back" unique_id=1583354879]
 transform = Transform3D(-4.371139e-08, -0.9999999, 0, 1, -4.3711385e-08, 0, 0, 0, 0.9999999, 0, 7.9, 0)
 pixel_size = 0.005
-texture = ExtResource("15_0ld40")
 
 [node name="card2" type="Sprite3D" parent="showfield/middle/cards/player2/back" unique_id=633505002]
 transform = Transform3D(-4.371139e-08, -0.9999999, 0, 1, -4.3711385e-08, 0, 0, 0, 0.9999999, 0, 4, 0)
 pixel_size = 0.005
-texture = ExtResource("15_0ld40")
 
 [node name="card3" type="Sprite3D" parent="showfield/middle/cards/player2/back" unique_id=380332222]
 transform = Transform3D(-4.371139e-08, -0.9999999, 0, 1, -4.3711385e-08, 0, 0, 0, 0.9999999, 0, 0, 0)
 pixel_size = 0.005
-texture = ExtResource("15_0ld40")
 
 [node name="card4" type="Sprite3D" parent="showfield/middle/cards/player2/back" unique_id=2107877969]
 transform = Transform3D(-4.371139e-08, -0.9999999, 0, 1, -4.3711385e-08, 0, 0, 0, 0.9999999, 0, -4, 0)
 pixel_size = 0.005
-texture = ExtResource("15_0ld40")
 
 [node name="card5" type="Sprite3D" parent="showfield/middle/cards/player2/back" unique_id=1627076248]
 transform = Transform3D(-4.371139e-08, -0.9999999, 0, 1, -4.3711385e-08, 0, 0, 0, 0.9999999, 0, -7.9, 0)
 pixel_size = 0.005
-texture = ExtResource("15_0ld40")
 
 [node name="ex" type="Node3D" parent="showfield/middle/cards" unique_id=44043659]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -0.24)
@@ -1156,7 +1141,6 @@ texture = ExtResource("15_muem4")
 [node name="card1" type="Sprite3D" parent="showfield/middle/cards/ex" unique_id=942378478]
 transform = Transform3D(-4.371139e-08, -0.9999999, 0, 1, -4.3711385e-08, 0, 0, 0, 0.9999999, 0, -4, 0)
 pixel_size = 0.008
-texture = ExtResource("13_0ld40")
 script = ExtResource("11_ya4ey")
 reverse = true
 
@@ -1173,7 +1157,6 @@ texture = ExtResource("15_gqmmt")
 [node name="card2" type="Sprite3D" parent="showfield/middle/cards/ex" unique_id=1408297250]
 transform = Transform3D(-4.371139e-08, 0.9999999, 0, -1, -4.3711385e-08, 8.2904493e-16, 8.2904504e-16, 3.6238705e-23, 0.9999999, 0, 4, 0)
 pixel_size = 0.008
-texture = ExtResource("13_0ld40")
 script = ExtResource("11_ya4ey")
 
 [node name="state_attack" type="Sprite3D" parent="showfield/middle/cards/ex/card2" unique_id=885361644]
@@ -1194,7 +1177,6 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -16)
 [node name="card" type="Sprite3D" parent="showfield/middle/field/player1" unique_id=631772562]
 transform = Transform3D(-4.371139e-08, 1, 0, -1, -4.371139e-08, 0, 0, 0, 1, 0, 0, 0)
 pixel_size = 0.08
-texture = ExtResource("13_trceg")
 
 [node name="player2" type="Node3D" parent="showfield/middle/field" unique_id=1779663986]
 
@@ -1202,7 +1184,6 @@ texture = ExtResource("13_trceg")
 transform = Transform3D(-4.371139e-08, 1, 0, -1, -4.371139e-08, 0, 0, 0, 1, 0, 0, 0)
 visible = false
 pixel_size = 0.08
-texture = ExtResource("13_trceg")
 
 [node name="bg" type="Sprite3D" parent="showfield/middle/field" unique_id=283280955]
 transform = Transform3D(50, 0, 0, 0, 50, 0, 0, 0, 50, 0, 0, 2)

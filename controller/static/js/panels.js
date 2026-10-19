@@ -183,6 +183,9 @@ export function openCardPanel(info, cb) {
     ]);
   }));
 
+  const markerRow = fieldRow("标记", markersWrap);
+  markerRow.classList.add("form-row--wide");
+
   // 指示物（种类用 datalist 提供游戏王真实 Counter 类型，也可自由输入）
   const counterDatalist = el("datalist", { id: "counter-types" },
     COUNTER_TYPES.map((t) => el("option", { value: t.en, label: `${t.cn} (${t.en})` })));
@@ -198,7 +201,7 @@ export function openCardPanel(info, cb) {
   };
   (c.counters || []).forEach((x) => addCounterRow(x.kind, x.count));
 
-  const form = el("div", { class: "form" }, [
+  const form = el("div", { class: "form form--2col" }, [
     fieldRow("卡号 id", idIn),
     fieldRow("卡名", nameIn),
     fieldRow("攻击力", atkIn),
@@ -210,8 +213,8 @@ export function openCardPanel(info, cb) {
     fieldRow("箭头", arrowsIn),
     fieldRow("正面", faceIn),
     fieldRow("朝向", orientIn),
-    fieldRow("标记", markersWrap),
-    el("div", { class: "form-row" }, [
+    markerRow,
+    el("div", { class: "form-row form-row--wide" }, [
       el("span", { class: "form-label", text: "指示物" }),
       el("div", {}, [
         countersWrap,
@@ -266,12 +269,58 @@ export function openCardPanel(info, cb) {
   });
 }
 
+/**
+ * 点击卡片的「操作选择」面板（在打开卡牌详情之前弹出）。
+ * 记录攻击者 / 被攻击者在 app.js 中完成，这里只负责选择动作。
+ * @param {object} info { player, zone, index, card }
+ * @param {object} cb { onDetail(), onDirect(), onAttack(), onDefend() }
+ * @param {object} sel 已选记录 { attacker, target }（用于提示，可空）
+ */
+export function openCardActionPanel(info, cb, sel = {}) {
+  const { player, zone, index } = info;
+  const zoneText = `${labelOf(CELL_TYPES, zone)} ${player}-${index}`;
+
+  const cellText = (c) =>
+    c ? `P${c.player} · ${labelOf(CELL_TYPES, c.zone)} ${c.index + 1}` : "未选择";
+
+  const actions = el("div", { class: "action-grid" }, [
+    el("button", {
+      class: "cy-btn cy-btn--exec", text: "详情",
+      onclick: () => { closeModal(); cb.onDetail && cb.onDetail(); },
+    }),
+    el("button", {
+      class: "cy-btn", text: "直接攻击",
+      onclick: () => { closeModal(); cb.onDirect && cb.onDirect(); },
+    }),
+    el("button", {
+      class: "cy-btn", text: "攻击",
+      onclick: () => { closeModal(); cb.onAttack && cb.onAttack(); },
+    }),
+    el("button", {
+      class: "cy-btn cy-btn--danger", text: "被攻击",
+      onclick: () => { closeModal(); cb.onDefend && cb.onDefend(); },
+    }),
+  ]);
+
+  const hint = el("div", { class: "action-hint" }, [
+    el("div", {}, [el("span", { class: "form-label", text: "攻击者" }), el("b", { text: cellText(sel.attacker) })]),
+    el("div", {}, [el("span", { class: "form-label", text: "被攻击者" }), el("b", { text: cellText(sel.target) })]),
+  ]);
+
+  openModal({
+    title: `卡牌操作 · ${zoneText}`,
+    badge: "// ACTION",
+    width: "min(380px,92vw)",
+    body: el("div", {}, [actions, hint]),
+  });
+}
+
 // ---------------------------------------------------------------------------
 // 各控制面板
 // ---------------------------------------------------------------------------
 export function openConfigPanel(current, onSave) {
   const ipIn = textInput(current.center_ip || "127.0.0.1");
-  const portIn = numberInput(current.center_port || 8765, { min: 1, max: 65535 });
+  const portIn = numberInput(current.center_port || 4560, { min: 1, max: 65535 });
   openModal({
     title: "连接配置",
     badge: "// CENTER",
@@ -280,7 +329,7 @@ export function openConfigPanel(current, onSave) {
       fieldRow("center 端口", portIn),
     ]),
     buttons: [
-      { label: "保存并重连", class: "cy-btn--exec", onClick: () => { onSave({ center_ip: ipIn.value, center_port: Number(portIn.value) || 8765 }); closeModal(); } },
+      { label: "保存并重连", class: "cy-btn--exec", onClick: () => { onSave({ center_ip: ipIn.value, center_port: Number(portIn.value) || 4560 }); closeModal(); } },
     ],
   });
 }

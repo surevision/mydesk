@@ -1,7 +1,9 @@
 # -*- coding: utf-8 -*-
 """
-center 配置：读写 config.json，提供默认值。
-配置文件方便手动编辑，管理页面也可修改。
+center 配置：读写 config/config.json，提供默认值。
+- config/config_default.json：随仓库提交的默认模板。
+- config/config.json：本机实际配置，首次运行由模板复制生成（可加入 .gitignore）。
+管理页面也可修改配置。
 """
 
 import copy
@@ -9,7 +11,9 @@ import json
 import os
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-CONFIG_PATH = os.path.join(BASE_DIR, "config.json")
+CONFIG_DIR = os.path.join(BASE_DIR, "config")
+CONFIG_PATH = os.path.join(CONFIG_DIR, "config.json")           # 本机配置（运行时生成）
+DEFAULT_PATH = os.path.join(CONFIG_DIR, "config_default.json")  # 提交的默认模板
 
 # 模型默认放在项目 src/models 下（与 test/*.py 一致）
 MODELS_DIR = os.path.normpath(os.path.join(BASE_DIR, "..", "src", "models"))
@@ -40,10 +44,10 @@ def _default_layout():
 DEFAULT_CONFIG = {
     # HTTP 服务（管理页面 + 接口 + 视频预览）
     "http_host": "0.0.0.0",
-    "http_port": 8080,
+    "http_port": 4580,
     # WebSocket 服务（display / controller 连接）
     "ws_host": "0.0.0.0",
-    "ws_port": 8765,
+    "ws_port": 4560,
 
     # 摄像头模式：single（单摄像头拍双方）| dual（双摄像头各拍一方）
     "mode": "single",
@@ -51,7 +55,7 @@ DEFAULT_CONFIG = {
     # 单摄像头模式
     "single": {
         # monitor 采集端的多路地址：单路用 /video/0
-        "url": "http://10.10.1.105:8080/video/0",
+        "url": "http://10.10.1.105:4581/video/0",
         "player1_side": "left",   # left：画面左半为 player1；right：右半为 player1
     },
 
@@ -60,8 +64,8 @@ DEFAULT_CONFIG = {
         "swap": False,            # 交换两个摄像头与玩家的对应
         # 两路必须填不同的地址（monitor 的 /video/0、/video/1）
         "cameras": [
-            {"url": "http://10.10.1.105:8080/video/0", "player": 1},
-            {"url": "http://10.10.1.105:8080/video/1", "player": 2},
+            {"url": "http://10.10.1.105:4581/video/0", "player": 1},
+            {"url": "http://10.10.1.105:4581/video/1", "player": 2},
         ],
     },
 
@@ -106,10 +110,29 @@ def _deep_merge(base, override):
     return out
 
 
+def _write_json(path, data):
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    with open(path, "w", encoding="utf-8") as f:
+        json.dump(data, f, ensure_ascii=False, indent=2)
+
+
+def _seed_config():
+    """config.json 不存在时生成：优先用 config_default.json 模板，否则用内置默认。"""
+    if os.path.exists(DEFAULT_PATH):
+        try:
+            with open(DEFAULT_PATH, "r", encoding="utf-8") as f:
+                data = json.load(f)
+            _write_json(CONFIG_PATH, data)
+            print("[config] 已由 config_default.json 生成 config/config.json")
+            return
+        except (OSError, ValueError) as e:
+            print(f"[config] 读取 config_default.json 失败，改用内置默认: {e}")
+    _write_json(CONFIG_PATH, DEFAULT_CONFIG)
+
+
 def load_config():
     if not os.path.exists(CONFIG_PATH):
-        save_config(DEFAULT_CONFIG)
-        return copy.deepcopy(DEFAULT_CONFIG)
+        _seed_config()
     try:
         with open(CONFIG_PATH, "r", encoding="utf-8") as f:
             data = json.load(f)
@@ -121,6 +144,5 @@ def load_config():
 
 def save_config(cfg):
     merged = _deep_merge(DEFAULT_CONFIG, cfg)
-    with open(CONFIG_PATH, "w", encoding="utf-8") as f:
-        json.dump(merged, f, ensure_ascii=False, indent=2)
+    _write_json(CONFIG_PATH, merged)
     return merged

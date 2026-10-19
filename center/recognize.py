@@ -30,6 +30,49 @@ def _log(*a):
     print("[recog]", *a)
 
 
+# 探测 torch 的 CUDA 可用性（只探一次），返回 (可用, 卡数, 说明)
+_torch_state = None
+
+
+def _torch_cuda():
+    global _torch_state
+    if _torch_state is None:
+        try:
+            import torch
+            if torch.cuda.is_available():
+                count = torch.cuda.device_count()
+                try:
+                    name = torch.cuda.get_device_name(0)
+                except Exception:  # noqa: BLE001
+                    name = "?"
+                _torch_state = (True, count, f"CUDA 可用（{count} 卡：{name}）")
+            else:
+                _torch_state = (False, 0, "torch 无可用 CUDA（CPU 版？）→ 用 CPU")
+        except Exception as e:  # noqa: BLE001
+            _torch_state = (False, 0, f"未导入 torch（{e}）→ 用 CPU")
+    return _torch_state
+
+
+def _resolve_device(dev):
+    """
+    按「配置 + 实际环境」决定推理设备，返回 (device, 说明)。
+    dev 为 "cpu" 时强制 CPU；为数字（如 0）时若 torch 无 CUDA 则自动回退 CPU，
+    并纠正越界的卡号。
+    """
+    if isinstance(dev, str) and dev.strip().lower() == "cpu":
+        return "cpu", "配置指定 CPU"
+    avail, count, note = _torch_cuda()
+    if not avail:
+        return "cpu", note
+    try:
+        dev_i = int(dev)
+    except (TypeError, ValueError):
+        dev_i = 0
+    if count and not (0 <= dev_i < count):
+        return 0, f"{note}；请求 device={dev_i} 越界，改用 0"
+    return dev_i, note
+
+
 class Models:
     """共享资源：cv2/numpy、卡名 ONNX 会话与卡名库。
     每路摄像头各自 make_detector() 出一个 Detector（独占 YOLO 与跟踪器），
@@ -97,7 +140,8 @@ class Models:
         return Detector(self)
 
     def device_info(self):
-        return {"providers": self.providers, "device": self.cfg["detect"].get("device", 0)}
+        dev, note = _resolve_device(self.cfg["detect"].get("device", 0))
+        return {"providers": self.providers, "device": dev, "device_note": note}
 
 
 class Detector:
@@ -120,12 +164,16 @@ class Detector:
         self._frame = None
         self._cache = {}         # tid -> info | None
         self._seen = {}          # tid -> 最近出现时间
+        self.timing = {}         # 上次 detect 各段耗时（秒）
+        # 推理设备：按配置 + 环境自动决定（无 CUDA 时回退 CPU）
+        self.device, self.device_note = _resolve_device(self.cfg["detect"].get("device", 0))
         try:
             from ultralytics import YOLO
             m = self.cfg["models"]
             self.front = YOLO(m["yolo_front"])
             self.back = YOLO(m["yolo_back"])
             self.ready = True
+            _log(f"识别器就绪，设备 {self.device}（{self.device_note}）")
         except Exception as e:  # noqa: BLE001
             self.error = f"YOLO 加载失败: {e}"
             _log(self.error)
@@ -200,8 +248,14 @@ class Detector:
         cfg = self.cfg["detect"]
         np = self.np
         out = []
+        _t = time.perf_counter
+        t_all = _t()
+        t0 = _t()
         front = self._infer(self.front, frame, cfg["front_conf"], 0)
+        t_front = _t() - t0
+        t0 = _t()
         back = self._infer(self.back, frame, cfg["back_conf"], 100000)
+        t_back = _t() - t0
         now = time.time()
         for d in front:
             side, ori, crop = self.analyze_card(d["corners"], d["xywhr"])
@@ -214,7 +268,7 @@ class Detector:
             side, ori, crop = self.analyze_card(d["corners"], d["xywhr"])
             if side != "反面":
                 continue
-            if any(abs(o["cx"] - d["cx"]) < 30 and abs(o["cy"] - d["cy"]) < 30 for o in out):
+            if any(abs(o["cx"] - d["xywhr"][0]) < 30 and abs(o["cy"] - d["xywhr"][1]) < 30 for o in out):
                 continue
             self._seen[d["tid"]] = now
             out.append(self._make(d, "back", ori, None, np))
@@ -223,11 +277,13 @@ class Detector:
         for tid in [t for t, ts in self._seen.items() if now - ts > ttl]:
             self._seen.pop(tid, None)
             self._cache.pop(tid, None)
+        self.timing = {"front": t_front, "back": t_back, "total": _t() - t_all,
+                       "n_front": len(front), "n_back": len(back)}
         return out
 
     def _infer(self, model, frame, conf, id_offset):
         cfg = self.cfg["detect"]
-        device = cfg.get("device", 0)
+        device = self.device          # 已解析（无 CUDA 时为 "cpu"）
         use_track = bool(cfg.get("track", True))
         try:
             if use_track:
@@ -283,7 +339,13 @@ class CameraWorker(threading.Thread):
 
     def _open(self):
         cv2 = self.models.cv2
-        src = int(self.url) if str(self.url).isdigit() else self.url
+        is_local = str(self.url).isdigit()
+        src = int(self.url) if is_local else self.url
+        if not is_local:
+            # 网络流：让 FFmpeg 不缓存、低延迟，尽量取最新帧（否则积压导致画面落后几秒）
+            os.environ.setdefault(
+                "OPENCV_FFMPEG_CAPTURE_OPTIONS",
+                "fflags;nobuffer|flags;low_delay|reorder_queue_size;0")
         cap = cv2.VideoCapture(src)
         try:
             cap.set(cv2.CAP_PROP_BUFFERSIZE, 1)
@@ -311,8 +373,14 @@ class CameraWorker(threading.Thread):
         count = 0
         t0 = time.time()
         retries = 0
+        # 耗时统计（每 ~2 秒输出一行）
+        sum_read = sum_proc = sum_pub = sum_front = sum_back = 0.0
+        n_proc = 0
+        _t = time.perf_counter
         while not self._stop.is_set():
+            tr = _t()
             ret, frame = cap.read()
+            read_dt = _t() - tr
             if not ret or frame is None:
                 self.connected = False
                 retries += 1
@@ -326,22 +394,43 @@ class CameraWorker(threading.Thread):
                 continue
             retries = 0
             self.connected = True
+            sum_read += read_dt
             now = time.time()
             count += 1
-            if now - t0 >= 2.0:
-                self.fps = count / (now - t0)
-                count = 0
-                t0 = now
             result = None
             if self.detector is not None and self.detector.ready and \
                     self.cfg.get("recognition_enabled", True) and now - last_detect >= interval:
                 last_detect = now
                 try:
+                    tp = _t()
                     result = self._process(frame)
+                    sum_proc += _t() - tp
+                    n_proc += 1
+                    tm = self.detector.timing
+                    sum_front += tm.get("front", 0.0)
+                    sum_back += tm.get("back", 0.0)
                 except Exception as e:  # noqa: BLE001
                     self.error = f"识别异常: {e}"
                     _log(self.error)
+            tp = _t()
             self._publish(frame, result)
+            sum_pub += _t() - tp
+            if now - t0 >= 2.0:
+                dt = now - t0
+                n = count or 1
+                self.fps = count / dt
+                if n_proc:
+                    proc_txt = (f"解析 {sum_proc/n_proc*1000:.0f}ms×{n_proc}"
+                                f" (前 {sum_front/n_proc*1000:.0f}/背 {sum_back/n_proc*1000:.0f}ms)")
+                else:
+                    proc_txt = "解析 未运行"
+                _log(f"[{self.cam_id}] 帧率 {self.fps:.1f} | {proc_txt}"
+                     f" | 发布 {sum_pub/n*1000:.0f}ms | 读帧 {sum_read/n*1000:.0f}ms"
+                     f" | 卡 {self.detections}")
+                count = 0
+                t0 = now
+                sum_read = sum_proc = sum_pub = sum_front = sum_back = 0.0
+                n_proc = 0
         cap.release()
         self.connected = False
 

@@ -102,6 +102,9 @@ body { overflow: hidden; }
 .cell:hover { border-color: var(--cy-cyan); box-shadow: 0 0 12px rgba(42,212,255,.35); }
 .cell.empty { border-style: dashed; }
 .zone.cells .cell, .zone.stack .cell, .zone.cells-ex .cell { flex: 0 0 auto; width: auto; }
+/* 额外怪兽区的占位空格：与格子同尺寸但不可见 */
+.cell-ghost { border-color: transparent; background: none; box-shadow: none; pointer-events: none; }
+.cell-ghost:hover { border-color: transparent; box-shadow: none; }
 .cell-zone {
   font-family: var(--cy-mono); font-size: 9px; letter-spacing: .08em; color: var(--cy-dim);
   text-align: center; padding: 2px; pointer-events: none;
@@ -130,6 +133,18 @@ body { overflow: hidden; }
   color: var(--cy-mag-lt); background: rgba(40,10,30,.85); padding: 0 3px; border: 1px solid var(--cy-mag-dk);
 }
 
+/* ---- 攻击 / 被攻击 选中高亮 ---- */
+.cell.sel-attack-from { border-color: var(--cy-yellow); box-shadow: 0 0 14px rgba(255,225,74,.7); }
+.cell.sel-attack-to { border-color: var(--cy-mag-lt); box-shadow: 0 0 14px rgba(255,80,200,.7); }
+.cell.sel-attack-from::after,
+.cell.sel-attack-to::after {
+  position: absolute; top: 2px; left: 50%; transform: translateX(-50%);
+  font-family: var(--cy-disp); font-size: 8px; font-weight: 700; letter-spacing: .08em;
+  padding: 0 3px; color: var(--cy-ink); pointer-events: none; z-index: 3;
+}
+.cell.sel-attack-from::after { content: "ATK"; background: var(--cy-yellow); }
+.cell.sel-attack-to::after { content: "TGT"; background: var(--cy-mag-lt); }
+
 /* ---- 中间信息条 ---- */
 .mid {
   display: flex; align-items: center; justify-content: center; gap: 28px;
@@ -149,11 +164,21 @@ body { overflow: hidden; }
 .form-label { flex: 0 0 72px; font-family: var(--cy-mono); font-size: 12px; color: var(--cy-dim); }
 .form-row > .cy-input, .form-row > div, .form-row > div > .cy-input { flex: 1; }
 .form-row > div { min-width: 0; }
+/* 卡牌详情等宽表单：宽屏自动两列，减少高度、尽量免滚动 */
+.form--2col { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 8px 14px; }
+.form--2col .form-row--wide { grid-column: 1 / -1; }
 .modal-foot { display: flex; gap: 8px; justify-content: flex-end; margin-top: 16px; flex-wrap: wrap; }
 .hint { font-family: var(--cy-mono); font-size: 11px; color: var(--cy-dim); line-height: 1.6; }
 
 .quick-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
 .quick-row { display: flex; gap: 6px; flex-wrap: wrap; }
+
+/* ---- 卡片操作选择面板（点击卡片先弹出）---- */
+.action-grid { display: flex; gap: 8px; flex-wrap: wrap; }
+.action-grid .cy-btn { flex: 1 1 40%; }
+.action-hint { margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--cy-line); display: flex; flex-direction: column; gap: 5px; }
+.action-hint > div { display: flex; align-items: center; gap: 8px; }
+.action-hint b { font-family: var(--cy-mono); font-size: 11px; color: var(--cy-cyan-lt); }
 
 .coord, .coord-group { display: flex; flex-direction: column; gap: 8px; }
 .coord-title { font-family: var(--cy-disp); font-size: 11px; letter-spacing: .18em; color: var(--cy-mag-lt); margin-top: 4px; }

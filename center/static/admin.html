@@ -30,7 +30,7 @@
           <legend>单摄像头</legend>
           <div class="row">
             <label>视频源
-              <input type="text" name="s_url" placeholder="http://ip:8080/video/0 或 0">
+              <input type="text" name="s_url" placeholder="http://ip:4581/video/0 或 0">
             </label>
             <label>player1 位置
               <select name="s_side">
@@ -100,6 +100,18 @@
     <section class="panel">
       <h2>视频预览 <small>（叠加框为当前格子布局，用于校准）</small></h2>
       <div id="previews" class="previews"></div>
+    </section>
+
+    <section class="panel">
+      <h2>采集端 monitor</h2>
+      <p class="hint">采集端性能不足时，降低采集帧率以减小负载与带宽。会通知当前配置里的采集端改帧率（并写回其 config.json）。</p>
+      <div class="row">
+        <label>采集帧率(fps)
+          <input type="number" id="monitor-fps" min="1" max="60" step="1" value="5">
+        </label>
+        <button type="button" id="monitor-fps-send">下发到采集端</button>
+        <span id="monitor-fps-msg"></span>
+      </div>
     </section>
 
     <section class="panel">

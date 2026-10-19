@@ -40,11 +40,12 @@ BOUNDARY = "frame"
 
 DEFAULT_CONFIG = {
     "host": "0.0.0.0",
-    "port": 8080,
+    "port": 4581,
     "quality": 70,             # JPEG 质量（1-100）
     "cameras": [
-        {"index": 0, "width": 1280, "height": 720, "fps": 30},
-        {"index": 1, "width": 1280, "height": 720, "fps": 30},
+        # 默认 5fps：采集端性能不佳时降低帧率，减小负载与带宽
+        {"index": 0, "width": 1280, "height": 720, "fps": 5},
+        {"index": 1, "width": 1280, "height": 720, "fps": 5},
     ],
 }
 
@@ -64,6 +65,15 @@ def load_config():
     for k, v in data.items():
         cfg[k] = v
     return cfg
+
+
+def save_config(cfg):
+    """写回 config.json（例如远端改了帧率，重启后仍生效）。"""
+    merged = json.loads(json.dumps(DEFAULT_CONFIG))
+    merged.update(cfg)
+    with open(CONFIG_PATH, "w", encoding="utf-8") as f:
+        json.dump(merged, f, ensure_ascii=False, indent=2)
+    return merged
 
 
 def _lan_ip():
@@ -88,11 +98,12 @@ class CameraStream(threading.Thread):
         self.index = int(spec.get("index", idx))
         self.width = int(spec.get("width", 1280))
         self.height = int(spec.get("height", 720))
-        self.fps = int(spec.get("fps", 30))
+        self.fps = int(spec.get("fps", 5))
         self.quality = int(quality)
         self._stop = threading.Event()
         self._lock = threading.Lock()
         self._jpeg = None
+        self._seq = 0            # 帧序号（每次新帧 +1，供流端判断是否有新画面）
         self.connected = False
         self.error = ""
         self.fps_real = 0.0
@@ -100,9 +111,20 @@ class CameraStream(threading.Thread):
     def stop(self):
         self._stop.set()
 
+    def set_fps(self, fps):
+        """运行时改目标帧率（下一帧起生效）。"""
+        fps = max(1, int(fps))
+        if fps != self.fps:
+            print(f"[monitor] 摄像头 {self.idx} 目标帧率 {self.fps} → {fps} fps")
+        self.fps = fps
+
     def latest(self):
         with self._lock:
             return self._jpeg
+
+    def latest_seq(self):
+        with self._lock:
+            return self._seq, self._jpeg
 
     def _open(self, cv2):
         # Windows 优先 DirectShow（打开更快更稳），失败再退回默认后端
@@ -130,6 +152,7 @@ class CameraStream(threading.Thread):
         cap = None
         count = 0
         t0 = time.time()
+        next_t = 0.0
         while not self._stop.is_set():
             if cap is None:
                 cap = self._open(cv2)
@@ -152,13 +175,18 @@ class CameraStream(threading.Thread):
                 self.error = "读帧失败，重连中"
                 time.sleep(0.3)
                 continue
+            now = time.time()
+            # 限帧：只在到达目标间隔时编码/推送，多余帧直接丢弃（降负载/带宽）
+            if now < next_t:
+                continue
+            next_t = now + 1.0 / max(1, self.fps)
             ok, buf = cv2.imencode(".jpg", frame,
                                    [int(cv2.IMWRITE_JPEG_QUALITY), self.quality])
             if ok:
                 with self._lock:
                     self._jpeg = buf.tobytes()
+                    self._seq += 1
                 count += 1
-            now = time.time()
             if now - t0 >= 2.0:
                 self.fps_real = count / (now - t0)
                 count = 0
@@ -170,17 +198,34 @@ class CameraStream(threading.Thread):
     def status(self):
         return {"idx": self.idx, "index": self.index,
                 "connected": self.connected, "fps": round(self.fps_real, 1),
-                "error": self.error}
+                "target_fps": self.fps, "error": self.error}
 
 
 class MonitorApp:
-    def __init__(self, streams):
+    def __init__(self, streams, cfg=None):
         self.streams = streams
+        self.cfg = cfg
 
     def get(self, idx):
         if 0 <= idx < len(self.streams):
             return self.streams[idx]
         return None
+
+    def set_fps(self, fps, idx=None):
+        """改一路（idx）或全部摄像头的目标帧率，并写回 config.json。"""
+        fps = max(1, int(fps))
+        applied = []
+        cams = list(self.cfg.get("cameras", [])) if self.cfg else []
+        for i, s in enumerate(self.streams):
+            if idx is not None and s.idx != idx:
+                continue
+            s.set_fps(fps)
+            if i < len(cams):
+                cams[i]["fps"] = fps
+            applied.append(s.idx)
+        if self.cfg is not None and applied:
+            save_config(self.cfg)
+        return applied
 
     def status(self):
         return [s.status() for s in self.streams]
@@ -199,6 +244,7 @@ class Handler(BaseHTTPRequestHandler):
         self.send_response(code)
         self.send_header("Content-Type", ctype)
         self.send_header("Content-Length", str(len(body)))
+        self.send_header("Access-Control-Allow-Origin", "*")
         self.send_header("Cache-Control", "no-store")
         self.end_headers()
         if self.command != "HEAD":
@@ -229,6 +275,34 @@ class Handler(BaseHTTPRequestHandler):
         except (BrokenPipeError, ConnectionResetError):
             pass
 
+    def do_POST(self):
+        path = self.path.split("?", 1)[0]
+        try:
+            length = int(self.headers.get("Content-Length", 0) or 0)
+            raw = self.rfile.read(length) if length else b""
+            data = json.loads(raw.decode("utf-8")) if raw else {}
+        except (ValueError, UnicodeDecodeError):
+            return self._send(400, "bad json")
+        if path == "/api/fps":
+            try:
+                fps = int(data.get("fps"))
+            except (TypeError, ValueError):
+                return self._send(400, "bad fps")
+            idx = data.get("idx")
+            applied = self.app.set_fps(fps, int(idx) if idx is not None else None)
+            print(f"[monitor] 收到改帧率请求 fps={fps} idx={idx} → 生效 {applied}")
+            body = json.dumps({"ok": True, "fps": fps, "applied": applied},
+                              ensure_ascii=False)
+            return self._send(200, body, "application/json; charset=utf-8")
+        return self._send(404, "not found")
+
+    def do_OPTIONS(self):
+        self.send_response(204)
+        self.send_header("Access-Control-Allow-Origin", "*")
+        self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+        self.send_header("Access-Control-Allow-Headers", "Content-Type")
+        self.end_headers()
+
     def _stream(self, idx):
         cam = self.app.get(idx)
         if cam is None:
@@ -238,15 +312,19 @@ class Handler(BaseHTTPRequestHandler):
         self.send_header("Cache-Control", "no-cache")
         self.end_headers()
         try:
+            last = -1
             while True:
-                frame = cam.latest()
-                if frame:
+                seq, frame = cam.latest_seq()
+                if frame is not None and seq != last:
+                    # 只在有新帧时推送，避免重复发同一张（否则接收端积压、画面落后）
+                    last = seq
                     self.wfile.write(f"--{BOUNDARY}\r\n".encode())
                     self.wfile.write(b"Content-Type: image/jpeg\r\n")
                     self.wfile.write(f"Content-Length: {len(frame)}\r\n\r\n".encode())
                     self.wfile.write(frame)
                     self.wfile.write(b"\r\n")
-                time.sleep(1.0 / 30)
+                else:
+                    time.sleep(1.0 / 60)
         except (BrokenPipeError, ConnectionResetError, OSError):
             return
 
@@ -310,16 +388,16 @@ def main():
     for s in streams:
         s.start()
 
-    Handler.app = MonitorApp(streams)
+    Handler.app = MonitorApp(streams, cfg)
     httpd = ThreadingHTTPServer((cfg["host"], cfg["port"]), Handler)
     httpd.daemon_threads = True
 
     ip = _lan_ip()
     print(f"[monitor] 采集端  http://{cfg['host']}:{cfg['port']}/")
     for s in streams:
-        print(f"[monitor] /video/{s.idx}  ← 摄像头 index={s.index}"
+        print(f"[monitor] /video/{s.idx}  ← 摄像头 index={s.index} @{s.fps}fps"
               f"   →  center 填 http://{ip}:{cfg['port']}/video/{s.idx}")
-    print("[monitor] Ctrl+C 退出")
+    print("[monitor] 改帧率：POST /api/fps {\"fps\":5}（center 管理页也可下发）；Ctrl+C 退出")
 
     try:
         httpd.serve_forever()

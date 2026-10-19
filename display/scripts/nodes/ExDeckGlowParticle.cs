@@ -32,7 +32,7 @@ public partial class ExDeckGlowParticle : CpuParticles2D
         base._Process(delta);
         if (target == null)
         {
-            GD.Print("not found");
+            // GD.Print("not found");
             return;
         }
 

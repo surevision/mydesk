@@ -35,7 +35,7 @@ CONFIG_PATH = os.path.join(BASE_DIR, "config.json")
 # center 连接默认地址（页面打开时会读取该配置并回填）
 DEFAULT_CONFIG = {
     "center_ip": "127.0.0.1",
-    "center_port": 8765,
+    "center_port": 4560,
 }
 
 # 静态文件扩展名 -> MIME
@@ -321,7 +321,7 @@ class Handler(BaseHTTPRequestHandler):
 
 def main():
     host = "0.0.0.0"
-    port = 8000
+    port = 4582
     # 允许 python server.py [port]
     if len(sys.argv) > 1:
         try:

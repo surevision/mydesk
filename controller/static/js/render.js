@@ -13,6 +13,21 @@ const STACK_ZONES = ["exdeck", "deck", "grave", "field"];
 // 数组区域（水平排列用）
 const ROW_ZONES = ["front", "back", "ex"];
 
+// ---- 攻击 / 被攻击 选中态（由「点击卡片 -> 操作面板」记录，用于棋盘高亮）----
+let selection = { attackFrom: null, attackTo: null };
+
+/**
+ * 设置当前选中的攻击者 / 被攻击者，用于在棋盘上高亮。
+ * @param {object} sel { attackFrom, attackTo }（每项为 {player, zone, index} 或 null）
+ */
+export function setSelection(sel) {
+  selection = Object.assign({ attackFrom: null, attackTo: null }, sel || {});
+}
+
+function isSelected(sel, player, zone, index) {
+  return !!sel && Number(sel.player) === player && sel.zone === zone && Number(sel.index) === index;
+}
+
 /**
  * 构建战场骨架
  * @param {HTMLElement} rootEl
@@ -53,24 +68,32 @@ function buildSide(player, onCellClick, exFirst) {
   const rowEx = makeRow();
   rowEx.classList.add("row-ex");
 
-  // back 行：exdeck | back1..5 | deck
-  rowBack.appendChild(makeStack(player, "exdeck", onCellClick));
+  // 角堆叠的左右位置：两方朝向相反，上方玩家镜像
+  //   下方 p1(exFirst)：field/exdeck 在左，grave/deck 在右
+  //   上方 p2：         grave/deck  在左，field/exdeck 在右
+  const frontLeft = exFirst ? "field" : "grave";
+  const frontRight = exFirst ? "grave" : "field";
+  const backLeft = exFirst ? "exdeck" : "deck";
+  const backRight = exFirst ? "deck" : "exdeck";
+
+  // back 行：卡组/额外卡组 | back1..5 | 额外卡组/卡组
+  rowBack.appendChild(makeStack(player, backLeft, onCellClick));
   rowBack.appendChild(makeRowCells(player, "back", onCellClick));
-  rowBack.appendChild(makeStack(player, "deck", onCellClick));
+  rowBack.appendChild(makeStack(player, backRight, onCellClick));
 
-  // front 行：field | front1..5 | grave
-  rowFront.appendChild(makeStack(player, "field", onCellClick));
+  // front 行：场地/墓地 | front1..5 | 墓地/场地
+  rowFront.appendChild(makeStack(player, frontLeft, onCellClick));
   rowFront.appendChild(makeRowCells(player, "front", onCellClick));
-  rowFront.appendChild(makeStack(player, "grave", onCellClick));
+  rowFront.appendChild(makeStack(player, frontRight, onCellClick));
 
-  // ex 行：ex1..2（每方 2 格）
-  rowEx.appendChild(makeRowCells(player, "ex", onCellClick));
+  // ex 行：占满 7 列，额外怪兽区落在第 3、5 列（对齐 front 的第 2、4 格）
+  rowEx.appendChild(makeExCells(player, onCellClick, exFirst));
 
-  // 靠近中间的一侧放 ex：p1 在顶部，p2 在底部
+  // 由靠近中场向外：ex 行 → front 行 → back 行
   if (exFirst) {
     grid.appendChild(rowEx);
-    grid.appendChild(rowBack);
     grid.appendChild(rowFront);
+    grid.appendChild(rowBack);
   } else {
     grid.appendChild(rowBack);
     grid.appendChild(rowFront);
@@ -105,6 +128,26 @@ function makeRowCells(player, zone, onCellClick) {
   for (let i = 0; i < n; i++) {
     wrap.appendChild(makeCell(player, zone, i, onCellClick));
   }
+  return wrap;
+}
+
+// 额外怪兽区：每方 2 格，占满 7 列、放在第 3、5 列（对齐 front 的第 2、4 格）
+function makeExCells(player, onCellClick, exFirst) {
+  const wrap = document.createElement("div");
+  wrap.className = "zone cells cells-ex";
+  wrap.dataset.zone = "ex";
+  // 下方 p1：左=ex1、右=ex2；上方 p2 镜像
+  const leftEx = exFirst ? 0 : 1;
+  const rightEx = exFirst ? 1 : 0;
+  [null, null, leftEx, null, rightEx, null, null].forEach((idx) => {
+    if (idx === null) {
+      const ghost = document.createElement("div");
+      ghost.className = "cell cell-ghost";
+      wrap.appendChild(ghost);
+    } else {
+      wrap.appendChild(makeCell(player, "ex", idx, onCellClick));
+    }
+  });
   return wrap;
 }
 
@@ -156,6 +199,8 @@ export function renderBoard(bf) {
     const index = Number(cell.dataset.index);
     const card = getCell(bf, player, zone, index);
     renderCell(cell, card);
+    cell.classList.toggle("sel-attack-from", isSelected(selection.attackFrom, player, zone, index));
+    cell.classList.toggle("sel-attack-to", isSelected(selection.attackTo, player, zone, index));
   });
 
   // HUD
