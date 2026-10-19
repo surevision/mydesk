@@ -98,7 +98,7 @@
     </section>
 
     <section class="panel">
-      <h2>视频预览 <small>（叠加框为当前格子布局，用于校准）</small></h2>
+      <h2>视频预览 <small>（叠加框为识别到的卡牌；定位完成后再显示战场网格）</small></h2>
       <div id="previews" class="previews"></div>
     </section>
 
@@ -116,7 +116,15 @@
 
     <section class="panel">
       <h2>定位 / 校准 <small>（框选玩家区域 → 定位方块 → 7×3 网格）</small></h2>
-      <p class="hint">在每路画面上拖拽框选玩家区域（单摄像头需框两次：player1、player2；双摄像头每路框一次）。</p>
+      <div class="row">
+        <label>定位方式
+          <select id="calib-mode">
+            <option value="auto">自动检测定位方块</option>
+            <option value="manual">手动标记定位标识</option>
+          </select>
+        </label>
+      </div>
+      <p class="hint" id="calib-hint"></p>
       <div id="calib-previews" class="previews"></div>
       <div class="actions">
         <button type="button" id="calib-run">开始定位</button>

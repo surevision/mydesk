@@ -27,6 +27,12 @@ public partial class ExDeckGlowParticle : CpuParticles2D
         }
     }
 
+    public void setTarget(Control control)
+    {
+        target = control;
+        targetNode = control;
+    }
+
     public override void _Process(double delta)
     {
         base._Process(delta);

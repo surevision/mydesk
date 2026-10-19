@@ -299,7 +299,7 @@ public partial class Connection : Node
     /// <param name="battlefield">战场情况的 JSON 字符串。</param>
     public void on_battlefield_change(string battlefield)
     {
-        GD.Print(battlefield);
+        // GD.Print(battlefield);
         BattleManager.getInstance().showField(battlefield);
     }
 

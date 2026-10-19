@@ -516,6 +516,34 @@ def calibrate_player(img_bgr, roi, cam_id, player, mode):
     return PlayerCalib(cam_id, player, mode, roi, corners, H, inv_H, (w, h))
 
 
+def calibrate_player_manual(corners_pixels, cam_id, player, mode, frame_size):
+    """
+    手动校准：直接使用用户框选的 4 个定位标识位置（画面像素），不再做自动检测。
+
+    corners_pixels 顺序：tl → tr → br → bl（从左上角开始顺时针）。
+    框选的每个小方格取其中心作为定位标识位置。
+    """
+    pts = [(float(p[0]), float(p[1])) for p in corners_pixels]
+    if len(pts) != 4:
+        raise ValueError("需要 4 个定位标识位置（tl→tr→br→bl 顺时针）")
+
+    corners = {c: pts[i] for i, c in enumerate(CORNERS)}
+    tl, tr, br, bl = corners["tl"], corners["tr"], corners["br"], corners["bl"]
+    # 退化检查：面积过小说明四点过近/共线，单应矩阵不可靠
+    area = abs((tr[0] - tl[0]) * (bl[1] - tl[1]) - (bl[0] - tl[0]) * (tr[1] - tl[1]))
+    if area < 25.0:
+        raise ValueError("4 个定位标识位置过近或共线，无法建立校准")
+
+    H, inv_H = compute_homography(corners)
+    if H is None:
+        raise ValueError("无法计算单应矩阵")
+
+    xs = [p[0] for p in pts]
+    ys = [p[1] for p in pts]
+    roi = (int(min(xs)), int(min(ys)), int(max(xs)), int(max(ys)))
+    return PlayerCalib(cam_id, player, mode, roi, corners, H, inv_H, frame_size)
+
+
 # ============================================================
 # 内存校准存储
 # ============================================================

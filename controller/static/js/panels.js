@@ -5,7 +5,7 @@
  * 每个面板都是「拼好表单 -> 回调返回数据」的形式，具体发送逻辑交给 app.js。
  */
 import {
-  PHASES, CELL_TYPES, SETTABLE_CELL_TYPES, DESTROY_CELL_TYPES,
+  PHASES, CELL_TYPES, SETTABLE_CELL_TYPES,
   SUMMON_TYPES, ATTRIBUTES, RACES, MARKER_TYPES, ORIENTATIONS, COUNTER_TYPES, labelOf,
 } from "./protocol.js";
 
@@ -95,10 +95,11 @@ function coordInput(defaults = {}, types = SETTABLE_CELL_TYPES) {
 // ---------------------------------------------------------------------------
 // Modal 基础
 // ---------------------------------------------------------------------------
-export function openModal({ title, badge, width, body, buttons = [] }) {
-  closeModal();
-  const mask = el("div", { class: "cy-modal-mask" });
-  const closeBtn = el("div", { class: "cy-modal__close", text: "✕", onclick: closeModal });
+export function openModal({ title, badge, width, body, buttons = [], stack = false }) {
+  if (!stack) closeModal();          // 叠加弹窗（stack）不清理下层弹窗
+  const closeThis = stack ? () => mask.remove() : closeModal;
+  const mask = el("div", { class: "cy-modal-mask" + (stack ? " cy-modal-mask--stack" : "") });
+  const closeBtn = el("div", { class: "cy-modal__close", text: "✕", onclick: closeThis });
 
   const bodyEl = el("div", { class: "cy-panel__bd" });
   if (typeof body === "string") bodyEl.innerHTML = body;
@@ -127,9 +128,9 @@ export function openModal({ title, badge, width, body, buttons = [] }) {
   const modal = el("div", { class: "cy-modal" }, [closeBtn, panel]);
   if (width) modal.style.width = width;
   mask.appendChild(modal);
-  mask.addEventListener("click", (e) => { if (e.target === mask) closeModal(); });
+  mask.addEventListener("click", (e) => { if (e.target === mask) closeThis(); });
   modalRoot.appendChild(mask);
-  return { mask, body: bodyEl, close: closeModal };
+  return { mask, body: bodyEl, close: closeThis };
 }
 
 // ---------------------------------------------------------------------------
@@ -201,8 +202,21 @@ export function openCardPanel(info, cb) {
   };
   (c.counters || []).forEach((x) => addCounterRow(x.kind, x.count));
 
+  // 卡号 id + 「选择」：从已导入的 P1/P2 卡组中按图片挑选
+  const idPick = el("button", {
+    class: "cy-btn cy-btn--sm cy-btn--ghost", type: "button", text: "选择",
+    onclick: () => {
+      const decks = (cb.getDeckIds && cb.getDeckIds()) || {};
+      openCardPicker(
+        ["1", "2"].map((p) => ({ player: p, ids: decks[p] || [] })),
+        (id) => { idIn.value = id; },
+      );
+    },
+  });
+  const idRow = el("div", { class: "id-row" }, [idIn, idPick]);
+
   const form = el("div", { class: "form form--2col" }, [
-    fieldRow("卡号 id", idIn),
+    fieldRow("卡号 id", idRow),
     fieldRow("卡名", nameIn),
     fieldRow("攻击力", atkIn),
     fieldRow("守备力", defIn),
@@ -270,10 +284,56 @@ export function openCardPanel(info, cb) {
 }
 
 /**
+ * 卡号「选择」弹窗：按已导入卡组的卡号列出卡图（assets/cards/<id>.jpg）。
+ * 找不到图片的卡号显示占位块。叠加在卡牌详情之上，选中后回填 id。
+ * @param {Array<{player:string, ids:number[]}>} groups
+ * @param {(id:number)=>void} onPick
+ */
+export function openCardPicker(groups, onPick) {
+  let closePicker = () => {};
+
+  const thumb = (id) => {
+    const img = el("img", {
+      class: "card-thumb__img", src: `assets/cards/${id}.jpg`,
+      alt: String(id), loading: "lazy",
+    });
+    const ph = el("div", { class: "card-thumb__ph", text: String(id) });
+    const btn = el("button", {
+      class: "card-thumb", type: "button", title: `卡号 ${id}`,
+      onclick: () => { onPick(id); closePicker(); },
+    }, [img, ph]);
+    img.addEventListener("error", () => btn.classList.add("is-missing"));
+    return btn;
+  };
+
+  const body = el("div", { class: "card-picker" }, groups.map((g) => {
+    const grid = g.ids.length
+      ? el("div", { class: "card-grid" }, g.ids.map(thumb))
+      : el("p", { class: "hint", text: `P${g.player} 尚未导入卡组` });
+    return el("div", { class: "card-group" }, [
+      el("div", { class: "card-group__hd" }, [
+        el("span", { text: `P${g.player} 卡组` }),
+        el("span", { class: "k", text: `// ${g.ids.length}` }),
+      ]),
+      grid,
+    ]);
+  }));
+
+  const modal = openModal({
+    title: "选择卡牌",
+    badge: "// CARD PICK",
+    width: "min(760px,96vw)",
+    stack: true,
+    body,
+  });
+  closePicker = modal.close;
+}
+
+/**
  * 点击卡片的「操作选择」面板（在打开卡牌详情之前弹出）。
  * 记录攻击者 / 被攻击者在 app.js 中完成，这里只负责选择动作。
  * @param {object} info { player, zone, index, card }
- * @param {object} cb { onDetail(), onDirect(), onAttack(), onDefend() }
+ * @param {object} cb { onDetail(), onDirect(), onAttack(), onDefend(), onDestroy() }
  * @param {object} sel 已选记录 { attacker, target }（用于提示，可空）
  */
 export function openCardActionPanel(info, cb, sel = {}) {
@@ -299,6 +359,10 @@ export function openCardActionPanel(info, cb, sel = {}) {
     el("button", {
       class: "cy-btn cy-btn--danger", text: "被攻击",
       onclick: () => { closeModal(); cb.onDefend && cb.onDefend(); },
+    }),
+    el("button", {
+      class: "cy-btn cy-btn--danger", text: "破坏",
+      onclick: () => { closeModal(); cb.onDestroy && cb.onDestroy(); },
     }),
   ]);
 
@@ -364,16 +428,6 @@ export function openSummonPanel(onApply) {
     el("button", { class: "cy-btn cy-btn--sm", text: s.label, onclick: () => { onApply(s.key); closeModal(); } })
   ));
   openModal({ title: "播放召唤动画", badge: "// SUMMON", body: grid });
-}
-
-export function openDestroyPanel(onApply) {
-  const coord = coordInput({ cell_type: "front" }, DESTROY_CELL_TYPES);
-  openModal({
-    title: "播放破坏动画",
-    badge: "// DESTROY",
-    body: coord.el,
-    buttons: [{ label: "播放", class: "cy-btn--exec", onClick: () => { onApply(coord.get()); closeModal(); } }],
-  });
 }
 
 export function openAttackPanel(onApply) {

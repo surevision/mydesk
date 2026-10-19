@@ -171,8 +171,21 @@ document.getElementById("monitor-fps-send").addEventListener("click", async () =
 
 const calibPreviews = document.getElementById("calib-previews");
 const calibMsg = document.getElementById("calib-msg");
+const calibHint = document.getElementById("calib-hint");
+const calibModeEl = document.getElementById("calib-mode");
 
 const calib = { key: null, targets: [] };
+// 顺时针：左上 → 右上 → 右下 → 左下
+const CORNERS = ["tl", "tr", "br", "bl"];
+const CORNER_MARK = { tl: "①", tr: "②", br: "③", bl: "④" };
+
+function isManual() { return calibModeEl.value === "manual"; }
+
+function updateCalibHint() {
+  calibHint.textContent = isManual()
+    ? "手动标记：在每个玩家区域按【左上 → 右上 → 右下 → 左下】顺时针依次框选 4 个定位标识（小方格）。单摄像头共 8 个（P1 4 + P2 4），双摄像头每路 4 个。"
+    : "自动检测：在每路画面上拖拽框选玩家区域（单摄像头需框两次：player1、player2；双摄像头每路框一次），再由 center 自动找 4 个定位方块。";
+}
 
 // 计算需要框选的「摄像头 → 玩家」目标（与后端 worker 的玩家归属一致）
 function calibTargets(cfg) {
@@ -199,6 +212,7 @@ function ensureCalibUI(cfg) {
   calibPreviews.innerHTML = "";
   for (const t of targets) {
     t.boxes = t.players.map(() => null);
+    t.marks = [];
     const box = document.createElement("div");
     box.className = "preview calib-preview";
     const wrap = document.createElement("div");
@@ -249,6 +263,34 @@ function drawBoxes(t, preview) {
     ctx.fillStyle = "#22c55e";
     ctx.fillText(`P${t.players[i]}`, b.x0 + 6, b.y0 + 22);
   });
+
+  // 手动定位标识：框选的小方格 + 中心点
+  if (t.marks && t.marks.length) {
+    t.marks.forEach((m) => {
+      ctx.strokeStyle = "#22d3ee";
+      ctx.strokeRect(m.x0, m.y0, m.x1 - m.x0, m.y1 - m.y0);
+      ctx.fillStyle = "#22d3ee";
+      ctx.fillText(`P${m.player}${CORNER_MARK[m.corner]}`,
+                   m.x0 + 2, Math.max(14, m.y0 - 4));
+      ctx.beginPath();
+      ctx.arc(m.cx, m.cy, 3, 0, Math.PI * 2);
+      ctx.fill();
+    });
+    // 每位玩家的 4 个中心按 tl→tr→br→bl 连成四边形
+    for (const p of t.players) {
+      const pts = CORNERS
+        .map((c) => t.marks.find((m) => m.player === p && m.corner === c))
+        .filter(Boolean);
+      if (pts.length >= 2) {
+        ctx.strokeStyle = "#f472b6";
+        ctx.beginPath();
+        pts.forEach((m, i) => (i ? ctx.lineTo(m.cx, m.cy) : ctx.moveTo(m.cx, m.cy)));
+        if (pts.length === 4) ctx.closePath();
+        ctx.stroke();
+      }
+    }
+  }
+
   if (preview) {
     const x0 = Math.min(preview.x0, preview.x1);
     const y0 = Math.min(preview.y0, preview.y1);
@@ -276,7 +318,13 @@ function setupDraw(t) {
       x0: Math.min(s.x, cur.x), y0: Math.min(s.y, cur.y),
       x1: Math.max(s.x, cur.x), y1: Math.max(s.y, cur.y),
     };
-    if (rect.x1 - rect.x0 < 10 || rect.y1 - rect.y0 < 10) { drawBoxes(t); return; }
+    const minSide = isManual() ? 4 : 10;
+    if (rect.x1 - rect.x0 < minSide || rect.y1 - rect.y0 < minSide) { drawBoxes(t); return; }
+
+    if (isManual()) {
+      addManualMark(t, rect);
+      return;
+    }
     const slot = t.boxes.findIndex((b) => b === null);
     if (slot >= 0) t.boxes[slot] = rect;
     else { t.boxes.shift(); t.boxes.push(rect); }
@@ -288,7 +336,28 @@ function setupDraw(t) {
   t.canvas.addEventListener("mouseleave", (e) => { if (start) finish(e); });
 }
 
+function addManualMark(t, rect) {
+  const total = t.players.length * 4;
+  if (t.marks.length >= total) {
+    calibMsg.textContent = `${t.cam_id}: 已标记 ${total} 个，如需重标请先「清除框选」`;
+    drawBoxes(t);
+    return;
+  }
+  const idx = t.marks.length;
+  const player = t.players[Math.floor(idx / 4)];
+  const corner = CORNERS[idx % 4];
+  t.marks.push({
+    player, corner,
+    x0: rect.x0, y0: rect.y0, x1: rect.x1, y1: rect.y1,
+    cx: (rect.x0 + rect.x1) / 2, cy: (rect.y0 + rect.y1) / 2,
+  });
+  drawBoxes(t);
+  const n = t.marks.filter((m) => m.player === player).length;
+  calibMsg.textContent = `${t.cam_id}: 标记 P${player} ${n}/4（${CORNER_MARK[corner]}）`;
+}
+
 async function runCalibration() {
+  if (isManual()) return runManualCalibration();
   calibMsg.textContent = "定位中…";
   const lines = [];
   for (const t of calib.targets) {
@@ -321,6 +390,37 @@ async function runCalibration() {
   poll();
 }
 
+async function runManualCalibration() {
+  calibMsg.textContent = "手动定位中…";
+  const lines = [];
+  for (const t of calib.targets) {
+    for (const p of t.players) {
+      const marks = CORNERS
+        .map((c) => (t.marks || []).find((m) => m.player === p && m.corner === c))
+        .filter(Boolean);
+      if (marks.length !== 4) {
+        lines.push(`${t.cam_id} 玩家${p}: 需顺时针框选 4 个定位标识（当前 ${marks.length}）`);
+        continue;
+      }
+      const corners = marks.map((m) => [Math.round(m.cx), Math.round(m.cy)]);
+      try {
+        const r = await fetch("/api/calibrate_manual", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ cam_id: t.cam_id, player: p, corners }),
+        });
+        const data = await r.json();
+        if (!r.ok) throw new Error(data.error || r.statusText);
+        lines.push(`${t.cam_id} 玩家${p}: 手动定位成功`);
+      } catch (err) {
+        lines.push(`${t.cam_id} 玩家${p}: ${err.message}`);
+      }
+    }
+  }
+  calibMsg.textContent = lines.join("；");
+  poll();
+}
+
 async function sendGuide(show) {
   try {
     const r = await fetch("/api/guide", {
@@ -337,9 +437,23 @@ async function sendGuide(show) {
 
 document.getElementById("calib-run").addEventListener("click", runCalibration);
 document.getElementById("calib-clear").addEventListener("click", () => {
-  for (const t of calib.targets) t.boxes = t.players.map(() => null);
-  for (const t of calib.targets) drawBoxes(t);
+  for (const t of calib.targets) {
+    t.boxes = t.players.map(() => null);
+    t.marks = [];
+    drawBoxes(t);
+  }
   calibMsg.textContent = "";
 });
 document.getElementById("guide-show").addEventListener("click", () => sendGuide(true));
 document.getElementById("guide-hide").addEventListener("click", () => sendGuide(false));
+
+calibModeEl.addEventListener("change", () => {
+  for (const t of calib.targets) {
+    t.boxes = t.players.map(() => null);
+    t.marks = [];
+    drawBoxes(t);
+  }
+  calibMsg.textContent = "";
+  updateCalibHint();
+});
+updateCalibHint();

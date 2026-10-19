@@ -494,36 +494,23 @@ class CameraWorker(threading.Thread):
             self.frames[self.cam_id] = buf.tobytes()
 
     def _draw_layout(self, img):
+        # 仅在已定位后，把正空间格子映射回画面画战场网格；
+        # 未定位时不画（默认归一化区域并不代表真实战场位置）。
+        if self.calib is None:
+            return
         cv2 = self.models.cv2
         np = self.models.np
-        h, w = img.shape[:2]
-        layout = self.cfg["layout"]
-        mode = self.cfg["mode"]
-        p1_side = self.cfg["single"]["player1_side"]
-        swap = self.cfg["dual"].get("swap", False)
         for p in self.players:
-            pc = self.calib.get(self.cam_id, p) if self.calib is not None else None
-            if pc is not None:
-                # 已校准：把正空间格子映射回画面画多边形
-                for zone, index, poly in pc.polygons():
-                    pts = np.array(poly, dtype=np.int32).reshape((-1, 1, 2))
-                    cv2.polylines(img, [pts], True, (0, 255, 255), 1)
-                    cx = int(sum(pt[0] for pt in poly) / len(poly))
-                    cy = int(sum(pt[1] for pt in poly) / len(poly))
-                    cv2.putText(img, f"{zone}{index if index is not None else ''}",
-                                (cx - 12, cy), cv2.FONT_HERSHEY_SIMPLEX, 0.4, (0, 255, 255), 1)
+            pc = self.calib.get(self.cam_id, p)
+            if pc is None:
                 continue
-            x0, y0, x1, y1 = gridmap.player_area(mode, p1_side, p, swap)
-            ax, ay = x0 * w, y0 * h
-            aw, ah = (x1 - x0) * w, (y1 - y0) * h
-            for zone, index, rx, ry, rw, rh in gridmap.layout_overlay(layout):
-                px = int(ax + rx * aw)
-                py = int(ay + ry * ah)
-                pw = int(rw * aw)
-                ph = int(rh * ah)
-                cv2.rectangle(img, (px, py), (px + pw, py + ph), (0, 255, 255), 1)
+            for zone, index, poly in pc.polygons():
+                pts = np.array(poly, dtype=np.int32).reshape((-1, 1, 2))
+                cv2.polylines(img, [pts], True, (0, 255, 255), 1)
+                cx = int(sum(pt[0] for pt in poly) / len(poly))
+                cy = int(sum(pt[1] for pt in poly) / len(poly))
                 cv2.putText(img, f"{zone}{index if index is not None else ''}",
-                            (px + 2, py + 12), cv2.FONT_HERSHEY_SIMPLEX, 0.4, (0, 255, 255), 1)
+                            (cx - 12, cy), cv2.FONT_HERSHEY_SIMPLEX, 0.4, (0, 255, 255), 1)
 
     def status(self):
         return {

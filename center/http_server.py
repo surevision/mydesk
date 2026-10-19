@@ -14,7 +14,8 @@ center 的管理页面 + 接口 + 视频预览。
   GET  /snapshot/<cam_id> 单帧 JPEG（带叠加）
   GET  /raw/<cam_id>     MJPEG 预览流（原始帧，定位用）
   GET  /rawsnap/<cam_id> 单帧 JPEG（原始帧，定位用）
-  POST /api/calibrate    按 ROI 框选执行定位
+  POST /api/calibrate    按 ROI 框选执行定位（自动检测定位方块）
+  POST /api/calibrate_manual  手动标记 4 个定位标识（顺时针）建立定位
   POST /api/guide        显示/隐藏 display 上的定位方块
   POST /api/monitor_fps  通知采集端 monitor 修改采集帧率
 """
@@ -27,7 +28,7 @@ import urllib.parse
 import urllib.request
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
-from calib import calibrate_player
+from calib import calibrate_player, calibrate_player_manual
 
 STATIC_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "static")
 
@@ -136,6 +137,23 @@ class AdminApp:
             self.store.rebroadcast()                 # 重新定位后重发战场快照给 control/display
         return {"ok": ok, "results": results, "errors": errors}
 
+    def calibrate_manual(self, cam_id, player, corners):
+        """
+        手动标记定位标识：corners 为框选小方格的中心（画面像素），
+        顺序 tl → tr → br → bl（从左上角开始顺时针）。
+        """
+        if self.calib is None:
+            raise RuntimeError("未启用定位功能")
+        frame = self.recognition.get_raw_frame(cam_id)
+        if frame is None:
+            raise RuntimeError(f"摄像头 {cam_id} 暂无画面，无法定位")
+        h, w = frame.shape[:2]
+        pc = calibrate_player_manual(corners, cam_id, str(player),
+                                     self.cfg["mode"], (w, h))
+        self.calib.set(pc)
+        self.store.rebroadcast()                 # 重新定位后重发战场快照
+        return {"ok": True, "result": pc.status()}
+
     def set_guide(self, show):
         """显示/隐藏 display 上的定位方块。"""
         msg = {"type": "on_marker_guide", "show": bool(show)}
@@ -229,6 +247,14 @@ class Handler(BaseHTTPRequestHandler):
                 if not cam_id or not isinstance(rois, dict) or not rois:
                     return self._json(400, {"error": "缺少 cam_id 或框选区域"})
                 return self._json(200, self.app.calibrate(cam_id, rois))
+            if path == "/api/calibrate_manual":
+                cam_id = str(data.get("cam_id", ""))
+                player = data.get("player")
+                corners = data.get("corners")
+                if not cam_id or player is None or \
+                        not isinstance(corners, list) or len(corners) != 4:
+                    return self._json(400, {"error": "缺少 cam_id / player / corners(4 点)"})
+                return self._json(200, self.app.calibrate_manual(cam_id, player, corners))
             if path == "/api/guide":
                 return self._json(200, self.app.set_guide(data.get("show", False)))
             if path == "/api/monitor_fps":

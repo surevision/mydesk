@@ -201,13 +201,13 @@ public partial class MainUI : Node3D
         }
         if (zoneType == ZoneType.Front)
         {
-            targetPath = string.Format("ui/player{0}/front/front{0}", player, index + 1);
+            targetPath = string.Format("ui/player{0}/front/front{1}", player, index + 1);
             rotate = cardData.Orientation == Orientation.Horizontal;
         }
         // 魔陷
         if (zoneType == ZoneType.Back)
         {
-            targetPath = string.Format("ui/player{0}/front/front{0}", player, index + 1);
+            targetPath = string.Format("ui/player{0}/back/back{1}", player, index + 1);
         }
         // 场地
         if (zoneType == ZoneType.Field)
@@ -217,14 +217,20 @@ public partial class MainUI : Node3D
         if (particle != null)
         {
             // 设置光圈位置
-            particle.targetNode = this.GetNode<Control>(targetPath);
+            GD.Print("targetPath ", targetPath, " ", player, " ", index + 1, " ");
+            particle.setTarget(this.GetNode<Control>(targetPath));
             particle.rotate = rotate;
             particle.Visible = true;
+            particle.Name = nodeName;
+            if (particle.GetParent() == null)
+            {
+                this.GetNode("ui/ring/items").AddChild(particle);
+            }
         }
 
         // 卡图
         // string baseDir = OS.GetExecutablePath().GetBaseDir();
-        string baseDir = "D:/Git/ygodesk/display";
+        string baseDir = "D:/Git/mydesk/display";
         if (cardData.FaceUp)
         {
             // 正面，加载卡图
@@ -245,6 +251,10 @@ public partial class MainUI : Node3D
                 if (zoneType == ZoneType.Ex)
                 {
                     filePath = Path.Combine(baseDir, "static", "picture", "closeup", string.Format("{0}.png", cardData.Id.ToString()));
+                    if (cardData.Id == -1)
+                    {
+                        filePath = Path.Combine(baseDir, "static", "common", "front_placeholder.png");
+                    }
                     if (player == 1)
                     {
                         if (index == 0)
@@ -272,48 +282,68 @@ public partial class MainUI : Node3D
                 {
                     filePath = Path.Combine(baseDir, "static", "picture", "closeup", string.Format("{0}.png", cardData.Id.ToString()));
                     nodePath = string.Format("showfield/middle/cards/player{0}/front/card{1}", player, index + 1);
+                    if (cardData.Id == -1)
+                    {
+                        filePath = Path.Combine(baseDir, "static", "common", "front_placeholder.png");
+                    }
+                    GD.Print(nodePath, " ", player, " ", index + 1, " ");
                 }
                 if (zoneType == ZoneType.Back)
                 {
                     filePath = Path.Combine(baseDir, "static", "picture", "hd_card", string.Format("{0}.jpg", cardData.Id.ToString()));
-                }
-                if (!File.Exists(filePath))
-                {
-                    GD.PrintErr($"文件不存在: {filePath}");
-                    // 采用默认图
-                    if (zoneType == ZoneType.Ex)
-                    {
-                        filePath = Path.Combine(baseDir, "static", "common", "front_placeholder.png");
-                    }
-                    if (zoneType == ZoneType.Front)
-                    {
-                        filePath = Path.Combine(baseDir, "static", "common", "front_placeholder.png");
-                    }
-                    if (zoneType == ZoneType.Back)
+                    nodePath = string.Format("showfield/middle/cards/player{0}/back/card{1}", player, index + 1);
+                    if (cardData.Id == -1)
                     {
                         filePath = Path.Combine(baseDir, "static", "common", "back_placeholder.png");
                     }
                 }
-                Image image = Image.LoadFromFile(filePath);
-                if (image == null || image.IsEmpty())
+                if (!string.IsNullOrEmpty(nodePath))
                 {
-                    GD.PrintErr($"加载失败: {filePath}");
-                    return;
-                }
+                    if (!File.Exists(filePath))
+                    {
+                        GD.PrintErr($"文件不存在: {filePath}");
+                        // 采用默认图
+                        if (zoneType == ZoneType.Ex)
+                        {
+                            filePath = Path.Combine(baseDir, "static", "common", "front_placeholder.png");
+                        }
+                        if (zoneType == ZoneType.Front)
+                        {
+                            filePath = Path.Combine(baseDir, "static", "common", "front_placeholder.png");
+                        }
+                        if (zoneType == ZoneType.Back)
+                        {
+                            filePath = Path.Combine(baseDir, "static", "common", "back_placeholder.png");
+                        }
+                    }
+                    Image image = Image.LoadFromFile(filePath);
+                    if (image == null || image.IsEmpty())
+                    {
+                        GD.PrintErr($"加载失败: {filePath}");
+                        return;
+                    }
 
-                image.GenerateMipmaps();
-                var texture = ImageTexture.CreateFromImage(image);
+                    image.GenerateMipmaps();
+                    var texture = ImageTexture.CreateFromImage(image);
 
-                var sprite = GetNode<Sprite3D>(nodePath);
-                sprite.Texture = texture;
-                // 攻击防御图标
-                
-                if (zoneType == ZoneType.Front || zoneType == ZoneType.Ex)
-                {
-                    string iconPath = cardData.Orientation == Orientation.Vertical ? "state_attack" : "state_defense";
-                    sprite.GetNode<Sprite3D>("state_attack").Visible = false;
-                    sprite.GetNode<Sprite3D>("state_defense").Visible = false;
-                    sprite.GetNode<Sprite3D>(iconPath).Visible = true;
+                    var sprite = GetNode<Sprite3D>(nodePath);
+                    if (sprite == null)
+                    {
+                        GD.Print("no sprite ", nodePath);
+                    }
+                    else
+                    {
+                        sprite.Texture = texture;   
+                    }
+                    // 攻击防御图标
+                    
+                    if (zoneType == ZoneType.Front || zoneType == ZoneType.Ex)
+                    {
+                        string iconPath = cardData.Orientation == Orientation.Vertical ? "state_attack" : "state_defense";
+                        sprite.GetNode<Sprite3D>("state_attack").Visible = false;
+                        sprite.GetNode<Sprite3D>("state_defense").Visible = false;
+                        sprite.GetNode<Sprite3D>(iconPath).Visible = true;
+                    }
                 }
             }
         } 

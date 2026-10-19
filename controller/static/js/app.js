@@ -9,7 +9,7 @@ import {
   getCell, setCell, cloneBattlefield, zoneSize, ZONE_LABEL,
 } from "./state.js";
 import { buildBoard, renderBoard, setSelection } from "./render.js";
-import { initModals, openModal, closeModal, el, openConfigPanel, openLpPanel, openPhasePanel, openSummonPanel, openDestroyPanel, openAttackPanel, openRelatePanel, openBgmPanel, openSePanel, openDicePanel, openCoinPanel, openImportPanel, openCardPanel, openCardActionPanel } from "./panels.js";
+import { initModals, openModal, closeModal, el, openConfigPanel, openLpPanel, openPhasePanel, openSummonPanel, openAttackPanel, openRelatePanel, openBgmPanel, openSePanel, openDicePanel, openCoinPanel, openImportPanel, openCardPanel, openCardActionPanel } from "./panels.js";
 import { getConfig, saveConfig, uploadYdk } from "./api.js";
 import { CenterClient } from "./center.js";
 
@@ -21,6 +21,9 @@ const center = new CenterClient();
 // 攻击 / 被攻击：点击卡片后记录，二者都可被后续选择覆盖
 let attacker = null; // { player, zone, index }
 let target = null;   // { player, zone, index }
+
+// 已导入卡组：{ "1": [id...], "2": [id...] }（供卡号「选择」弹窗使用）
+const decks = { "1": [], "2": [] };
 
 // ---------------------------------------------------------------------------
 // 启动
@@ -114,6 +117,10 @@ function onCellClick(player, zone, index) {
       onDirect: () => selectDirectAttack(player, zone, index),
       onAttack: () => selectAttacker(player, zone, index),
       onDefend: () => selectTarget(player, zone, index),
+      // 破坏：只下发消息，不修改本地卡牌
+      onDestroy: () => sendMsg(MSG.DESTROY, {
+        player: Number(player), cell_type: zone, cell_index: Number(index),
+      }),
     },
     { attacker, target }
   );
@@ -131,6 +138,7 @@ function openCardDetailPanel(player, zone, index) {
         setCard(player, zone, index, cardData);
       },
       onClear: () => clearCell(player, zone, index),
+      getDeckIds: () => decks,
     }
   );
 }
@@ -146,6 +154,9 @@ function selectDirectAttack(player, zone, index) {
     is_direct: true,
   });
   toast(`直接攻击：P${from.player} ${cellLabel(from)} → 对方玩家`, "success");
+  attacker = null;
+  target = null;
+  syncSelection();
 }
 
 // 选择「攻击」：记录攻击者（可被后续选择覆盖）
@@ -155,7 +166,8 @@ function selectAttacker(player, zone, index) {
   toast(`攻击者：P${player} ${cellLabel(attacker)}`, "success");
 }
 
-// 选择「被攻击」：记录被攻击者；若已选攻击者，则推送 on_attack_anim 给 center
+// 选择「被攻击」：记录被攻击者；若已选攻击者，则推送 on_attack_anim 给 center，
+// 发送后清空攻击者/被攻击者，等待下次选择
 function selectTarget(player, zone, index) {
   target = { player: Number(player), zone, index: Number(index) };
   syncSelection();
@@ -169,6 +181,9 @@ function selectTarget(player, zone, index) {
     is_direct: false,
   });
   toast(`攻击：P${attacker.player} ${cellLabel(attacker)} → P${target.player} ${cellLabel(target)}`, "success");
+  attacker = null;
+  target = null;
+  syncSelection();
 }
 
 // 刷新棋盘上的攻击/被攻击高亮
@@ -234,7 +249,6 @@ function wireButtons() {
 
   on("btn-phase", () => openPhasePanel(battle.phase, setPhase));
   on("btn-summon", () => openSummonPanel((t) => sendMsg(MSG.SUMMON, { summon_type: t })));
-  on("btn-destroy", () => openDestroyPanel((c) => sendMsg(MSG.DESTROY, c)));
   on("btn-attack", () => openAttackPanel((a) => sendMsg(MSG.ATTACK, a)));
   on("btn-relate", () => openRelatePanel((r) => sendMsg(MSG.RELATE, r)));
   on("btn-bgm", () => openBgmPanel((name) => sendMsg(MSG.BGM, { bgm_filename: name })));
@@ -276,6 +290,8 @@ async function importYdk(player, file) {
   try {
     const r = await uploadYdk(player, file);
     if (!r.ok) { toast(r.error || "ydk 解析失败", "danger"); return; }
+    // 记录去重后的卡号，供卡号「选择」弹窗使用
+    decks[String(player)] = [...new Set(r.ids.map(Number))];
     toast(`P${player} 导入 ${r.ids.length} 张卡`, "success");
     sendMsg(MSG.IMPORT_YDK, { player, ids: r.ids, main: r.main, extra: r.extra, side: r.side });
   } catch (e) {

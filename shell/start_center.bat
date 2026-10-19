@@ -1,1 +1,0 @@
-%WINDIR%\System32\WindowsPowerShell\v1.0\powershell.exe -ExecutionPolicy ByPass -NoExit -Command "& 'd:\ProgramData\miniconda3\shell\condabin\conda-hook.ps1' ; conda activate ygodev ; cd ../center; python center.py "

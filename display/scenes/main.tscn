@@ -9,6 +9,7 @@
 [ext_resource type="Texture2D" uid="uid://c2niy85dr6hf2" path="res://static/ground/red4.png" id="3_tbgi4"]
 [ext_resource type="Texture2D" uid="uid://cjqphkrm027nb" path="res://ui_themes/cyberpunk/images/lp1.png" id="5_tipki"]
 [ext_resource type="Texture2D" uid="uid://c2qk7igwcpgr4" path="res://static/ground/blue4.png" id="6_tefeu"]
+[ext_resource type="Script" uid="uid://bttgnk3bb2a8i" path="res://addons/font_auto_size_labels/auto_size_label.gd" id="7_dp3eg"]
 [ext_resource type="Texture2D" uid="uid://dgcqxsk1jewco" path="res://ui_themes/cyberpunk/images/lp2.png" id="9_85g3d"]
 [ext_resource type="Texture2D" uid="uid://d04hl5w46xgwo" path="res://static/ground/bg1.png" id="10_a8y0u"]
 [ext_resource type="Script" uid="uid://bnq4hj0tm5qeg" path="res://scripts/nodes/CardShowNode.cs" id="11_ya4ey"]
@@ -437,26 +438,31 @@ offset_bottom = 40.0
 [node name="lp" type="Panel" parent="ui/player1" unique_id=1290365672]
 layout_mode = 1
 offset_left = 844.0
-offset_right = 1128.0
+offset_right = 1088.0
 offset_bottom = 128.0
 rotation = 1.5707964
 theme_override_styles/panel = SubResource("StyleBoxTexture_85g3d")
 
-[node name="val" type="Label" parent="ui/player1/lp" unique_id=1685929245]
-layout_mode = 1
-anchors_preset = 8
-anchor_left = 0.5
-anchor_top = 0.5
-anchor_right = 0.5
-anchor_bottom = 0.5
-offset_left = -20.0
-offset_top = -11.5
-offset_right = 20.0
-offset_bottom = 11.5
-grow_horizontal = 2
-grow_vertical = 2
+[node name="val" type="Label" parent="ui/player1/lp" unique_id=1134342437]
+custom_minimum_size = Vector2(192, 115)
+custom_maximum_size = Vector2(192, 115)
+layout_mode = 0
+offset_left = 26.0
+offset_right = 218.0
+offset_bottom = 115.0
+theme_override_constants/outline_size = 0
 theme_override_font_sizes/font_size = 84
 text = "8000"
+horizontal_alignment = 1
+vertical_alignment = 1
+autowrap_mode = 3
+clip_text = true
+script = ExtResource("7_dp3eg")
+_max_size = 86
+_outline_ratio = 0.0
+_current_font_size = 84
+_editor_defaults_set = true
+metadata/_custom_type_script = "uid://bttgnk3bb2a8i"
 
 [node name="player2" type="Control" parent="ui" unique_id=1481827237]
 layout_mode = 1
@@ -795,23 +801,23 @@ offset_bottom = 258.0
 grow_horizontal = 0
 grow_vertical = 2
 
-[node name="ex1" type="TextureRect" parent="ui/player2/ex" unique_id=1108459227]
-custom_minimum_size = Vector2(102, 102)
-custom_maximum_size = Vector2(102, 102)
-layout_mode = 0
-offset_left = -102.0
-offset_top = 102.0
-offset_bottom = 204.0
-texture = ExtResource("6_tefeu")
-flip_h = true
-
-[node name="ex2" type="TextureRect" parent="ui/player2/ex" unique_id=1963050705]
+[node name="ex1" type="TextureRect" parent="ui/player2/ex" unique_id=1963050705]
 custom_minimum_size = Vector2(102, 102)
 custom_maximum_size = Vector2(102, 102)
 layout_mode = 0
 offset_left = -102.0
 offset_top = 306.0
 offset_bottom = 408.0
+texture = ExtResource("6_tefeu")
+flip_h = true
+
+[node name="ex2" type="TextureRect" parent="ui/player2/ex" unique_id=1108459227]
+custom_minimum_size = Vector2(102, 102)
+custom_maximum_size = Vector2(102, 102)
+layout_mode = 0
+offset_left = -102.0
+offset_top = 102.0
+offset_bottom = 204.0
 texture = ExtResource("6_tefeu")
 flip_h = true
 
@@ -822,27 +828,30 @@ anchor_top = 1.0
 anchor_bottom = 1.0
 offset_left = -844.0
 offset_top = -2.0
-offset_right = -560.0
+offset_right = -600.0
 offset_bottom = 126.0
 grow_vertical = 0
 rotation = -1.5707964
 theme_override_styles/panel = SubResource("StyleBoxTexture_choun")
 
-[node name="val" type="Label" parent="ui/player2/lp" unique_id=1172822913]
+[node name="val" type="Label" parent="ui/player2/lp" unique_id=1566122202]
 layout_mode = 1
-anchors_preset = 8
-anchor_left = 0.5
-anchor_top = 0.5
-anchor_right = 0.5
-anchor_bottom = 0.5
-offset_left = -20.0
-offset_top = -11.5
-offset_right = 20.0
-offset_bottom = 11.5
-grow_horizontal = 2
-grow_vertical = 2
+offset_left = 26.0
+offset_top = 6.5
+offset_right = 218.0
+offset_bottom = 121.5
+theme_override_constants/outline_size = 17
 theme_override_font_sizes/font_size = 84
 text = "8000"
+horizontal_alignment = 1
+vertical_alignment = 1
+autowrap_mode = 3
+clip_text = true
+script = ExtResource("7_dp3eg")
+_max_size = 86
+_current_font_size = 84
+_editor_defaults_set = true
+metadata/_custom_type_script = "uid://bttgnk3bb2a8i"
 
 [node name="Camera2D" type="Camera2D" parent="ui" unique_id=2040473244]
 anchor_mode = 0
