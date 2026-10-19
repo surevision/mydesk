@@ -1,7 +1,7 @@
 using Godot;
 using System;
 
-public partial class CardShowNode : Node3D
+public partial class CardShowNode : Sprite3D
 {
     [Export]
     public bool reverse = false;
