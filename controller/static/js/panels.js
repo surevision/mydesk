@@ -391,6 +391,7 @@ export function openConfigPanel(current, onSave) {
     body: el("div", { class: "form" }, [
       fieldRow("center IP", ipIn),
       fieldRow("center 端口", portIn),
+      el("p", { class: "hint", text: "留空或填 127.0.0.1 / localhost 时，自动使用当前打开本页的地址。" }),
     ]),
     buttons: [
       { label: "保存并重连", class: "cy-btn--exec", onClick: () => { onSave({ center_ip: ipIn.value, center_port: Number(portIn.value) || 4560 }); closeModal(); } },
@@ -399,19 +400,139 @@ export function openConfigPanel(current, onSave) {
 }
 
 export function openLpPanel(player, lp, onApply) {
-  const lpIn = numberInput(lp);
-  const quick = [8000, 4000, 2000, 0];
+  const start = Number(lp) || 0;
+
+  let acc = start;        // 运算符左侧的累积值
+  let pendingOp = null;   // "+" | "-"
+  let fresh = true;       // 下一次数字输入是否替换显示值
+
+  const display = el("input", {
+    class: "lp-calc__display",
+    type: "text",
+    inputmode: "numeric",
+    autocomplete: "off",
+    value: String(start),
+  });
+  const hint = el("div", { class: "lp-calc__hint" });
+
+  const num = () => Number(display.value) || 0;
+  const setDisplay = (v) => { display.value = String(v); };
+  const renderHint = () => {
+    hint.textContent = pendingOp
+      ? `P${player} · ${acc} ${pendingOp === "+" ? "+" : "−"}`
+      : `P${player} · 当前 LP ${start}`;
+  };
+
+  const pressDigit = (d) => {
+    if (fresh) {
+      setDisplay(d);
+      fresh = false;
+    } else {
+      const cur = display.value === "0" ? "" : display.value;
+      setDisplay((cur + d).slice(0, 9) || "0");
+    }
+    renderHint();
+  };
+
+  const pressDoubleZero = () => {
+    if (fresh) {
+      setDisplay("0");
+      fresh = false;
+    } else {
+      const cur = display.value === "0" ? "" : display.value;
+      setDisplay((cur + "00").slice(0, 9) || "0");
+    }
+    renderHint();
+  };
+
+  const pressBack = () => {
+    const v = display.value.slice(0, -1);
+    setDisplay(v === "" ? "0" : v);
+    fresh = false;
+    renderHint();
+  };
+
+  const pressClear = () => {
+    acc = 0;
+    pendingOp = null;
+    fresh = true;
+    setDisplay("0");
+    renderHint();
+  };
+
+  const pressOp = (op) => {
+    if (pendingOp && !fresh) {
+      acc = pendingOp === "+" ? acc + num() : acc - num();
+    } else if (!pendingOp) {
+      acc = num();
+    }
+    pendingOp = op;
+    setDisplay(acc);
+    fresh = true;
+    renderHint();
+  };
+
+  const apply = () => {
+    let v;
+    if (pendingOp) {
+      v = fresh ? acc : (pendingOp === "+" ? acc + num() : acc - num());
+    } else {
+      v = num();
+    }
+    onApply(Math.max(0, Math.round(v)));
+    closeModal();
+  };
+
+  // 直接键盘输入：只保留数字
+  display.addEventListener("input", () => {
+    display.value = display.value.replace(/\D/g, "").slice(0, 9);
+    fresh = false;
+    renderHint();
+  });
+  display.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") { e.preventDefault(); apply(); }
+    else if (e.key === "+") { e.preventDefault(); pressOp("+"); }
+    else if (e.key === "-") { e.preventDefault(); pressOp("-"); }
+  });
+
+  const key = (label, cls, onclick) =>
+    el("button", { class: `cy-btn cy-btn--sm lp-calc__key ${cls || ""}`, text: label, onclick });
+
+  const keys = el("div", { class: "lp-calc__keys" }, [
+    key("7", "", () => pressDigit("7")),
+    key("8", "", () => pressDigit("8")),
+    key("9", "", () => pressDigit("9")),
+    key("⌫", "cy-btn--ghost", pressBack),
+
+    key("4", "", () => pressDigit("4")),
+    key("5", "", () => pressDigit("5")),
+    key("6", "", () => pressDigit("6")),
+    key("C", "cy-btn--danger", pressClear),
+
+    key("1", "", () => pressDigit("1")),
+    key("2", "", () => pressDigit("2")),
+    key("3", "", () => pressDigit("3")),
+    key("−", "lp-calc__key--op", () => pressOp("-")),
+
+    key("0", "", () => pressDigit("0")),
+    key("00", "", pressDoubleZero),
+    key("+", "lp-calc__key--op", () => pressOp("+")),
+    key("=", "cy-btn--exec", apply),
+  ]);
+
+  const body = el("div", { class: "lp-calc" }, [
+    el("div", { class: "lp-calc__view" }, [hint, display]),
+    keys,
+  ]);
+
+  renderHint();
   openModal({
     title: `变更 LP · P${player}`,
     badge: "// LP",
-    body: el("div", { class: "form" }, [
-      fieldRow("新 LP", lpIn),
-      el("div", { class: "quick-row" }, quick.map((v) =>
-        el("button", { class: "cy-btn cy-btn--ghost cy-btn--sm", text: String(v), onclick: () => { lpIn.value = v; } })
-      )),
-    ]),
+    width: "min(360px,92vw)",
+    body,
     buttons: [
-      { label: "应用", class: "cy-btn--exec", onClick: () => { onApply(Number(lpIn.value) || 0); closeModal(); } },
+      { label: "应用", class: "cy-btn--exec", onClick: apply },
     ],
   });
 }
@@ -497,6 +618,21 @@ export function openSePanel(onApply) {
   });
 }
 
+// 掷骰 / 硬币结果弹窗（大号结果，等待用户确认）
+function openRollResultPanel(title, badge, main, sub) {
+  const body = el("div", { class: "roll-result" }, [
+    el("div", { class: "roll-result__main", text: main }),
+    el("div", { class: "roll-result__sub", text: sub }),
+  ]);
+  openModal({
+    title,
+    badge,
+    width: "min(320px,90vw)",
+    body,
+    buttons: [{ label: "确定", class: "cy-btn--exec", onClick: closeModal }],
+  });
+}
+
 export function openDicePanel(onApply) {
   const player = select([{ value: 0, label: "公用" }, { value: 1, label: "P1" }, { value: 2, label: "P2" }], 0);
   openModal({
@@ -504,9 +640,12 @@ export function openDicePanel(onApply) {
     body: el("div", { class: "form" }, [fieldRow("所属", player)]),
     buttons: [{
       label: "ROLL", class: "cy-btn--exec", onClick: () => {
+        const p = Number(player.value);
         const value = 1 + Math.floor(Math.random() * 6);
-        onApply({ player: Number(player.value), value });
+        onApply({ player: p, value });
         closeModal();
+        openRollResultPanel("骰子结果", "// DICE", String(value),
+          `点数 ${value} · ${p ? `P${p}` : "公用"}`);
       },
     }],
   });
@@ -522,9 +661,12 @@ export function openCoinPanel(onApply) {
     ]),
     buttons: [{
       label: "TOSS", class: "cy-btn--exec", onClick: () => {
+        const p = Number(player.value);
         const value = Math.random() < 0.5 ? 1 : 0; // 1=正面，0=反面
-        onApply({ player: Number(player.value), value });
+        onApply({ player: p, value });
         closeModal();
+        openRollResultPanel("硬币结果", "// COIN", value === 1 ? "正" : "反",
+          `${value === 1 ? "正面 (heads)" : "反面 (tails)"} · ${p ? `P${p}` : "公用"}`);
       },
     }],
   });

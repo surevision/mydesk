@@ -16,6 +16,11 @@ const ROW_ZONES = ["front", "back", "ex"];
 // ---- 攻击 / 被攻击 选中态（由「点击卡片 -> 操作面板」记录，用于棋盘高亮）----
 let selection = { attackFrom: null, attackTo: null };
 
+// ---- 玩家上下显示位置（仅前端视觉，不影响 data-player / 发送数据里的玩家编号）----
+let swapped = false;
+let boardRoot = null;
+let boardClick = null;
+
 /**
  * 设置当前选中的攻击者 / 被攻击者，用于在棋盘上高亮。
  * @param {object} sel { attackFrom, attackTo }（每项为 {player, zone, index} 或 null）
@@ -34,15 +39,32 @@ function isSelected(sel, player, zone, index) {
  * @param {(player:number, zone:string, index:number)=>void} onCellClick
  */
 export function buildBoard(rootEl, onCellClick) {
-  rootEl.innerHTML = "";
+  boardRoot = rootEl;
+  boardClick = onCellClick;
+  renderSkeleton();
+}
 
-  const p2 = buildSide(2, onCellClick, /*exFirst*/ false);
-  const mid = buildMiddle();
-  const p1 = buildSide(1, onCellClick, /*exFirst*/ true);
+/**
+ * 交换玩家 1 / 2 的上下显示位置（仅视觉，不改动 data-player 与发送数据）
+ * @param {boolean} value
+ */
+export function setSwapped(value) {
+  swapped = !!value;
+  renderSkeleton();
+}
 
-  rootEl.appendChild(p2);
-  rootEl.appendChild(mid);
-  rootEl.appendChild(p1);
+function renderSkeleton() {
+  if (!boardRoot) return;
+  boardRoot.innerHTML = "";
+
+  // 上方玩家：ex 行在最内侧（靠近中场），即该方的底部 → exFirst = false
+  // 下方玩家：ex 行在最内侧（靠近中场），即该方的顶部 → exFirst = true
+  const topPlayer = swapped ? 1 : 2;
+  const bottomPlayer = swapped ? 2 : 1;
+
+  boardRoot.appendChild(buildSide(topPlayer, boardClick, /*exFirst*/ false));
+  boardRoot.appendChild(buildMiddle());
+  boardRoot.appendChild(buildSide(bottomPlayer, boardClick, /*exFirst*/ true));
 }
 
 function buildSide(player, onCellClick, exFirst) {

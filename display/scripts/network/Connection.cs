@@ -293,6 +293,7 @@ public partial class Connection : Node
     /// <param name="lp">新的 LP 值。</param>
     public void on_lp_change(int player, int lp)
     {
+        BattleManager.getInstance().setLp(player, lp);
     }
 
     /// <summary>战场情况发生变更。</summary>
@@ -341,6 +342,7 @@ public partial class Connection : Node
     /// <param name="show">true=显示，false=隐藏。</param>
     public void on_marker_guide(bool show)
     {
+        BattleManager.getInstance().togglePosRects(show);
     }
 
     /// <summary>播放 BGM。</summary>

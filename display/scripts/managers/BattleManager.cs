@@ -17,6 +17,17 @@ public partial class BattleManager : Node
         return instance;
     }
 
+    public void togglePosRects(bool show)
+    {
+        if (mainUI == null)
+        {
+            GD.Print("UI未就绪");
+            return;
+        }
+        GD.Print("toggle show pos rect ", show);
+        mainUI.togglePosRects(show);
+    }
+
     public void showField(string battlefield)
     {
         if (mainUI == null)
@@ -30,5 +41,15 @@ public partial class BattleManager : Node
             return;
         }
         mainUI.showField(field);
+    }
+    public void setLp(int player, int lp)
+    {
+        if (mainUI == null)
+        {
+            GD.Print("UI未就绪");
+            return;
+        }
+        GD.Print("set new lp ", player, " ", lp);
+        mainUI.setLp(player, lp);
     }
 }

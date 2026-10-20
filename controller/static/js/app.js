@@ -8,7 +8,7 @@ import {
   makeBattlefield, normalizeBattlefield, normalizeCard,
   getCell, setCell, cloneBattlefield, zoneSize, ZONE_LABEL,
 } from "./state.js";
-import { buildBoard, renderBoard, setSelection } from "./render.js";
+import { buildBoard, renderBoard, setSelection, setSwapped } from "./render.js";
 import { initModals, openModal, closeModal, el, openConfigPanel, openLpPanel, openPhasePanel, openSummonPanel, openAttackPanel, openRelatePanel, openBgmPanel, openSePanel, openDicePanel, openCoinPanel, openImportPanel, openCardPanel, openCardActionPanel } from "./panels.js";
 import { getConfig, saveConfig, uploadYdk } from "./api.js";
 import { CenterClient } from "./center.js";
@@ -21,6 +21,9 @@ const center = new CenterClient();
 // 攻击 / 被攻击：点击卡片后记录，二者都可被后续选择覆盖
 let attacker = null; // { player, zone, index }
 let target = null;   // { player, zone, index }
+
+// 仅前端视觉：是否交换 P1 / P2 的上下显示位置（不影响发送数据里的玩家编号）
+let swapped = false;
 
 // 已导入卡组：{ "1": [id...], "2": [id...] }（供卡号「选择」弹窗使用）
 const decks = { "1": [], "2": [] };
@@ -47,8 +50,21 @@ async function init() {
   connectCenter();
 }
 
+/**
+ * center 通常与 controller 部署在同一台机器上：
+ * 把默认占位地址（空 / 127.0.0.1 / localhost）解析为“打开本页所用的主机”，
+ * 这样用局域网 IP 打开 controller 时，会自动连到同一 IP 上的 center。
+ */
+function resolveCenterIp(ip) {
+  if (!ip || ip === "127.0.0.1" || ip === "localhost") {
+    const host = location.hostname || ip;
+    return host.includes(":") && !host.startsWith("[") ? `[${host}]` : host;
+  }
+  return ip;
+}
+
 function connectCenter() {
-  center.connect(config.center_ip, config.center_port);
+  center.connect(resolveCenterIp(config.center_ip), config.center_port);
 }
 
 // ---------------------------------------------------------------------------
@@ -100,9 +116,10 @@ function updateStatus(status, url) {
   const txt = document.getElementById("conn-status");
   if (!dot || !txt) return;
   dot.className = "conn-dot " + status;
-  if (status === "connected") txt.textContent = `已连接 ${url}`;
-  else if (status === "connecting") txt.textContent = `连接中 ${url} ...`;
+  if (status === "connected") txt.textContent = "已连接";
+  else if (status === "connecting") txt.textContent = "连接中…";
   else txt.textContent = "未连接";
+  txt.title = url || "";
 }
 
 // ---------------------------------------------------------------------------
@@ -244,6 +261,13 @@ function wireButtons() {
   on("btn-config", () => openConfigPanel(config, saveAndReconnect));
   on("btn-reconnect", connectCenter);
 
+  // 竖屏：点「操作」展开/收起顶部操作按钮（横屏由 CSS 直接显示，按钮不出现）
+  const menuBtn = document.getElementById("btn-menu");
+  const topbar = document.querySelector(".topbar");
+  if (menuBtn && topbar) {
+    menuBtn.addEventListener("click", () => topbar.classList.toggle("menu-open"));
+  }
+
   on("btn-import-1", () => openImportPanel(1, (file) => importYdk(1, file)));
   on("btn-import-2", () => openImportPanel(2, (file) => importYdk(2, file)));
 
@@ -264,13 +288,34 @@ function wireButtons() {
     sendMsg(MSG.COIN, c);
   }));
 
-  // LP 变更：点击 LP 数字
-  for (const p of [1, 2]) {
-    const lpEl = document.getElementById(`lp-${p}`);
-    if (lpEl) {
-      lpEl.style.cursor = "pointer";
-      lpEl.addEventListener("click", () => openLpPanel(p, battle.players[String(p)].lp, (lp) => setLp(p, lp)));
-    }
+  // 交换 P1 / P2 的上下显示位置（仅前端视觉，不改动玩家编号）
+  on("btn-swap", () => {
+    swapped = !swapped;
+    setSwapped(swapped);
+    renderBoard(battle);
+    toast(swapped ? "已交换玩家显示位置（仅显示）" : "已恢复默认显示位置");
+  });
+
+  // 显示 / 隐藏 display 上的定位方块
+  on("btn-guide-show", () => {
+    sendMsg(MSG.GUIDE, { show: true });
+    toast("已显示定位", "success");
+  });
+  on("btn-guide-hide", () => {
+    sendMsg(MSG.GUIDE, { show: false });
+    toast("已隐藏定位", "success");
+  });
+
+  // LP 变更：点击 LP 数字（事件委托，交换位置重建棋盘后依然有效）
+  const boardEl = document.getElementById("board");
+  if (boardEl) {
+    boardEl.addEventListener("click", (e) => {
+      const lpEl = e.target.closest("[id^='lp-']");
+      if (!lpEl) return;
+      const p = Number(lpEl.id.slice(3));
+      if (!battle.players[String(p)]) return;
+      openLpPanel(p, battle.players[String(p)].lp, (lp) => setLp(p, lp));
+    });
   }
 }
 

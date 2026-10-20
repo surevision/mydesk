@@ -82,6 +82,14 @@ def main():
         if t in ("on_dice", "on_coin"):
             ws.broadcast(obj, exclude=client)
             return
+        # 显示/隐藏定位方块：转为 display 用的 on_marker_guide（附带四角坐标）
+        if t == "on_guide":
+            show = bool(obj.get("show"))
+            msg = {"type": "on_marker_guide", "show": show}
+            if show:
+                msg["quads"] = calib.quads()
+            ws.broadcast(msg)
+            return
         # 其余动画/音效/导入等信息原样转发给其它端（主要是 display）
         ws.broadcast(obj, exclude=client)
 

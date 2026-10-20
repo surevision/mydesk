@@ -34,7 +34,7 @@ def empty_player():
 
 def empty_battlefield():
     return {
-        "phase": "main1", "turn_player": 0, "dice": None, "coin": None,
+        "phase": "draw", "turn_player": 0, "dice": None, "coin": None,
         "players": {"1": empty_player(), "2": empty_player()},
     }
 

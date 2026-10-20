@@ -18,6 +18,7 @@
  *   on_import_ydk          { player, ids, main, extra, side }            导入卡组
  *   on_dice                { player, value }                             掷骰子（value 1-6）
  *   on_coin                { player, value }                             投硬币（value 1=正面, 0=反面）
+ *   on_guide               { show }                                      显示/隐藏 display 上的定位方块
  *
  * battlefield JSON 结构（由 controller 拟定，后续按需调整）：
  * {
@@ -214,6 +215,7 @@ export const MSG = {
   IMPORT_YDK: "on_import_ydk",
   DICE: "on_dice",
   COIN: "on_coin",
+  GUIDE: "on_guide",
 };
 
 // 辅助：按 key 取 label

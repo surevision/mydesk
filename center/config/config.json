@@ -22,10 +22,10 @@
     ]
   },
   "models": {
-    "yolo_front": "D:\\Git\\mydesk\\src\\models\\ygo_yolo.pt",
-    "yolo_back": "D:\\Git\\mydesk\\src\\models\\cardcaptor_v3_best.pt",
-    "name_onnx": "D:\\Git\\mydesk\\src\\models\\vit_fp32.onnx",
-    "names_json": "D:\\Git\\mydesk\\src\\models\\cardnames_onnx.json"
+    "yolo_front": "D:\\Git\\ygodesk\\models\\ygo_yolo.onnx",
+    "yolo_back": "D:\\Git\\ygodesk\\models\\cardback_best.pt",
+    "name_onnx": "D:\\Git\\ygodesk\\models\\vit_fp32.onnx",
+    "names_json": "D:\\Git\\ygodesk\\models\\cardnames_onnx.json"
   },
   "detect": {
     "front_conf": 0.05,

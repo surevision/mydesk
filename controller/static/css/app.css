@@ -37,12 +37,48 @@ body { overflow: hidden; }
 .brand-tx small { font-family: var(--cy-mono); font-size: 9px; color: var(--cy-mag); letter-spacing: .2em; }
 
 .conn { display: flex; align-items: center; gap: 8px; }
-.conn-text { font-family: var(--cy-mono); font-size: 12px; color: var(--cy-dim); }
+.conn-text { font-family: var(--cy-mono); font-size: 12px; color: var(--cy-dim); white-space: nowrap; }
 .conn-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--cy-red); box-shadow: 0 0 8px var(--cy-red); }
 .conn-dot.connecting { background: var(--cy-yellow); box-shadow: 0 0 8px var(--cy-yellow); }
 .conn-dot.connected { background: var(--cy-green); box-shadow: 0 0 8px var(--cy-green); }
 
 .controls { display: flex; gap: 6px; flex-wrap: wrap; margin-left: auto; }
+
+/* 竖屏：顶部操作按钮收进「操作」按钮的下拉菜单（横屏默认全部显示） */
+#btn-menu { display: none; margin-left: auto; }
+
+@media (orientation: portrait) {
+  #btn-menu { display: inline-flex; }
+  .topbar { gap: 8px; }
+  .conn { gap: 6px; }
+  .brand-tx small { display: none; }
+
+  /* 竖屏：压缩左右留白与格间距，让卡牌尽量贴边、尽量大 */
+  #app { padding: 8px 4px; }
+  #app .board { padding-right: 0; }
+  #app .side { padding: 6px 3px; }
+  #app .row { gap: 6px; }
+  #app .zone { gap: 6px; }
+
+  /* 竖屏：按宽度缩放卡格，保证 7 列（含两侧堆叠）完整显示、不横向溢出 */
+  .board .cell { height: auto; }
+  .board .zone.cells .cell,
+  .board .zone.stack .cell {
+    width: min(calc((100vw - 68px) / 7), 120px);
+  }
+
+  .topbar .controls { display: none; }
+
+  .topbar.menu-open .controls {
+    display: flex;
+    flex: 1 0 100%;
+    margin-left: 0;
+    padding-top: 8px;
+    border-top: 1px solid var(--cy-line);
+  }
+
+  .topbar.menu-open .controls .cy-btn { flex: 1 1 auto; }
+}
 
 /* ---- 战场 ---- */
 .board {
@@ -64,14 +100,14 @@ body { overflow: hidden; }
   background: linear-gradient(180deg, rgba(12,22,38,.55), rgba(6,12,22,.55));
   clip-path: var(--cy-clip);
 }
-.side-p1 { border-color: var(--cy-cyan-dk); }
-.side-p2 { border-color: var(--cy-mag-dk); }
+.side-p1 { border-color: var(--cy-mag-dk); }
+.side-p2 { border-color: var(--cy-cyan-dk); }
 
 .side-head { display: flex; align-items: center; gap: 14px; }
-.side-name { font-family: var(--cy-disp); font-weight: 700; letter-spacing: .12em; color: var(--cy-cyan-lt); }
-.side-p2 .side-name { color: var(--cy-mag-lt); }
+.side-name { font-family: var(--cy-disp); font-weight: 700; letter-spacing: .12em; color: var(--cy-mag-lt); }
+.side-p2 .side-name { color: var(--cy-cyan-lt); }
 .side-lp { font-family: var(--cy-mono); font-size: 13px; color: var(--cy-dim); }
-.side-lp b { font-family: var(--cy-disp); font-size: 18px; color: var(--cy-text); }
+.side-lp b { font-family: var(--cy-disp); font-size: 18px; color: var(--cy-text); cursor: pointer; }
 .side-turn {
   margin-left: auto; font-family: var(--cy-mono); font-size: 10px; letter-spacing: .2em;
   color: var(--cy-dim); opacity: 0; transition: .15s;
@@ -111,7 +147,7 @@ body { overflow: hidden; }
 }
 
 .cell-inner { position: absolute; inset: 0; }
-.card-img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.card-img { width: 100%; height: 100%; object-fit: cover; display: block; transform: scale(.7); }
 .cell-inner.horizontal .card-img { transform: rotate(90deg) scale(.7); }
 
 .cell-name {
@@ -172,6 +208,45 @@ body { overflow: hidden; }
 
 .quick-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
 .quick-row { display: flex; gap: 6px; flex-wrap: wrap; }
+
+/* ---- LP 计算器 ---- */
+.lp-calc { display: flex; flex-direction: column; gap: 10px; }
+.lp-calc__view {
+  display: flex; flex-direction: column; gap: 4px;
+  padding: 8px 12px 4px;
+  border: 1px solid var(--cy-line);
+  background: rgba(8, 16, 26, .6);
+  clip-path: var(--cy-clip);
+}
+.lp-calc__hint {
+  font-family: var(--cy-mono); font-size: 10px; letter-spacing: .12em;
+  color: var(--cy-dim); min-height: 14px;
+}
+.lp-calc__display {
+  width: 100%; box-sizing: border-box; padding: 0 2px;
+  border: none; outline: none; background: transparent;
+  color: var(--cy-cyan-lt); font-family: var(--cy-disp); font-weight: 700;
+  font-size: 30px; line-height: 1.2; text-align: right; letter-spacing: .04em;
+  text-shadow: var(--cy-glow-cy); font-variant-numeric: tabular-nums;
+}
+.lp-calc__keys { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+.lp-calc__key { height: 44px; font-size: 16px; }
+.lp-calc__key--op { border-color: var(--cy-mag-dk); color: var(--cy-mag-lt); text-shadow: var(--cy-glow-mg); }
+
+/* ---- 掷骰 / 硬币结果弹窗 ---- */
+.roll-result { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 20px 0 8px; }
+.roll-result__main {
+  font-family: var(--cy-disp); font-weight: 700; font-size: 78px; line-height: 1;
+  color: var(--cy-cyan-lt); text-shadow: var(--cy-glow-cy);
+  animation: roll-pop .28s cubic-bezier(.2, 1.4, .4, 1);
+}
+.roll-result__sub {
+  font-family: var(--cy-mono); font-size: 12px; letter-spacing: .16em; color: var(--cy-dim);
+}
+@keyframes roll-pop {
+  from { transform: scale(.5); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
 
 /* ---- 卡片操作选择面板（点击卡片先弹出）---- */
 .action-grid { display: flex; gap: 8px; flex-wrap: wrap; }

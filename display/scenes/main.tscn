@@ -127,14 +127,14 @@ offset_bottom = 96.0
 grow_vertical = 0
 texture = ExtResource("1_o5qli")
 
-[node name="ColorRect4" type="ColorRect" parent="ui/player1/back/deck" unique_id=2033452995]
+[node name="PosRect" type="ColorRect" parent="ui/player1/back/deck" unique_id=2033452995]
 layout_mode = 0
 offset_left = -53.0
 offset_top = 82.0
 offset_right = 7.0
 offset_bottom = 142.0
 
-[node name="ColorRect" type="ColorRect" parent="ui/player1/back/deck/ColorRect4" unique_id=782688275]
+[node name="ColorRect" type="ColorRect" parent="ui/player1/back/deck/PosRect" unique_id=782688275]
 layout_mode = 1
 anchors_preset = 8
 anchor_left = 0.5
@@ -149,7 +149,7 @@ grow_horizontal = 2
 grow_vertical = 2
 color = Color(0, 0, 0, 1)
 
-[node name="ColorRect" type="ColorRect" parent="ui/player1/back/deck/ColorRect4/ColorRect" unique_id=2001758689]
+[node name="ColorRect" type="ColorRect" parent="ui/player1/back/deck/PosRect/ColorRect" unique_id=2001758689]
 layout_mode = 1
 anchors_preset = 8
 anchor_left = 0.5
@@ -171,14 +171,14 @@ offset_top = -102.0
 offset_right = 102.0
 texture = ExtResource("1_o5qli")
 
-[node name="ColorRect4" type="ColorRect" parent="ui/player1/back/exdeck" unique_id=209105642]
+[node name="PosRect" type="ColorRect" parent="ui/player1/back/exdeck" unique_id=209105642]
 layout_mode = 0
 offset_left = -52.0
 offset_top = -40.0
 offset_right = 8.0
 offset_bottom = 20.0
 
-[node name="ColorRect" type="ColorRect" parent="ui/player1/back/exdeck/ColorRect4" unique_id=277569972]
+[node name="ColorRect" type="ColorRect" parent="ui/player1/back/exdeck/PosRect" unique_id=277569972]
 layout_mode = 1
 anchors_preset = 8
 anchor_left = 0.5
@@ -193,7 +193,7 @@ grow_horizontal = 2
 grow_vertical = 2
 color = Color(0, 0, 0, 1)
 
-[node name="ColorRect" type="ColorRect" parent="ui/player1/back/exdeck/ColorRect4/ColorRect" unique_id=1500700518]
+[node name="ColorRect" type="ColorRect" parent="ui/player1/back/exdeck/PosRect/ColorRect" unique_id=1500700518]
 layout_mode = 1
 anchors_preset = 8
 anchor_left = 0.5
@@ -270,14 +270,14 @@ offset_top = -102.0
 offset_right = 102.0
 texture = ExtResource("1_o5qli")
 
-[node name="ColorRect4" type="ColorRect" parent="ui/player1/front/field" unique_id=290776899]
+[node name="PosRect" type="ColorRect" parent="ui/player1/front/field" unique_id=290776899]
 layout_mode = 0
 offset_left = 156.0
 offset_top = -41.0
 offset_right = 216.0
 offset_bottom = 19.0
 
-[node name="ColorRect" type="ColorRect" parent="ui/player1/front/field/ColorRect4" unique_id=39353068]
+[node name="ColorRect" type="ColorRect" parent="ui/player1/front/field/PosRect" unique_id=39353068]
 layout_mode = 1
 anchors_preset = 8
 anchor_left = 0.5
@@ -292,7 +292,7 @@ grow_horizontal = 2
 grow_vertical = 2
 color = Color(0, 0, 0, 1)
 
-[node name="ColorRect" type="ColorRect" parent="ui/player1/front/field/ColorRect4/ColorRect" unique_id=2076851013]
+[node name="ColorRect" type="ColorRect" parent="ui/player1/front/field/PosRect/ColorRect" unique_id=2076851013]
 layout_mode = 1
 anchors_preset = 8
 anchor_left = 0.5
@@ -319,14 +319,14 @@ offset_bottom = 96.0
 grow_vertical = 0
 texture = ExtResource("1_o5qli")
 
-[node name="ColorRect4" type="ColorRect" parent="ui/player1/front/grave" unique_id=1409350892]
+[node name="PosRect" type="ColorRect" parent="ui/player1/front/grave" unique_id=1409350892]
 layout_mode = 0
 offset_left = 157.0
 offset_top = 80.0
 offset_right = 217.0
 offset_bottom = 140.0
 
-[node name="ColorRect" type="ColorRect" parent="ui/player1/front/grave/ColorRect4" unique_id=615393070]
+[node name="ColorRect" type="ColorRect" parent="ui/player1/front/grave/PosRect" unique_id=615393070]
 layout_mode = 1
 anchors_preset = 8
 anchor_left = 0.5
@@ -341,7 +341,7 @@ grow_horizontal = 2
 grow_vertical = 2
 color = Color(0, 0, 0, 1)
 
-[node name="ColorRect" type="ColorRect" parent="ui/player1/front/grave/ColorRect4/ColorRect" unique_id=157490332]
+[node name="ColorRect" type="ColorRect" parent="ui/player1/front/grave/PosRect/ColorRect" unique_id=157490332]
 layout_mode = 1
 anchors_preset = 8
 anchor_left = 0.5
@@ -461,6 +461,7 @@ script = ExtResource("7_dp3eg")
 _max_size = 86
 _outline_ratio = 0.0
 _current_font_size = 84
+_size_just_modified_by_autosizer = true
 _editor_defaults_set = true
 metadata/_custom_type_script = "uid://bttgnk3bb2a8i"
 
@@ -506,14 +507,14 @@ offset_left = -102.0
 offset_top = -102.0
 texture = ExtResource("3_jyhfs")
 
-[node name="ColorRect4" type="ColorRect" parent="ui/player2/back/exdeck" unique_id=375573167]
+[node name="PosRect" type="ColorRect" parent="ui/player2/back/exdeck" unique_id=375573167]
 layout_mode = 0
 offset_left = 95.0
 offset_top = -39.0
 offset_right = 155.0
 offset_bottom = 21.0
 
-[node name="ColorRect" type="ColorRect" parent="ui/player2/back/exdeck/ColorRect4" unique_id=2032786812]
+[node name="ColorRect" type="ColorRect" parent="ui/player2/back/exdeck/PosRect" unique_id=2032786812]
 layout_mode = 1
 anchors_preset = 8
 anchor_left = 0.5
@@ -528,7 +529,7 @@ grow_horizontal = 2
 grow_vertical = 2
 color = Color(0, 0, 0, 1)
 
-[node name="ColorRect" type="ColorRect" parent="ui/player2/back/exdeck/ColorRect4/ColorRect" unique_id=275530231]
+[node name="ColorRect" type="ColorRect" parent="ui/player2/back/exdeck/PosRect/ColorRect" unique_id=275530231]
 layout_mode = 1
 anchors_preset = 8
 anchor_left = 0.5
@@ -555,14 +556,14 @@ offset_bottom = 96.0
 grow_vertical = 0
 texture = ExtResource("3_jyhfs")
 
-[node name="ColorRect4" type="ColorRect" parent="ui/player2/back/deck" unique_id=433185757]
+[node name="PosRect" type="ColorRect" parent="ui/player2/back/deck" unique_id=433185757]
 layout_mode = 0
 offset_left = 92.0
 offset_top = 80.0
 offset_right = 152.0
 offset_bottom = 140.0
 
-[node name="ColorRect" type="ColorRect" parent="ui/player2/back/deck/ColorRect4" unique_id=537036823]
+[node name="ColorRect" type="ColorRect" parent="ui/player2/back/deck/PosRect" unique_id=537036823]
 layout_mode = 1
 anchors_preset = 8
 anchor_left = 0.5
@@ -577,7 +578,7 @@ grow_horizontal = 2
 grow_vertical = 2
 color = Color(0, 0, 0, 1)
 
-[node name="ColorRect" type="ColorRect" parent="ui/player2/back/deck/ColorRect4/ColorRect" unique_id=1736158442]
+[node name="ColorRect" type="ColorRect" parent="ui/player2/back/deck/PosRect/ColorRect" unique_id=1736158442]
 layout_mode = 1
 anchors_preset = 8
 anchor_left = 0.5
@@ -657,14 +658,14 @@ offset_left = -102.0
 offset_top = -102.0
 texture = ExtResource("3_jyhfs")
 
-[node name="ColorRect4" type="ColorRect" parent="ui/player2/front/field" unique_id=1446341713]
+[node name="PosRect" type="ColorRect" parent="ui/player2/front/field" unique_id=1446341713]
 layout_mode = 0
 offset_left = -116.0
 offset_top = -39.0
 offset_right = -56.0
 offset_bottom = 21.0
 
-[node name="ColorRect" type="ColorRect" parent="ui/player2/front/field/ColorRect4" unique_id=991779507]
+[node name="ColorRect" type="ColorRect" parent="ui/player2/front/field/PosRect" unique_id=991779507]
 layout_mode = 1
 anchors_preset = 8
 anchor_left = 0.5
@@ -679,7 +680,7 @@ grow_horizontal = 2
 grow_vertical = 2
 color = Color(0, 0, 0, 1)
 
-[node name="ColorRect" type="ColorRect" parent="ui/player2/front/field/ColorRect4/ColorRect" unique_id=1087919031]
+[node name="ColorRect" type="ColorRect" parent="ui/player2/front/field/PosRect/ColorRect" unique_id=1087919031]
 layout_mode = 1
 anchors_preset = 8
 anchor_left = 0.5
@@ -707,14 +708,14 @@ offset_bottom = 96.0
 grow_vertical = 0
 texture = ExtResource("3_jyhfs")
 
-[node name="ColorRect4" type="ColorRect" parent="ui/player2/front/grave" unique_id=444371542]
+[node name="PosRect" type="ColorRect" parent="ui/player2/front/grave" unique_id=444371542]
 layout_mode = 0
 offset_left = -116.0
 offset_top = 96.0
 offset_right = -56.0
 offset_bottom = 156.0
 
-[node name="ColorRect" type="ColorRect" parent="ui/player2/front/grave/ColorRect4" unique_id=687545997]
+[node name="ColorRect" type="ColorRect" parent="ui/player2/front/grave/PosRect" unique_id=687545997]
 layout_mode = 1
 anchors_preset = 8
 anchor_left = 0.5
@@ -729,7 +730,7 @@ grow_horizontal = 2
 grow_vertical = 2
 color = Color(0, 0, 0, 1)
 
-[node name="ColorRect" type="ColorRect" parent="ui/player2/front/grave/ColorRect4/ColorRect" unique_id=212400485]
+[node name="ColorRect" type="ColorRect" parent="ui/player2/front/grave/PosRect/ColorRect" unique_id=212400485]
 layout_mode = 1
 anchors_preset = 8
 anchor_left = 0.5

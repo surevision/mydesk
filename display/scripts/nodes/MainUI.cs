@@ -4,11 +4,58 @@ using System.IO;
 
 public partial class MainUI : Node3D
 {
+    private Tween p1lpTween;
+    private Tween p2lpTween;
+    private Label p1lpLabel;
+    private Label p2lpLabel;
+
     Battlefield currField = new Battlefield();
     public override void _Ready()
     {
         base._Ready();
         BattleManager.getInstance().mainUI = this;
+    }
+
+    /// <summary>
+    /// 让 Label 从 startValue 平滑变化到 endValue
+    /// </summary>
+    public void AnimateLabel(int player, float endValue, float duration = 1.0f)
+    {
+        // 如果上一个动画还在跑，先杀掉，避免两个 Tween 抢同一个属性
+        Tween tween = player == 1 ? p1lpTween : p2lpTween;
+        tween?.Kill();
+        p1lpLabel = this.GetNode<Label>("ui/player1/lp/val");
+        p2lpLabel = this.GetNode<Label>("ui/player2/lp/val");
+        Label label = player == 1 ? p1lpLabel : p2lpLabel;
+        float startValue = float.Parse(label.Text);
+        tween = CreateTween();
+        if (player == 1)
+        {
+            tween.TweenMethod(
+                Callable.From<float>(SetLp1LabelValue), // 每帧被调用的方法
+                startValue,                           // 起始值（传参）
+                endValue,                             // 结束值（传参）
+                duration                              // 持续时间
+            );
+        }
+        if (player == 2)
+        {
+            tween.TweenMethod(
+                Callable.From<float>(SetLp2LabelValue), // 每帧被调用的方法
+                startValue,                           // 起始值（传参）
+                endValue,                             // 结束值（传参）
+                duration                              // 持续时间
+            );
+        }
+    }
+
+    private void SetLp1LabelValue(float value)
+    {
+        p1lpLabel.Set("text", ((int)value).ToString());
+    }
+    private void SetLp2LabelValue(float value)
+    {
+        p2lpLabel.Set("text", ((int)value).ToString());
     }
 
     /// <summary>
@@ -165,6 +212,17 @@ public partial class MainUI : Node3D
         {
             this.setCard(2, ZoneType.Deck, 0, battlefieldChange.player2CardsNew.Deck);
         }
+        // 更新lp
+        int p1lp = field.GetPlayer(1).Lp;
+        int p2lp = field.GetPlayer(2).Lp;
+        if (int.Parse(this.GetNode<Label>("ui/player1/lp/val").Text) != p1lp)
+        {
+            this.AnimateLabel(1, p1lp);
+        }
+        if (int.Parse(this.GetNode<Label>("ui/player2/lp/val").Text) != p2lp)
+        {
+            this.AnimateLabel(2, p2lp);
+        }
     }
 
     // 展示一张卡
@@ -230,7 +288,9 @@ public partial class MainUI : Node3D
 
         // 卡图
         // string baseDir = OS.GetExecutablePath().GetBaseDir();
-        string baseDir = "D:/Git/mydesk/display";
+        // string baseDir = "D:/Git/mydesk/display";
+        string anchorAbsPath = ProjectSettings.GlobalizePath("res://icon.svg");
+        string baseDir = Path.GetDirectoryName(anchorAbsPath);
         int exRotate90 = 90;
         if (cardData.FaceUp)
         {
@@ -350,6 +410,7 @@ public partial class MainUI : Node3D
                         sprite.GetNode<Sprite3D>("state_attack").Visible = false;
                         sprite.GetNode<Sprite3D>("state_defense").Visible = false;
                         sprite.GetNode<Sprite3D>(iconPath).Visible = true;
+                        ((CardShowNode)sprite).stop = cardData.Orientation == Orientation.Horizontal;
                     }
                 }
             }
@@ -425,6 +486,7 @@ public partial class MainUI : Node3D
                         sprite.GetNode<Sprite3D>("state_attack").Visible = false;
                         sprite.GetNode<Sprite3D>("state_defense").Visible = false;
                         sprite.GetNode<Sprite3D>(iconPath).Visible = true;
+                        ((CardShowNode)sprite).stop = cardData.Orientation == Orientation.Horizontal;
                     }
                 }
                 else
@@ -433,7 +495,6 @@ public partial class MainUI : Node3D
                 }
             }
         }
-        
     }
     public void removeCard(int player, ZoneType zoneType, int index)
     {
@@ -515,9 +576,9 @@ public partial class MainUI : Node3D
         }
     }
 
-    public void setLp()
+    public void setLp(int player, int newLp)
     {
-        
+        this.AnimateLabel(player, newLp);
     }
 
     public void setPhase()
@@ -543,6 +604,25 @@ public partial class MainUI : Node3D
     public void showAttack()
     {
         
+    }
+
+    public void togglePosRects(bool show = true)
+    {
+        string []pathes = [
+            "ui/player1/back/deck/PosRect",
+            "ui/player1/back/exdeck/PosRect",
+            "ui/player1/front/field/PosRect",
+            "ui/player1/front/grave/PosRect",
+            "ui/player2/back/exdeck/PosRect",
+            "ui/player2/back/deck/PosRect",
+            "ui/player2/front/field/PosRect",
+            "ui/player2/front/grave/PosRect"
+        ];
+
+        foreach (string path in pathes)
+        {
+            this.GetNode<ColorRect>(path).Visible = show;
+        }
     }
 
 }
