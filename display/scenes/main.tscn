@@ -18,6 +18,8 @@
 [ext_resource type="Texture2D" uid="uid://dsa0xkg87yo70" path="res://ui_themes/cyberpunk/images/frame_square_round.png" id="15_jkv2x"]
 [ext_resource type="Texture2D" uid="uid://cw1t4x8xp68s4" path="res://static/ground/cardbg1.png" id="15_muem4"]
 [ext_resource type="Script" uid="uid://ct70fpbpcxntr" path="res://scripts/nodes/ExDeckGlowParticle.cs" id="16_glow"]
+[ext_resource type="Script" uid="uid://c0h3i64860654" path="res://addons/dice_3d/dice_cinematic_roller_3d.gd" id="19_0ld40"]
+[ext_resource type="Script" uid="uid://b28v0gs5j0q7y" path="res://addons/dice_3d/coin_toss_3d.gd" id="20_gqmmt"]
 
 [sub_resource type="StyleBoxTexture" id="StyleBoxTexture_85g3d"]
 texture = ExtResource("5_tipki")
@@ -461,7 +463,6 @@ script = ExtResource("7_dp3eg")
 _max_size = 86
 _outline_ratio = 0.0
 _current_font_size = 84
-_size_just_modified_by_autosizer = true
 _editor_defaults_set = true
 metadata/_custom_type_script = "uid://bttgnk3bb2a8i"
 
@@ -1224,3 +1225,32 @@ transform = Transform3D(50, 0, 0, 0, 50, 0, 0, 0, 50, 0, -9.536743e-07, 2)
 modulate = Color(1, 1, 1, 0.5803922)
 pixel_size = 0.1
 texture = ExtResource("15_jkv2x")
+
+[node name="dice" type="Node3D" parent="showfield/middle" unique_id=314427788]
+
+[node name="DiceCinematicRoller3D" type="Node3D" parent="showfield/middle/dice" unique_id=691334760]
+script = ExtResource("19_0ld40")
+dice_spacing = 1.18
+spin_clearance = 1.28
+layout_tween_duration = 0.32
+debug_visible = false
+spawn_dice_from_definitions_on_ready = false
+roll_duration = 2.05
+bounce_height = 2.42
+bounce_count = 4.0
+spin_turns = 14.0
+settle_start = 0.76
+start_hidden = true
+result_hold_seconds = 2.0
+idle_spin_speed_min_degrees = 7.0
+idle_spin_speed_max_degrees = 14.0
+
+[node name="coin" type="Node3D" parent="showfield/middle" unique_id=2013026063]
+
+[node name="CoinToss3D" type="Node3D" parent="showfield/middle/coin" unique_id=50546189]
+script = ExtResource("20_gqmmt")
+coin_size = 2.0
+bounce_height = 4.0
+bounce_count = 4.0
+gravity_direction = 1
+result_hold_seconds = 2.0

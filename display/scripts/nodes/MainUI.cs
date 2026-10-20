@@ -586,14 +586,44 @@ public partial class MainUI : Node3D
         
     }
 
-    public void showDice()
+    public void showDice(int player, int val)
     {
-        
+        Node3D roller = GetNode<Node3D>("showfield/middle/dice/DiceCinematicRoller3D");
+
+        // 主场景相机朝 -Z，结果面要朝 +Z 才面向摄像机。
+        roller.Set("result_side", 2);
+
+        // 属性：0=下 1=上 2=左 3=右
+        roller.Set("gravity_direction", player == 1 ? 2 : (player == 2 ? 3 : Random.Shared.NextInt64() % 4));
+
+        // 场景里没有生成骰子时：有 dice_definitions 就按定义生成（保留贴图），
+        // 否则创建一颗默认 D6；不创建的话 roll_all() 没有骰子可滚。
+        if (roller.Call("get_registered_dice").AsGodotArray().Count == 0)
+        {
+            if (roller.Get("dice_definitions").AsGodotArray().Count > 0)
+            {
+                roller.Call("spawn_dice_from_definitions");
+            }
+            else
+            {
+                Variant die = roller.Call("create_die");
+                die.AsGodotObject().Set("edge_length", 1.8f);
+            }
+        }
+
+        roller.Call("roll_all", val);
     }
 
-    public void showCoin()
+    public void showCoin(int player, int val)
     {
-        
+        // 1=正面，0=反面
+        var coin = GetNode<Node3D>("showfield/middle/coin/CoinToss3D");
+
+        // 主场景相机朝 -Z，结果面要朝 +Z 才面向摄像机。
+        coin.Set("result_side", 2);
+
+        coin.Set("gravity_direction", player == 1 ? 2 : (player == 2 ? 3 : Random.Shared.NextInt64() % 4));
+        coin.Call("toss", val);
     }
 
     public void showSummonAnim()

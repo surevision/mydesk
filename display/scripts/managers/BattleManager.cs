@@ -52,4 +52,26 @@ public partial class BattleManager : Node
         GD.Print("set new lp ", player, " ", lp);
         mainUI.setLp(player, lp);
     }
+
+    public void showDice(int player, int val)
+    {
+        if (mainUI == null)
+        {
+            GD.Print("UI未就绪");
+            return;
+        }
+        GD.Print("show dice ", player, " ", val);
+        mainUI.showDice(player, val);
+    }
+
+    public void showCoin(int player, int val)
+    {
+        if (mainUI == null)
+        {
+            GD.Print("UI未就绪");
+            return;
+        }
+        GD.Print("show coin ", player, " ", val);
+        mainUI.showCoin(player, val);
+    }
 }

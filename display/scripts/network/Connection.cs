@@ -374,6 +374,7 @@ public partial class Connection : Node
     /// <param name="value">点数 1-6。</param>
     public void on_dice(int player, int value)
     {
+        BattleManager.getInstance().showDice(player, value);
     }
 
     /// <summary>投硬币结果。</summary>
@@ -381,5 +382,6 @@ public partial class Connection : Node
     /// <param name="value">1=正面(heads)，0=反面(tails)。</param>
     public void on_coin(int player, int value)
     {
+        BattleManager.getInstance().showCoin(player, value);
     }
 }

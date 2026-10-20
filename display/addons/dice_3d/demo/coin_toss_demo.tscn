@@ -1,0 +1,61 @@
+[gd_scene format=3 uid="uid://b5dn4qa1l7o5l"]
+
+[ext_resource type="Script" uid="uid://cskmy84mmp8wq" path="res://addons/dice_3d/demo/coin_toss_demo.gd" id="1_demo"]
+[ext_resource type="Script" uid="uid://b28v0gs5j0q7y" path="res://addons/dice_3d/coin_toss_3d.gd" id="2_coin"]
+
+[sub_resource type="BoxMesh" id="BoxMesh_panel"]
+size = Vector3(10, 6.5, 0.1)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_panel"]
+albedo_color = Color(0.08, 0.1, 0.13, 1)
+metallic_specular = 0.2
+roughness = 0.75
+
+[sub_resource type="Environment" id="Environment_demo"]
+background_mode = 1
+background_color = Color(0.04, 0.05, 0.07, 1)
+ambient_light_source = 3
+ambient_light_color = Color(0.6, 0.65, 0.75, 1)
+ambient_light_energy = 0.35
+
+[node name="CoinTossDemo" type="Node3D" unique_id=1293145761]
+script = ExtResource("1_demo")
+
+[node name="CoinToss3D" type="Node3D" parent="." unique_id=1391228789]
+script = ExtResource("2_coin")
+coin_size = 1.0
+bounce_height = 4.0
+bounce_count = 4.0
+gravity_direction = 1
+result_hold_seconds = 2.0
+
+[node name="BackPanel" type="MeshInstance3D" parent="." unique_id=1955193479]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 2)
+mesh = SubResource("BoxMesh_panel")
+surface_material_override/0 = SubResource("StandardMaterial3D_panel")
+
+[node name="KeyLight" type="DirectionalLight3D" parent="." unique_id=2134322054]
+transform = Transform3D(-1, 0, 0, 0, 1, 0, 0, 0, -1, 0, 2, -3)
+light_energy = 1.4
+shadow_enabled = true
+
+[node name="FillLight" type="OmniLight3D" parent="." unique_id=763319277]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.4, 2.2, -3.5)
+light_energy = 3.0
+omni_range = 12.0
+
+[node name="Camera3D" type="Camera3D" parent="." unique_id=1680603433]
+transform = Transform3D(-1, 0, 0, 0, 1, 0, 0, 0, -1, 0, 0, -7)
+environment = SubResource("Environment_demo")
+current = true
+fov = 40.0
+
+[node name="CanvasLayer" type="CanvasLayer" parent="." unique_id=87578388]
+
+[node name="Hint" type="Label" parent="CanvasLayer" unique_id=1273903209]
+offset_left = 24.0
+offset_top = 20.0
+offset_right = 640.0
+offset_bottom = 52.0
+theme_override_font_sizes/font_size = 20
+text = "SPACE: alternate H / T    R: random    ARROWS: gravity"

@@ -18,12 +18,12 @@ config/icon="res://icon.svg"
 [autoload]
 
 Connection="*uid://xjfueqs8cd3o"
+AudioHost="*uid://c7leb1uf0myni"
 
 [display]
 
 window/size/viewport_width=1920
 window/size/viewport_height=1080
-window/size/mode=4
 window/size/resizable=false
 window/stretch/mode="canvas_items"
 window/stretch/aspect="expand"
@@ -34,7 +34,7 @@ project/assembly_name="display"
 
 [editor_plugins]
 
-enabled=PackedStringArray("res://addons/font_auto_size_labels/plugin.cfg")
+enabled=PackedStringArray("res://addons/audio_service/plugin.cfg", "res://addons/dice_3d/plugin.cfg", "res://addons/font_auto_size_labels/plugin.cfg")
 
 [physics]
 
