@@ -79,7 +79,9 @@ python test_monitor.py --image ..\test\dm6.jpg --image ..\test\dm7.jpg
 - `cameras` 的**顺序**就是端点编号：第 1 项是 `/video/0`，第 2 项是 `/video/1`。
 - `index` 是 OpenCV 的摄像头编号，Windows 上通常 0/1 对应两个物理摄像头。
 - `width` / `height` 是采集分辨率，默认 **1920×1080**；运行中可用 `POST /api/resolution` 或 center 管理页的「采集端 monitor」区域下发，会重开摄像头并写回本文件。
-- `fps` 默认 **5**（采集端性能不佳时调低）；运行中可用 `POST /api/fps` 或 center 管理页的「采集端 monitor」区域下发，会写回本文件。采集循环按此限帧，多余帧直接丢弃以降低负载与带宽。
+- `fps` 默认 **5**（采集端性能不佳时调低）；运行中可用 `POST /api/fps` 或 center 管理页的「采集端 monitor」区域下发，会写回本文件。摄像头本身按 **30fps + MJPG** 打开，限帧在软件层做（未到间隔只 `grab()` 不解码），所以改帧率**不需要重开摄像头**。
+- 1080p/720p 下务必走 MJPG：USB2 带宽下若用默认 YUY2，帧率会被压到个位数（画面很卡），代码已自动请求 `MJPG`。
+- `index` 不存在时（多配置了一路摄像头）只会每 15 秒重试一次并显示「无法打开摄像头」；不用请从 `cameras` 里删掉。
 
 ## center 端配置
 

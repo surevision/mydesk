@@ -5,7 +5,7 @@
   "ws_port": 4560,
   "mode": "single",
   "single": {
-    "url": "http://127.0.0.1:4581/video/0",
+    "url": "http://192.168.0.254:4581/video/0",
     "player1_side": "left"
   },
   "dual": {
@@ -13,29 +13,38 @@
     "cameras": [
       {
         "url": "http://127.0.0.1:4581/video/0",
-        "player": 1
+        "player": 1,
+        "orientation": "horizontal"
       },
       {
         "url": "http://127.0.0.1:4581/video/1",
-        "player": 2
+        "player": 2,
+        "orientation": "horizontal"
       }
     ]
   },
   "models": {
-    "yolo_front": "D:\\Git\\ygodesk\\models\\ygo_yolo.onnx",
-    "yolo_back": "D:\\Git\\ygodesk\\models\\cardback_best.pt",
-    "name_onnx": "D:\\Git\\ygodesk\\models\\vit_fp32.onnx",
-    "names_json": "D:\\Git\\ygodesk\\models\\cardnames_onnx.json"
+    "yolo_front": "D:\\Git\\mydesk\\models\\ygo_yolo.onnx",
+    "yolo_back": "D:\\Git\\mydesk\\models\\cardback_best.pt",
+    "name_onnx": "D:\\Git\\mydesk\\models\\vit_fp32.onnx",
+    "names_json": "D:\\Git\\mydesk\\models\\cardnames_onnx.json"
   },
   "detect": {
     "front_conf": 0.05,
     "back_conf": 0.5,
     "name_thr": 0.001,
+    "top_k": 15,
     "interval": 0.1,
     "min_side": 30,
     "device": 0,
     "track": true,
-    "name_cache_ttl": 3
+    "name_cache_ttl": 3,
+    "crop_size": 224,
+    "flip_low": 0.15,
+    "flip_margin": 1.25,
+    "nms_iou": 0.5,
+    "track_iou": 0.3,
+    "track_ttl": 1
   },
   "layout": {
     "col_count": 5,

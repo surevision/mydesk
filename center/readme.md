@@ -29,10 +29,10 @@ conda run -n ygodesk python center.py
 
 ## 识别实现（参考 test/videotest.py、test/yolotest.py）
 
-- **cv2** 取流（`CAP_PROP_BUFFERSIZE=1`，读帧失败自动重连）。
-- **正面检测走纯 ONNX**（`models.yolo_front` 以 `.onnx` 结尾时）：`ygo_yolo.onnx`（draw2 网页版同款 YOLO11s-obb，输入 640、单类）。自己做 letterbox → onnxruntime 推理 → 解析 `[6,N]`(x,y,w,h,conf,angle) → OBB 近似 IoU NMS（`nms_iou`）。路径为 `.pt` 时仍走 **ultralytics YOLO(OBB)**。**卡背检测**暂仍用 ultralytics `cardback_best.pt`（如需纯 ONNX，可提供它的 onnx 导出）。
+- **cv2** 取流（`CAP_PROP_BUFFERSIZE=1`，读帧失败自动重连）。每路摄像头拆成 **采集 / 识别 / 发布** 三条线程：采集只管读帧，识别按 `detect.interval` 取最新帧（可慢），预览始终按采集帧率刷新，不会因为推理慢把管理页拖成 1fps。
+- **正面检测走纯 ONNX**（`models.yolo_front` 以 `.onnx` 结尾时）：`ygo_yolo.onnx`（draw2 网页版同款 YOLO11s-obb，输入 640、单类）。自己做 letterbox → onnxruntime 推理 → 解析 `[6,N]`(x,y,w,h,conf,angle) → OBB 近似 IoU NMS（`nms_iou`）。解析和 NMS 都做了整表向量化（8400 行逐元素循环在 Python 里要 ~1s）。路径为 `.pt` 时仍走 **ultralytics YOLO(OBB)**。**卡背检测**暂仍用 ultralytics `cardback_best.pt`（如需纯 ONNX，可提供它的 onnx 导出）。
 - **ultralytics** 推理设备 `detect.device` 默认 `0`，但会**自动判断**：`torch.cuda.is_available()` 为假（如 CPU 版 torch）时回退 `cpu`，卡号越界也会纠正；显式设 `cpu` 则强制 CPU。实际使用的设备在运行状态里显示。
-- **onnxruntime**：卡名识别 `vit_fp32.onnx`（带 `.onnx` 正面检测时复用同一批 `providers`），依次尝试 `CUDAExecutionProvider`→`CPUExecutionProvider`（实际使用的提供者在状态里显示）。
+- **onnxruntime**：卡名识别 `vit_fp32.onnx`（带 `.onnx` 正面检测时复用同一批 `providers`），依次尝试 `CUDAExecutionProvider`→`CPUExecutionProvider`（实际使用的提供者在状态里显示）。**注意**：`onnxruntime-gpu` 1.2x 起要求 CUDA 13，而 torch 2.6+cu124 自带的是 CUDA 12；版本不匹配时 CUDA EP 建不起来会**静默退回 CPU**（启动日志里 PROVIDER 会只剩 CPU，正面推理 ~300ms）。装 `onnxruntime-gpu==1.20.1`（CUDA 12 + cuDNN 9）即可走 GPU（~10ms）。
 - ONNX 模型**无内置跟踪器**，用自建 **IoU 跟踪**（`track_iou`/`track_ttl`）维持稳定 id；`.pt` 路径仍用 ultralytics 跟踪。
 - 朝向/尺寸用 OBB 的 `xywhr` 判断。分类顺序：先跑 draw2 `vit_fp32.onnx` 识别卡名，识别成功即按正面；未识别时再由 `cardback_best.pt` 判断，且该区域中心必须为暗色（`dark>0.6` 且 `mean_v<80`）才按反面，否则按卡面（无卡名）。这样卡名识别优先于卡背模型，卡背模型也只对暗色区域生效，避免把亮色正面卡误判成卡背。
 - 卡裁切移植 draw2：四个 OBB 角点先统一绕向、再从**短边**起重排，单应矫正成 `detect.crop_size`（默认 224）**方图**，使卡片长边始终竖直（横置/守备卡不再被压扁）。矫正后只剩 0°/180° 歧义：先用卡面上下亮度猜（正立时下半部更亮），置信度低于 `flip_low` 再试另一方向，且需比原方向好 `flip_margin` 倍才采纳。

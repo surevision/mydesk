@@ -75,41 +75,59 @@ def parse_onnx_obb(np, out, scale, padx, pady, conf_thr, nms_iou=0.5):
     """
     解析 ONNX 输出为检测列表。输出为 [6, N]（x,y,w,h,conf,angle）或 [N, 6]，
     conf 已是 0-1 概率，angle 为弧度；坐标在 640 黑边空间 → 还原到原图。
+    先整表过滤再算角点：8400 行的逐元素循环在 Python 里要 ~1s，必须向量化。
     """
-    feats_first = out.shape[0] < out.shape[1]
-    rows = out.shape[1] if feats_first else out.shape[0]
-    dets = []
-    for i in range(rows):
-        if feats_first:
-            xc, yc, w, h, conf, ang = (out[0, i], out[1, i], out[2, i],
-                                       out[3, i], out[4, i], out[5, i])
-        else:
-            xc, yc, w, h, conf, ang = (out[i, 0], out[i, 1], out[i, 2],
-                                       out[i, 3], out[i, 4], out[i, 5])
-        if float(conf) < conf_thr:
-            continue
-        x, y = (float(xc) - padx) / scale, (float(yc) - pady) / scale
-        bw, bh = float(w) / scale, float(h) / scale
-        dets.append({"corners": obb_corners(np, x, y, bw, bh, float(ang)),
-                     "xywhr": np.array([x, y, bw, bh, float(ang)], dtype=np.float32),
-                     "conf": float(conf)})
+    data = out.T if out.shape[0] < out.shape[1] else out          # [N, 6]
+    sel = data[data[:, 4] >= conf_thr]
+    if sel.shape[0] == 0:
+        return []
+    cx = (sel[:, 0] - padx) / scale
+    cy = (sel[:, 1] - pady) / scale
+    bw = sel[:, 2] / scale
+    bh = sel[:, 3] / scale
+    ang = sel[:, 5]
+    conf = sel[:, 4]
+    # 与 obb_corners 同一变换：p' = p·R^T + c，R = [[cos,-sin],[sin,cos]]
+    cos, sin = np.cos(ang), np.sin(ang)
+    hw, hh = bw / 2.0, bh / 2.0
+    base = np.array([[-1.0, -1.0], [1.0, -1.0], [1.0, 1.0], [-1.0, 1.0]], dtype=np.float32)
+    px = base[None, :, 0] * hw[:, None]
+    py = base[None, :, 1] * hh[:, None]
+    xs = cx[:, None] + px * cos[:, None] - py * sin[:, None]
+    ys = cy[:, None] + px * sin[:, None] + py * cos[:, None]
+    corners = np.stack([xs, ys], axis=2).astype(np.float32)       # [k, 4, 2]
+    dets = [{"corners": corners[i],
+             "xywhr": np.array([cx[i], cy[i], bw[i], bh[i], ang[i]], dtype=np.float32),
+             "conf": float(conf[i])}
+            for i in range(sel.shape[0])]
     return nms_obb(np, dets, iou_thr=nms_iou)
 
 
 def nms_obb(np, dets, iou_thr=0.5):
-    """按置信度贪心 NMS（用四边形外接框的近似 IoU）。"""
-    dets = sorted(dets, key=lambda d: -d["conf"])
-    keep = []
-    for d in dets:
+    """按置信度贪心 NMS（用四边形外接框的近似 IoU，整表向量化）。"""
+    n = len(dets)
+    if n == 0:
+        return []
+    bb = np.empty((n, 4), dtype=np.float32)
+    conf = np.empty(n, dtype=np.float32)
+    for i, d in enumerate(dets):
         c = d["corners"]
-        bb = (float(c[:, 0].min()), float(c[:, 1].min()),
-              float(c[:, 0].max()), float(c[:, 1].max()))
-        if all(iou_xyxy(bb, k["_bb"]) <= iou_thr for k in keep):
-            d["_bb"] = bb
-            keep.append(d)
-    for d in keep:
-        d.pop("_bb", None)
-    return keep
+        bb[i] = (c[:, 0].min(), c[:, 1].min(), c[:, 0].max(), c[:, 1].max())
+        conf[i] = d["conf"]
+    x0 = np.maximum(bb[:, None, 0], bb[None, :, 0])
+    y0 = np.maximum(bb[:, None, 1], bb[None, :, 1])
+    x1 = np.minimum(bb[:, None, 2], bb[None, :, 2])
+    y1 = np.minimum(bb[:, None, 3], bb[None, :, 3])
+    inter = np.clip(x1 - x0, 0, None) * np.clip(y1 - y0, 0, None)
+    area = (bb[:, 2] - bb[:, 0]) * (bb[:, 3] - bb[:, 1])
+    iou = inter / np.maximum(area[:, None] + area[None, :] - inter, 1e-9)
+    keep, dead = [], np.zeros(n, dtype=bool)
+    for i in np.argsort(-conf, kind="stable"):
+        if dead[i]:
+            continue
+        keep.append(int(i))
+        dead |= iou[i] > iou_thr
+    return [dets[i] for i in keep]
 
 
 # 探测 torch 的 CUDA 可用性（只探一次），返回 (可用, 卡数, 说明)
@@ -596,15 +614,21 @@ class CameraWorker(threading.Thread):
         self.calib = calib              # CalibrationStore 或 None
         self.raw_frames = raw_frames    # {cam_id: bgr frame} 原始帧（校准用）
         self.detector = None            # 本摄像头独立的识别器（在 run 里创建）
-        self._stop = threading.Event()
+        self._stopping = threading.Event()
         self.connected = False
         self.fps = 0.0
         self.detections = 0
         self.error = ""
         self._last_reco = None          # 上次打印的识别结果（变化时才打印）
+        self._latest = None             # 最新原始帧（采集线程写）
+        self._latest_seq = 0
+        self._result = None             # 最近一次识别结果（识别线程写）
+        self._read_avg = 0.0
+        self._proc_avg = self._front_avg = self._back_avg = 0.0
+        self._proc_n = 0
 
     def stop(self):
-        self._stop.set()
+        self._stopping.set()
 
     def _open(self):
         cv2 = self.models.cv2
@@ -630,6 +654,18 @@ class CameraWorker(threading.Thread):
         # 本路独立识别器：独占 YOLO 与跟踪器，和多路并发互不干扰
         if self.models.ok:
             self.detector = self.models.make_detector(self.orientation)
+        interval = max(0.05, float(self.cfg["detect"]["interval"]))
+        # 采集 / 识别 / 发布拆成三条线程：识别慢时预览仍按采集帧率刷新，
+        # 不再被推理拖成 1fps；识别只取最新帧，慢一点也只是结果稍旧。
+        threading.Thread(target=self._reader, name=f"cam-{self.cam_id}-read",
+                         daemon=True).start()
+        if self.detector is not None:
+            threading.Thread(target=self._detector_loop, args=(interval,),
+                             name=f"cam-{self.cam_id}-det", daemon=True).start()
+        self._publish_loop()
+
+    def _reader(self):
+        """持续读帧，只更新最新帧；读帧失败自动重连。"""
         cap = self._open()
         if not cap.isOpened():
             self.error = f"无法打开视频源: {self.url}"
@@ -637,19 +673,12 @@ class CameraWorker(threading.Thread):
             return
         self.connected = True
         self.error = ""
-        interval = max(0.05, float(self.cfg["detect"]["interval"]))
-        last_detect = 0.0
-        count = 0
-        t0 = time.time()
         retries = 0
-        # 耗时统计（每 ~2 秒输出一行）
-        sum_read = sum_proc = sum_pub = sum_front = sum_back = 0.0
-        n_proc = 0
         _t = time.perf_counter
-        while not self._stop.is_set():
+        while not self._stopping.is_set():
             tr = _t()
             ret, frame = cap.read()
-            read_dt = _t() - tr
+            dt = _t() - tr
             if not ret or frame is None:
                 self.connected = False
                 retries += 1
@@ -663,45 +692,83 @@ class CameraWorker(threading.Thread):
                 continue
             retries = 0
             self.connected = True
-            sum_read += read_dt
+            self._read_avg = dt if not self._read_avg else self._read_avg * 0.8 + dt * 0.2
+            self._latest = frame
+            self._latest_seq += 1
+        cap.release()
+        self.connected = False
+
+    def _detector_loop(self, interval):
+        """取最新帧做识别（按 interval 限频），结果给发布线程复用。"""
+        _t = time.perf_counter
+        last_seq = -1
+        last = 0.0
+        while not self._stopping.is_set():
+            frame = self._latest
+            seq = self._latest_seq
             now = time.time()
+            if (frame is None or seq == last_seq or now - last < interval
+                    or not self.detector.ready
+                    or not self.cfg.get("recognition_enabled", True)):
+                time.sleep(0.01)
+                continue
+            last_seq = seq
+            last = now
+            try:
+                tp = _t()
+                result = self._process(frame)
+                dt = _t() - tp
+            except Exception as e:  # noqa: BLE001
+                self.error = f"识别异常: {e}"
+                _log(self.error)
+                time.sleep(0.2)
+                continue
+            self._result = result
+            tm = self.detector.timing
+            f, b = tm.get("front", 0.0), tm.get("back", 0.0)
+            self._proc_avg = dt if not self._proc_avg else self._proc_avg * 0.8 + dt * 0.2
+            self._front_avg = f if not self._front_avg else self._front_avg * 0.8 + f * 0.2
+            self._back_avg = b if not self._back_avg else self._back_avg * 0.8 + b * 0.2
+            self._proc_n += 1
+
+    def _publish_loop(self):
+        """有新帧就发布预览（带最近一次识别结果），每 ~2 秒打印一次统计。"""
+        _t = time.perf_counter
+        count = 0
+        t0 = time.time()
+        last_seq = -1
+        sum_pub = 0.0
+        while not self._stopping.is_set():
+            seq = self._latest_seq
+            frame = self._latest
+            if frame is None or seq == last_seq:
+                time.sleep(0.005)
+                continue
+            last_seq = seq
             count += 1
-            result = None
-            if self.detector is not None and self.detector.ready and \
-                    self.cfg.get("recognition_enabled", True) and now - last_detect >= interval:
-                last_detect = now
-                try:
-                    tp = _t()
-                    result = self._process(frame)
-                    sum_proc += _t() - tp
-                    n_proc += 1
-                    tm = self.detector.timing
-                    sum_front += tm.get("front", 0.0)
-                    sum_back += tm.get("back", 0.0)
-                except Exception as e:  # noqa: BLE001
-                    self.error = f"识别异常: {e}"
-                    _log(self.error)
             tp = _t()
-            self._publish(frame, result)
+            self._publish(frame, self._result)
             sum_pub += _t() - tp
+            now = time.time()
             if now - t0 >= 2.0:
-                dt = now - t0
                 n = count or 1
-                self.fps = count / dt
-                if n_proc:
-                    proc_txt = (f"解析 {sum_proc/n_proc*1000:.0f}ms×{n_proc}"
-                                f" (前 {sum_front/n_proc*1000:.0f}/背 {sum_back/n_proc*1000:.0f}ms)")
-                else:
+                self.fps = count / (now - t0)
+                if self._proc_n:
+                    proc_txt = (f"解析 {self._proc_avg * 1000:.0f}ms×{self._proc_n}"
+                                f" (前 {self._front_avg * 1000:.0f}"
+                                f"/背 {self._back_avg * 1000:.0f}ms)")
+                elif self.detector is None:
                     proc_txt = "解析 未运行"
+                else:
+                    proc_txt = "解析 0ms×0"
                 _log(f"[{self.cam_id}] 帧率 {self.fps:.1f} | {proc_txt}"
-                     f" | 发布 {sum_pub/n*1000:.0f}ms | 读帧 {sum_read/n*1000:.0f}ms"
+                     f" | 发布 {sum_pub / n * 1000:.0f}ms"
+                     f" | 读帧 {self._read_avg * 1000:.0f}ms"
                      f" | 卡 {self.detections}")
                 count = 0
                 t0 = now
-                sum_read = sum_proc = sum_pub = sum_front = sum_back = 0.0
-                n_proc = 0
-        cap.release()
-        self.connected = False
+                sum_pub = 0.0
+                self._proc_n = 0
 
     def _process(self, frame):
         dets = self.detector.detect(frame)

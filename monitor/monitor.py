@@ -102,7 +102,7 @@ class CameraStream(threading.Thread):
         self.height = int(spec.get("height", 720))
         self.fps = int(spec.get("fps", 5))
         self.quality = int(quality)
-        self._stop = threading.Event()
+        self._stopping = threading.Event()
         self._reopen = threading.Event()
         self._lock = threading.Lock()
         self._jpeg = None
@@ -114,7 +114,7 @@ class CameraStream(threading.Thread):
         self.fps_real = 0.0
 
     def stop(self):
-        self._stop.set()
+        self._stopping.set()
 
     def set_fps(self, fps):
         """运行时改目标帧率（下一帧起生效）。"""
@@ -143,20 +143,30 @@ class CameraStream(threading.Thread):
         with self._lock:
             return self._seq, self._jpeg
 
+    OPEN_FPS = 30                # 设备固定按 30fps 打开，降帧由上层限流，改帧率无需重开
+
     def _open(self, cv2):
-        # Windows 优先 DirectShow（打开更快更稳），失败再退回默认后端
-        for backend in (getattr(cv2, "CAP_DSHOW", 700), getattr(cv2, "CAP_ANY", 0)):
+        # Windows 优先 DirectShow，再试 MSMF。1080p/720p 必须用 MJPG 传输，
+        # 否则 USB2 带宽不够会被压到个位数帧率（这也是「采集很卡」的常见原因）。
+        backends = [getattr(cv2, "CAP_DSHOW", 700)]
+        msmf = getattr(cv2, "CAP_MSMF", 1400)
+        if msmf:
+            backends.append(msmf)
+        fourcc = cv2.VideoWriter_fourcc(*"MJPG")
+        for backend in backends:
             cap = cv2.VideoCapture(self.index, backend)
-            if cap.isOpened():
-                try:
-                    cap.set(cv2.CAP_PROP_FRAME_WIDTH, self.width)
-                    cap.set(cv2.CAP_PROP_FRAME_HEIGHT, self.height)
-                    cap.set(cv2.CAP_PROP_FPS, self.fps)
-                    cap.set(cv2.CAP_PROP_BUFFERSIZE, 1)
-                except Exception:  # noqa: BLE001
-                    pass
-                return cap
-            cap.release()
+            if not cap.isOpened():
+                cap.release()
+                continue
+            try:
+                cap.set(cv2.CAP_PROP_FOURCC, fourcc)
+                cap.set(cv2.CAP_PROP_FRAME_WIDTH, self.width)
+                cap.set(cv2.CAP_PROP_FRAME_HEIGHT, self.height)
+                cap.set(cv2.CAP_PROP_FPS, self.OPEN_FPS)
+                cap.set(cv2.CAP_PROP_BUFFERSIZE, 1)
+            except Exception:  # noqa: BLE001
+                pass
+            return cap
         return None
 
     def run(self):
@@ -170,7 +180,8 @@ class CameraStream(threading.Thread):
         count = 0
         t0 = time.time()
         next_t = 0.0
-        while not self._stop.is_set():
+        fails = 0
+        while not self._stopping.is_set():
             if self._reopen.is_set():
                 self._reopen.clear()
                 if cap is not None:
@@ -182,16 +193,34 @@ class CameraStream(threading.Thread):
                 if cap is None:
                     self.connected = False
                     self.error = f"无法打开摄像头 index={self.index}"
-                    time.sleep(1.0)
+                    # 不存在/被占用的摄像头不必每秒重试刷屏
+                    fails += 1
+                    time.sleep(1.0 if fails < 3 else 15.0)
                     continue
+                fails = 0
                 self.connected = True
                 self.error = ""
                 count = 0
                 t0 = time.time()
+                real_w = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+                real_h = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+                real_fps = cap.get(cv2.CAP_PROP_FPS)
                 print(f"[monitor] 摄像头 {self.idx} (index={self.index}) 已打开 "
-                      f"{self.width}x{self.height}@{self.fps}")
-            ret, frame = cap.read()
-            if not ret or frame is None:
+                      f"{real_w}x{real_h}@{real_fps:g}（目标 {self.fps}fps）")
+            if not cap.grab():
+                cap.release()
+                cap = None
+                self.connected = False
+                self.error = "读帧失败，重连中"
+                time.sleep(0.3)
+                continue
+            now = time.time()
+            # 降帧：没到目标间隔就只 grab（不解码），到点才 retrieve → 省 CPU
+            if now < next_t:
+                continue
+            next_t = now + 1.0 / max(1, self.fps)
+            ok, frame = cap.retrieve()
+            if not ok or frame is None:
                 cap.release()
                 cap = None
                 self.connected = False
@@ -200,11 +229,6 @@ class CameraStream(threading.Thread):
                 continue
             self.frame_width = int(frame.shape[1])
             self.frame_height = int(frame.shape[0])
-            now = time.time()
-            # 降帧：只在到达目标间隔时编码/发送，其他帧直接丢弃，降低网络/编码压力
-            if now < next_t:
-                continue
-            next_t = now + 1.0 / max(1, self.fps)
             ok, buf = cv2.imencode(".jpg", frame,
                                    [int(cv2.IMWRITE_JPEG_QUALITY), self.quality])
             if ok:

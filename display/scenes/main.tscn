@@ -459,6 +459,7 @@ script = ExtResource("7_dp3eg")
 _max_size = 86
 _outline_ratio = 0.0
 _current_font_size = 84
+_size_just_modified_by_autosizer = true
 _editor_defaults_set = true
 metadata/_custom_type_script = "uid://bttgnk3bb2a8i"
 

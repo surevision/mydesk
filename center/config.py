@@ -15,8 +15,17 @@ CONFIG_DIR = os.path.join(BASE_DIR, "config")
 CONFIG_PATH = os.path.join(CONFIG_DIR, "config.json")           # 本机配置（运行时生成）
 DEFAULT_PATH = os.path.join(CONFIG_DIR, "config_default.json")  # 提交的默认模板
 
-# 模型默认放在项目 src/models 下（与 test/*.py 一致）
-MODELS_DIR = os.path.normpath(os.path.join(BASE_DIR, "..", "src", "models"))
+# 模型默认放在项目 models 下（旧的 src/models 也兼容）
+def _models_dir():
+    """模型目录：优先 ../models，兼容旧的 ../src/models。"""
+    for rel in (("..", "models"), ("..", "src", "models")):
+        p = os.path.normpath(os.path.join(BASE_DIR, *rel))
+        if os.path.isdir(p):
+            return p
+    return os.path.normpath(os.path.join(BASE_DIR, "..", "models"))
+
+
+MODELS_DIR = _models_dir()
 
 
 def _default_layout():
