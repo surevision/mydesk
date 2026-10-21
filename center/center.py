@@ -14,6 +14,7 @@ center.py
 
 import argparse
 import json
+import os
 import time
 
 import config as config_mod
@@ -39,7 +40,7 @@ def main():
 
     store = BattlefieldStore()
     ws = WebSocketServer(cfg["ws_host"], cfg["ws_port"])
-    calib = CalibrationStore()
+    calib = CalibrationStore(os.path.join(config_mod.CONFIG_DIR, "calib.json"))
     decks = DeckStore()                      # 已导入卡组：卡名识别候选约束
     blacklist = BlacklistStore()             # 卡名黑名单：不按卡面处理
     muted = False                            # display 全局静音状态

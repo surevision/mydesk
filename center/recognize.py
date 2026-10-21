@@ -18,6 +18,7 @@ recognize.py
 依赖 cv2 / numpy / ultralytics / onnxruntime，均为延迟导入，未装时仅预览。
 """
 
+import copy
 import json
 import os
 import threading
@@ -441,22 +442,53 @@ class Detector:
         return dark > 0.6 and mean_v < 80
 
     # ---- 检测 -------------------------------------------------------------
-    def detect(self, frame):
+    @staticmethod
+    def _crop(frame, roi):
+        """按 ROI 裁剪帧。返回 (图, ox, oy)；不裁时返回原帧与 0,0。"""
+        if not roi:
+            return frame, 0, 0
+        h, w = frame.shape[:2]
+        x0 = max(0, min(int(roi[0]), w - 1))
+        y0 = max(0, min(int(roi[1]), h - 1))
+        x1 = max(x0 + 1, min(int(roi[2]), w))
+        y1 = max(y0 + 1, min(int(roi[3]), h))
+        if x1 - x0 < 32 or y1 - y0 < 32:
+            return frame, 0, 0
+        if x0 == 0 and y0 == 0 and x1 == w and y1 == h:
+            return frame, 0, 0
+        return frame[y0:y1, x0:x1], x0, y0
+
+    def _shift(self, dets, ox, oy):
+        """裁剪坐标 → 整帧坐标（下游落格/画框都用整帧坐标）。"""
+        d = self.np.array([ox, oy], dtype=self.np.float32)
+        for det in dets:
+            det["corners"] = (det["corners"] + d).astype(self.np.float32)
+            xy = det["xywhr"].copy()
+            xy[0] += ox
+            xy[1] += oy
+            det["xywhr"] = xy
+
+    def detect(self, frame, roi=None):
+        """roi=(x0,y0,x1,y1)：只在该区域做检测与卡名识别（框选之外不识别）。"""
         self._frame = frame
         cfg = self.cfg["detect"]
         np = self.np
         out = []
         _t = time.perf_counter
         t_all = _t()
+        src, ox, oy = self._crop(frame, roi)
         t0 = _t()
         if self.front_onnx:
-            front = self._infer_onnx(frame, cfg["front_conf"])
+            front = self._infer_onnx(src, cfg["front_conf"])
         else:
-            front = self._infer(self.front, frame, cfg["front_conf"], 0)
+            front = self._infer(self.front, src, cfg["front_conf"], 0)
         t_front = _t() - t0
         t0 = _t()
-        back = self._infer(self.back, frame, cfg["back_conf"], 100000)
+        back = self._infer(self.back, src, cfg["back_conf"], 100000)
         t_back = _t() - t0
+        if ox or oy:
+            self._shift(front, ox, oy)
+            self._shift(back, ox, oy)
         now = time.time()
         if self.front_onnx:
             self._assign_tids(front, now)
@@ -535,7 +567,10 @@ class Detector:
         use_track = bool(cfg.get("track", True))
         try:
             if use_track:
-                r = model.track(frame, persist=True, conf=conf, device=device, verbose=False)[0]
+                # 默认 tracker（tracktrack/botsort）带 GMC 稀疏光流：静态机位用不上，且我们
+                # 喂的是裁剪帧，尺寸一变就会每帧刷 “GMC failed” 警告。ByteTrack 无 GMC。
+                r = model.track(frame, persist=True, conf=conf, device=device,
+                                verbose=False, tracker="bytetrack.yaml")[0]
             else:
                 r = model.predict(frame, conf=conf, device=device, verbose=False)[0]
         except Exception as e:  # noqa: BLE001
@@ -626,6 +661,7 @@ class CameraWorker(threading.Thread):
         self._read_avg = 0.0
         self._proc_avg = self._front_avg = self._back_avg = 0.0
         self._proc_n = 0
+        self._keep = {}                 # player -> {(zone, idx): {"card":..., "miss": n}}
 
     def stop(self):
         self._stopping.set()
@@ -703,15 +739,21 @@ class CameraWorker(threading.Thread):
         _t = time.perf_counter
         last_seq = -1
         last = 0.0
+        paused = False
         while not self._stopping.is_set():
             frame = self._latest
             seq = self._latest_seq
             now = time.time()
-            if (frame is None or seq == last_seq or now - last < interval
-                    or not self.detector.ready
-                    or not self.cfg.get("recognition_enabled", True)):
+            enabled = bool(self.cfg.get("recognition_enabled", True))
+            # 暂停/断线/模型未就绪：这一轮根本不会识别，卡可能已被拿走或换掉
+            idle = frame is None or not enabled or not self.detector.ready
+            if idle or seq == last_seq or now - last < interval:
+                if idle and not paused:
+                    self._keep.clear()
+                    paused = True
                 time.sleep(0.01)
                 continue
+            paused = False
             last_seq = seq
             last = now
             try:
@@ -770,8 +812,33 @@ class CameraWorker(threading.Thread):
                 sum_pub = 0.0
                 self._proc_n = 0
 
+    def _calib_roi(self, frame):
+        """本路所有已校准玩家格子区域的外接框（整帧像素）；未校准则 None。"""
+        if self.calib is None:
+            return None
+        polys = []
+        h, w = frame.shape[:2]
+        for p in self.players:
+            pc = self.calib.get(self.cam_id, p)
+            if pc is None:
+                continue
+            if tuple(pc.frame_size) != (w, h):
+                continue          # 分辨率变了，旧像素坐标不可用
+            polys.extend(poly for _zone, _idx, poly in pc.polygons())
+        if not polys:
+            return None
+        xs = [pt[0] for poly in polys for pt in poly]
+        ys = [pt[1] for poly in polys for pt in poly]
+        x0, x1 = min(xs), max(xs)
+        y0, y1 = min(ys), max(ys)
+        # 留一点边，避免贴边卡片被裁掉
+        mx = (x1 - x0) * 0.03 + 4
+        my = (y1 - y0) * 0.03 + 4
+        return (max(0, int(x0 - mx)), max(0, int(y0 - my)),
+                min(w, int(x1 + mx)), min(h, int(y1 + my)))
+
     def _process(self, frame):
-        dets = self.detector.detect(frame)
+        dets = self.detector.detect(frame, self._calib_roi(frame))
         by_player = {p: {} for p in self.players}
         layout = self.cfg["layout"]
         mode = self.cfg["mode"]
@@ -804,11 +871,41 @@ class CameraWorker(threading.Thread):
                 card["name"] = d["info"]["name"]
                 card["extra"]["score"] = d["info"]["score"]
             by_player[p][(zone, index)] = card
+        self._keep_names(by_player)
         for p in self.players:
             self.store.apply_recognition(p, by_player[p])
         self.detections = sum(len(v) for v in by_player.values())
         self._log_reco(by_player)
         return dets
+
+    def _keep_names(self, by_player):
+        """卡名保持：这一轮该格有卡但没认出名字时，沿用该格上次认出的卡名。
+
+        只在「正面且无卡名」时沿用；看到卡背视为状态变了，直接忘掉。
+        该格这一轮没有卡（没检测到）就清记忆 —— 之后再来未知卡，就按未知卡处理，
+        不会把旧名字贴到新卡上。
+        """
+        for p in self.players:
+            mem = self._keep.setdefault(p, {})
+            cells = by_player[p]
+            for key in list(mem):
+                if key not in cells:
+                    mem.pop(key, None)
+            for key, card in cells.items():
+                if not card.get("face_up"):
+                    mem.pop(key, None)          # 卡背：这一格换状态了
+                    continue
+                if card.get("name"):
+                    mem[key] = copy.deepcopy(card)
+                    continue
+                kept = mem.get(key)
+                if kept is None:
+                    continue                    # 真的没认出过，就按未知卡
+                kept = copy.deepcopy(kept)
+                kept["face_up"] = card.get("face_up", True)
+                kept["orientation"] = card.get("orientation") or kept.get("orientation")
+                kept.setdefault("extra", {})["source"] = "keep"
+                cells[key] = kept
 
     def _log_reco(self, by_player):
         """打印卡名识别结果（内容变化时才打印，避免每个识别周期刷屏）。"""

@@ -67,6 +67,7 @@ async function loadConfig() {
   renderPreviews(cfg.mode);
   ensureCalibUI(cfg);
   window.__cfg = cfg;
+  restoreCalib();
   return cfg;
 }
 
@@ -286,6 +287,50 @@ const calib = { key: null, targets: [] };
 // 顺时针：左上 → 右上 → 右下 → 左下
 const CORNERS = ["tl", "tr", "br", "bl"];
 const CORNER_MARK = { tl: "①", tr: "②", br: "③", bl: "④" };
+let calibRestored = false;
+
+// 把后端已保存的校准恢复成框选/标记（页面刷新、center 重启后不用重框）
+async function restoreCalib() {
+  if (calibRestored || !calib.targets.length) return;
+  let data;
+  try {
+    data = await (await fetch("/api/calib")).json();
+  } catch (err) {
+    return;
+  }
+  calibRestored = true;
+  const mode = (window.__cfg || {}).mode;
+  const list = (data.calibrations || []).filter((it) => !mode || it.mode === mode);
+  if (!list.length) return;
+  for (const t of calib.targets) {
+    const mine = list.filter((it) => it.cam_id === t.cam_id);
+    for (const it of mine) {
+      const pi = t.players.indexOf(String(it.player));
+      if (pi < 0) continue;
+      if (it.roi && it.roi.length === 4 && !t.boxes[pi]) {
+        t.boxes[pi] = { x0: it.roi[0], y0: it.roi[1], x1: it.roi[2], y1: it.roi[3] };
+      }
+    }
+    // 手动标定：按 玩家 → 角 的顺序恢复成小方块，序号与后续点击一致
+    for (const p of t.players) {
+      const it = mine.find((x) => String(x.player) === p && x.source === "manual");
+      if (!it || !it.corners) continue;
+      for (const c of CORNERS) {
+        if (t.marks.some((m) => m.player === p && m.corner === c)) continue;
+        const pt = it.corners[c];
+        if (!pt) continue;
+        const r = 8;
+        t.marks.push({
+          player: p, corner: c,
+          x0: pt[0] - r, y0: pt[1] - r, x1: pt[0] + r, y1: pt[1] + r,
+          cx: pt[0], cy: pt[1],
+        });
+      }
+    }
+    drawBoxes(t);
+  }
+  calibMsg.textContent = "已恢复上次的框选/标定";
+}
 
 function isManual() { return calibModeEl.value === "manual"; }
 
@@ -323,6 +368,7 @@ function ensureCalibUI(cfg) {
   if (key === calib.key) return;   // 结构未变则不重建，保留已有框选
   calib.key = key;
   calib.targets = targets;
+  calibRestored = false;           // 重建后重新从后端恢复框选
   calibPreviews.innerHTML = "";
   for (const t of targets) {
     t.boxes = t.players.map(() => null);

@@ -19,7 +19,8 @@ calib.py
   - 画面坐标用「像素」；正空间为 0~1。
   - 单应矩阵由像素角点算出，故 map_point 接收像素坐标。
 
-仅内存保存：CalibrationStore 里的结果重启后失效，需重新框选。
+仅内存保存：CalibrationStore 里的结果默认放内存；传入 path 时会读写 JSON，
+因此 center 重启后不必重新框选。
 
 依赖 cv2 / numpy，均为延迟导入（未安装时本模块仍可导入，只是无法校准与映射）。
 """
@@ -463,7 +464,7 @@ class PlayerCalib:
     """某摄像头 · 某玩家的校准结果：单应矩阵 + 正空间格子表。"""
 
     def __init__(self, cam_id, player, mode, roi, corners, H, inv_H, frame_size,
-                 orientation=ORIENTATION_H):
+                 orientation=ORIENTATION_H, source="auto"):
         self.cam_id = cam_id
         self.player = str(player)
         self.mode = mode
@@ -473,6 +474,7 @@ class PlayerCalib:
         self.H = H
         self.inv_H = inv_H
         self.frame_size = tuple(int(v) for v in frame_size)   # (W, H)
+        self.source = source            # "auto"（拖框） / "manual"（点 4 个方块）
         self.regions = build_regions(table_for(mode, self.player, self.orientation))
 
     def map_point(self, px, py):
@@ -513,12 +515,32 @@ class PlayerCalib:
     def status(self):
         return {
             "cam_id": self.cam_id, "player": self.player, "mode": self.mode,
-            "orientation": self.orientation,
+            "orientation": self.orientation, "source": self.source,
             "roi": list(self.roi),
             "corners": {c: [int(round(self.corners[c][0])), int(round(self.corners[c][1]))]
                         for c in CORNERS},
             "frame_size": list(self.frame_size),
         }
+
+    def to_dict(self):
+        """可 JSON 序列化（用于保存，重启后重建）。"""
+        return {
+            "cam_id": self.cam_id, "player": self.player, "mode": self.mode,
+            "orientation": self.orientation, "source": self.source,
+            "roi": list(self.roi),
+            "corners": {c: [self.corners[c][0], self.corners[c][1]] for c in CORNERS},
+            "frame_size": list(self.frame_size),
+        }
+
+    @classmethod
+    def from_dict(cls, d):
+        corners = {c: (float(d["corners"][c][0]), float(d["corners"][c][1]))
+                   for c in CORNERS}
+        H, inv_H = compute_homography(corners)
+        return cls(d["cam_id"], d["player"], d.get("mode", "single"),
+                   d.get("roi") or (0, 0, 1, 1), corners,
+                   H, inv_H, d.get("frame_size") or (0, 0),
+                   d.get("orientation", ORIENTATION_H), d.get("source", "auto"))
 
 
 def calibrate_player(img_bgr, roi, cam_id, player, mode, orientation=ORIENTATION_H):
@@ -540,7 +562,7 @@ def calibrate_player(img_bgr, roi, cam_id, player, mode, orientation=ORIENTATION
                          % (len(marks), detail.get("reason") or "无法分配 4 角"))
     H, inv_H = compute_homography(corners)
     return PlayerCalib(cam_id, player, mode, roi, corners, H, inv_H, (w, h),
-                       orientation)
+                       orientation, source="auto")
 
 
 def calibrate_player_manual(corners_pixels, cam_id, player, mode, frame_size,
@@ -571,23 +593,60 @@ def calibrate_player_manual(corners_pixels, cam_id, player, mode, frame_size,
     ys = [p[1] for p in pts]
     roi = (int(min(xs)), int(min(ys)), int(max(xs)), int(max(ys)))
     return PlayerCalib(cam_id, player, mode, roi, corners, H, inv_H, frame_size,
-                       orientation)
+                       orientation, source="manual")
 
 
 # ============================================================
-# 内存校准存储
+# 校准存储（内存 + 可选 JSON 持久化）
 # ============================================================
 
 class CalibrationStore:
-    """内存保存所有校准结果（cam_id, player）→ PlayerCalib。重启失效。"""
+    """保存所有校准结果（cam_id, player）→ PlayerCalib。
 
-    def __init__(self):
+    传入 path 时会把结果写成 JSON，启动时自动读回 —— 管理页刷新 / center
+    重启都不必重新框选；不传 path 则只放内存（旧行为）。
+    """
+
+    def __init__(self, path=None):
         self._lock = threading.RLock()
         self._items = {}
+        self.path = path
+        if path:
+            self._load()
+
+    def _load(self):
+        import json
+        try:
+            with open(self.path, "r", encoding="utf-8") as f:
+                data = json.load(f)
+        except (OSError, ValueError):
+            return
+        items = data.get("players") if isinstance(data, dict) else None
+        for d in items or []:
+            try:
+                pc = PlayerCalib.from_dict(d)
+            except (KeyError, TypeError, ValueError):
+                continue
+            self._items[(pc.cam_id, pc.player)] = pc
+
+    def _save(self):
+        if not self.path:
+            return
+        import json
+        import os
+        items = [pc.to_dict() for pc in self._items.values()]
+        tmp = self.path + ".tmp"
+        try:
+            with open(tmp, "w", encoding="utf-8") as f:
+                json.dump({"players": items}, f, ensure_ascii=False, indent=2)
+            os.replace(tmp, self.path)
+        except OSError:
+            pass
 
     def set(self, calib):
         with self._lock:
             self._items[(calib.cam_id, calib.player)] = calib
+            self._save()
 
     def get(self, cam_id, player):
         with self._lock:
@@ -597,12 +656,15 @@ class CalibrationStore:
         with self._lock:
             if cam_id is None:
                 self._items.clear()
+                self._save()
                 return
             if player is None:
                 for k in [k for k in self._items if k[0] == cam_id]:
                     self._items.pop(k, None)
+                self._save()
                 return
             self._items.pop((cam_id, str(player)), None)
+            self._save()
 
     def quads(self):
         """所有定位方块的画面坐标，供 display 画定位方块：{cam_id: {player: [[x,y]*4]}}。"""

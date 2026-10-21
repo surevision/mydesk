@@ -226,8 +226,10 @@ public partial class MainUI : Node3D
             this.setCard(2, ZoneType.Deck, 0, battlefieldChange.player2CardsNew.Deck);
         }
         // 更新lp
-        int p1lp = field.GetPlayer(1).Lp;
-        int p2lp = field.GetPlayer(2).Lp;
+        PlayerData p1Data = field.GetPlayer(1);
+        PlayerData p2Data = field.GetPlayer(2);
+        int p1lp = p1Data != null ? p1Data.Lp : this.p1Lp;
+        int p2lp = p2Data != null ? p2Data.Lp : this.p2Lp;
         if (this.p1Lp != p1lp)
         {
             this.setLp(1, p1lp, 0);
@@ -240,6 +242,23 @@ public partial class MainUI : Node3D
 
     // 展示一张卡
     public void setCard(int player, ZoneType zoneType, int index, CardData cardData)
+    {
+        try
+        {
+            setCardImpl(player, zoneType, index, cardData);
+        }
+        catch (Exception ex)
+        {
+            GD.PushError($"setCard P{player} {zoneType}[{index}] failed: {ex.Message}");
+            PlayerData pd = currField.GetPlayer(player);
+            if (pd != null)
+            {
+                pd.SetCell(zoneType, index, null);
+            }
+        }
+    }
+
+    private void setCardImpl(int player, ZoneType zoneType, int index, CardData cardData)
     {
         // 光效
         // 预备复制的节点
@@ -322,7 +341,7 @@ public partial class MainUI : Node3D
                 string nodePath = "";
                 if (zoneType == ZoneType.Field)
                 {
-                    filePath = Path.Combine(baseDir, "static", "picture", "hd_card", string.Format("{0}.jpg", cardData.Id.ToString()));
+                    filePath = Path.Combine(baseDir, "static", "picture", "field", string.Format("{0}.jpg", cardData.Id.ToString()));
                     nodePath = string.Format("showfield/middle/field/player{0}/card", player);
                     // todo 处理双方都有场地卡的情况，一人一半
                 }
@@ -406,7 +425,7 @@ public partial class MainUI : Node3D
                     image.GenerateMipmaps();
                     var texture = ImageTexture.CreateFromImage(image);
 
-                    var sprite = GetNode<Sprite3D>(nodePath);
+                    var sprite = GetNodeOrNull<Sprite3D>(nodePath);
                     if (sprite == null)
                     {
                         GD.Print("no sprite ", nodePath);
@@ -424,10 +443,13 @@ public partial class MainUI : Node3D
                     if (zoneType == ZoneType.Front || zoneType == ZoneType.Ex)
                     {
                         string iconPath = cardData.Orientation == Orientation.Vertical ? "state_attack" : "state_defense";
-                        sprite.GetNode<Sprite3D>("state_attack").Visible = false;
-                        sprite.GetNode<Sprite3D>("state_defense").Visible = false;
-                        sprite.GetNode<Sprite3D>(iconPath).Visible = true;
-                        ((CardShowNode)sprite).stop = cardData.Orientation == Orientation.Horizontal;
+                        var stateAttack = sprite.GetNodeOrNull<Sprite3D>("state_attack");
+                        if (stateAttack != null) stateAttack.Visible = false;
+                        var stateDefense = sprite.GetNodeOrNull<Sprite3D>("state_defense");
+                        if (stateDefense != null) stateDefense.Visible = false;
+                        var stateIcon = sprite.GetNodeOrNull<Sprite3D>(iconPath);
+                        if (stateIcon != null) stateIcon.Visible = true;
+                        if (sprite is CardShowNode cardNode) cardNode.stop = cardData.Orientation == Orientation.Horizontal;
                     }
                 }
             }
@@ -478,6 +500,7 @@ public partial class MainUI : Node3D
                 if (zoneType == ZoneType.Back)
                 {
                     filePath = Path.Combine(baseDir, "static", "common", "back_placeholder.png");
+                    nodePath = string.Format("showfield/middle/cards/player{0}/back/card{1}", player, index + 1);
                 }
                 if (File.Exists(filePath))
                 {
@@ -491,7 +514,12 @@ public partial class MainUI : Node3D
                     image.GenerateMipmaps();
                     var texture = ImageTexture.CreateFromImage(image);
                     GD.Print("卡背nodePath ", nodePath);
-                    var sprite = GetNode<Sprite3D>(nodePath);
+                    var sprite = GetNodeOrNull<Sprite3D>(nodePath);
+                    if (sprite == null)
+                    {
+                        GD.PushError($"no sprite {nodePath}");
+                        return;
+                    }
                     sprite.Texture = texture;
                     if (zoneType == ZoneType.Ex)
                     {
@@ -500,10 +528,13 @@ public partial class MainUI : Node3D
                     if (zoneType == ZoneType.Front || zoneType == ZoneType.Ex)
                     {
                         string iconPath = cardData.Orientation == Orientation.Vertical ? "state_attack" : "state_defense";
-                        sprite.GetNode<Sprite3D>("state_attack").Visible = false;
-                        sprite.GetNode<Sprite3D>("state_defense").Visible = false;
-                        sprite.GetNode<Sprite3D>(iconPath).Visible = true;
-                        ((CardShowNode)sprite).stop = cardData.Orientation == Orientation.Horizontal;
+                        var stateAttack = sprite.GetNodeOrNull<Sprite3D>("state_attack");
+                        if (stateAttack != null) stateAttack.Visible = false;
+                        var stateDefense = sprite.GetNodeOrNull<Sprite3D>("state_defense");
+                        if (stateDefense != null) stateDefense.Visible = false;
+                        var stateIcon = sprite.GetNodeOrNull<Sprite3D>(iconPath);
+                        if (stateIcon != null) stateIcon.Visible = true;
+                        if (sprite is CardShowNode cardNode) cardNode.stop = cardData.Orientation == Orientation.Horizontal;
                     }
                 }
                 else
@@ -514,6 +545,18 @@ public partial class MainUI : Node3D
         }
     }
     public void removeCard(int player, ZoneType zoneType, int index)
+    {
+        try
+        {
+            removeCardImpl(player, zoneType, index);
+        }
+        catch (Exception ex)
+        {
+            GD.PushError($"removeCard P{player} {zoneType}[{index}] failed: {ex.Message}");
+        }
+    }
+
+    private void removeCardImpl(int player, ZoneType zoneType, int index)
     {
         // 移除光效：隐藏该位置对应的 2D 光圈粒子节点
         string nodeName = string.Format("bling_p{0}_{1}_{2}", player, zoneType.ToString(), index + 1);
@@ -659,7 +702,26 @@ public partial class MainUI : Node3D
 
     public void backToTitle()
     {
+        clearField();
+        currField = new Battlefield();
         // 返回标题界面
+    }
+
+    public void clearField()
+    {
+        for (int player = 1; player <= 2; player += 1)
+        {
+            for (int i = 0; i < 5; i += 1)
+            {
+                removeCard(player, ZoneType.Front, i);
+                removeCard(player, ZoneType.Back, i);
+            }
+            for (int i = 0; i < 2; i += 1)
+            {
+                removeCard(player, ZoneType.Ex, i);
+            }
+            removeCard(player, ZoneType.Field, 0);
+        }
     }
 
     public void togglePosRects(bool show = true)
