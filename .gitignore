@@ -20,3 +20,5 @@ desktop.ini
 *.swp
 /materials
 /shell
+/display/build
+/display/export_presets.cfg
