@@ -13,11 +13,13 @@
     "cameras": [
       {
         "url": "http://127.0.0.1:4581/video/0",
-        "player": 1
+        "player": 1,
+        "orientation": "horizontal"
       },
       {
         "url": "http://127.0.0.1:4581/video/1",
-        "player": 2
+        "player": 2,
+        "orientation": "horizontal"
       }
     ]
   },
@@ -30,7 +32,7 @@
   "detect": {
     "front_conf": 0.1,
     "back_conf": 0.5,
-    "name_thr": 0.1,
+    "name_thr": 0.001,
     "interval": 0.1,
     "min_side": 30,
     "device": 0,

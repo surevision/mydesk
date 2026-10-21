@@ -5,14 +5,14 @@
  * 后端接口见 controller/server.py。
  */
 
-/** 读取 center 连接配置 { center_ip, center_port } */
+/** 读取连接/行为配置 { center_ip, center_port, dice_coin_choose_player } */
 export async function getConfig() {
   const res = await fetch("api/config", { cache: "no-store" });
   if (!res.ok) throw new Error("读取配置失败: " + res.status);
   return res.json();
 }
 
-/** 保存 center 连接配置，返回后端保存后的配置 */
+/** 保存连接/行为配置，返回后端保存后的配置 */
 export async function saveConfig(cfg) {
   const res = await fetch("api/config", {
     method: "POST",

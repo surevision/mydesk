@@ -18,6 +18,7 @@ import time
 
 import config as config_mod
 import http_server
+from blacklist import BlacklistStore
 from calib import CalibrationStore
 from recognize import RecognitionManager
 from state import BattlefieldStore, DeckStore
@@ -40,7 +41,9 @@ def main():
     ws = WebSocketServer(cfg["ws_host"], cfg["ws_port"])
     calib = CalibrationStore()
     decks = DeckStore()                      # 已导入卡组：卡名识别候选约束
-    recognition = RecognitionManager(store, cfg, calib, decks)
+    blacklist = BlacklistStore()             # 卡名黑名单：不按卡面处理
+    muted = False                            # display 全局静音状态
+    recognition = RecognitionManager(store, cfg, calib, decks, blacklist)
 
     def broadcast_change(kind, data):
         if kind == "battlefield":
@@ -55,6 +58,7 @@ def main():
     store.on_change = broadcast_change
 
     def on_message(client, obj):
+        nonlocal muted
         t = obj.get("type")
         if t == "on_battlefield_change":
             bf = obj.get("battlefield")
@@ -78,6 +82,19 @@ def main():
             print(f"[center] 记录 P{obj.get('player', 1)} 卡组 {n} 张（用于卡名识别约束）")
             ws.broadcast(obj, exclude=client)
             return
+        # 重新开始：复位战场，并把重置后的空战场随 on_game_reset 一起下发给其它端
+        if t == "on_game_reset":
+            store.reset(emit=False)
+            bf = json.dumps(store.snapshot(), ensure_ascii=False)
+            ws.broadcast({"type": "on_game_reset", "battlefield": bf}, exclude=client)
+            ws.broadcast({"type": "on_battlefield_change", "battlefield": bf})
+            print("[center] 重新开始：战场已清空并广播")
+            return
+        # 开始决斗：广播给所有 controller 和 display（controller 收到不处理）
+        if t == "on_game_start":
+            ws.broadcast({"type": "on_game_start"})
+            print("[center] 开始决斗")
+            return
         # 骰子 / 硬币：转发给其它端（display 播放对应动画/音效）
         if t in ("on_dice", "on_coin"):
             ws.broadcast(obj, exclude=client)
@@ -90,17 +107,25 @@ def main():
                 msg["quads"] = calib.quads()
             ws.broadcast(msg)
             return
+        # 全局静音：记录状态并同步给所有端（display 控制音频总线）
+        if t == "on_mute":
+            muted = bool(obj.get("mute"))
+            ws.broadcast({"type": "on_mute", "mute": muted})
+            print(f"[center] display 静音: {muted}")
+            return
         # 其余动画/音效/导入等信息原样转发给其它端（主要是 display）
         ws.broadcast(obj, exclude=client)
 
     def on_connect(client):
+        client.send_json({"type": "on_mute", "mute": muted})
         client.send_json({"type": "on_battlefield_change",
                           "battlefield": json.dumps(store.snapshot(), ensure_ascii=False)})
 
     ws.on_message = on_message
     ws.on_connect = on_connect
 
-    app = http_server.AdminApp(cfg, store, recognition, ws, config_mod.save_config, calib)
+    app = http_server.AdminApp(cfg, store, recognition, ws, config_mod.save_config, calib,
+                              blacklist)
     httpd = http_server.create_server(app, cfg["http_host"], cfg["http_port"])
 
     ws.start()

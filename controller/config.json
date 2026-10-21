@@ -1,4 +1,5 @@
 {
   "center_ip": "127.0.0.1",
-  "center_port": 4560
+  "center_port": 4560,
+  "dice_coin_choose_player": false
 }

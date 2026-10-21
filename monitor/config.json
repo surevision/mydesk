@@ -5,14 +5,14 @@
   "cameras": [
     {
       "index": 0,
-      "width": 1280,
-      "height": 720,
+      "width": 1920,
+      "height": 1080,
       "fps": 1
     },
     {
       "index": 1,
-      "width": 1280,
-      "height": 720,
+      "width": 1920,
+      "height": 1080,
       "fps": 1
     }
   ]

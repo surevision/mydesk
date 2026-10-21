@@ -9,6 +9,9 @@ public partial class MainUI : Node3D
     private Label p1lpLabel;
     private Label p2lpLabel;
 
+    private int p1Lp;
+    private int p2Lp;
+
     Battlefield currField = new Battlefield();
     public override void _Ready()
     {
@@ -19,7 +22,7 @@ public partial class MainUI : Node3D
     /// <summary>
     /// 让 Label 从 startValue 平滑变化到 endValue
     /// </summary>
-    public void AnimateLabel(int player, float endValue, float duration = 1.0f)
+    public void AnimateLabel(int player, float endValue, int playSfxType = -1, float duration = 2.0f)
     {
         // 如果上一个动画还在跑，先杀掉，避免两个 Tween 抢同一个属性
         Tween tween = player == 1 ? p1lpTween : p2lpTween;
@@ -46,6 +49,16 @@ public partial class MainUI : Node3D
                 endValue,                             // 结束值（传参）
                 duration                              // 持续时间
             );
+        }
+        if (playSfxType == 0)
+        {   
+            // 初始音效
+            AudioManager.getInstance().playSESync("yugioh-lp-shows-sfx");
+        }
+        if (playSfxType == 1)
+        {   
+            // 变化音效
+            AudioManager.getInstance().playSESync("point-drop");
         }
     }
 
@@ -215,13 +228,13 @@ public partial class MainUI : Node3D
         // 更新lp
         int p1lp = field.GetPlayer(1).Lp;
         int p2lp = field.GetPlayer(2).Lp;
-        if (int.Parse(this.GetNode<Label>("ui/player1/lp/val").Text) != p1lp)
+        if (this.p1Lp != p1lp)
         {
-            this.AnimateLabel(1, p1lp);
+            this.setLp(1, p1lp, 0);
         }
-        if (int.Parse(this.GetNode<Label>("ui/player2/lp/val").Text) != p2lp)
+        if (this.p2Lp != p2lp)
         {
-            this.AnimateLabel(2, p2lp);
+            this.setLp(2, p2lp, 0);
         }
     }
 
@@ -473,7 +486,7 @@ public partial class MainUI : Node3D
 
                     image.GenerateMipmaps();
                     var texture = ImageTexture.CreateFromImage(image);
-
+                    GD.Print("卡背nodePath ", nodePath);
                     var sprite = GetNode<Sprite3D>(nodePath);
                     sprite.Texture = texture;
                     if (zoneType == ZoneType.Ex)
@@ -576,9 +589,17 @@ public partial class MainUI : Node3D
         }
     }
 
-    public void setLp(int player, int newLp)
+    public void setLp(int player, int newLp, int playSfxType = -1)
     {
-        this.AnimateLabel(player, newLp);
+        this.AnimateLabel(player, newLp, playSfxType);
+        if (player == 1)
+        {
+            this.p1Lp = newLp;
+        }
+        if (player == 2)
+        {
+            this.p2Lp = newLp;
+        }
     }
 
     public void setPhase()
@@ -589,9 +610,6 @@ public partial class MainUI : Node3D
     public void showDice(int player, int val)
     {
         Node3D roller = GetNode<Node3D>("showfield/middle/dice/DiceCinematicRoller3D");
-
-        // 主场景相机朝 -Z，结果面要朝 +Z 才面向摄像机。
-        roller.Set("result_side", 2);
 
         // 属性：0=下 1=上 2=左 3=右
         roller.Set("gravity_direction", player == 1 ? 2 : (player == 2 ? 3 : Random.Shared.NextInt64() % 4));
@@ -612,18 +630,17 @@ public partial class MainUI : Node3D
         }
 
         roller.Call("roll_all", val);
+        AudioManager.getInstance().playSE("dice-shake-1");
     }
 
     public void showCoin(int player, int val)
     {
         // 1=正面，0=反面
         var coin = GetNode<Node3D>("showfield/middle/coin/CoinToss3D");
-
-        // 主场景相机朝 -Z，结果面要朝 +Z 才面向摄像机。
-        coin.Set("result_side", 2);
-
         coin.Set("gravity_direction", player == 1 ? 2 : (player == 2 ? 3 : Random.Shared.NextInt64() % 4));
         coin.Call("toss", val);
+        AudioManager.getInstance().playSE("dice-grab-1");
+
     }
 
     public void showSummonAnim()
@@ -634,6 +651,11 @@ public partial class MainUI : Node3D
     public void showAttack()
     {
         
+    }
+
+    public void backToTitle()
+    {
+        // 返回标题界面
     }
 
     public void togglePosRects(bool show = true)

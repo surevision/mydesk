@@ -66,9 +66,9 @@ static func numbered_faces(count: int) -> Array[DiceFace3D]:
 
 static func coin_faces() -> Array[DiceFace3D]:
 	var heads := new_face(1, &"heads", null, "Heads")
-	heads.label_text = "H"
+	heads.label_text = "正"
 	var tails := new_face(0, &"tails", null, "Tails")
-	tails.label_text = "T"
+	tails.label_text = "反"
 	var faces: Array[DiceFace3D] = [heads, tails]
 	return faces
 

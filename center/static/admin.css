@@ -19,11 +19,17 @@ main { padding: 16px 20px; display: grid; gap: 16px; }
 .row { display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 10px; }
 label { display: flex; flex-direction: column; gap: 4px; font-size: 13px; color: #aebccd; }
 label.chk { flex-direction: row; align-items: center; gap: 6px; color: #d7dde5; }
-input[type="text"], input[type="number"], select {
+input[type="text"], input[type="number"], select, textarea {
   background: #0e1116; color: #e6edf5; border: 1px solid #2b3441; border-radius: 6px;
   padding: 6px 8px; min-width: 200px; font: inherit;
 }
 input[type="number"] { min-width: 100px; }
+textarea {
+  display: block; width: 100%; min-height: 140px; resize: vertical;
+  font-family: Consolas, "Courier New", monospace; line-height: 1.45;
+}
+#blacklist-msg { color: #8fd3a8; }
+code { color: #9fb2c8; }
 fieldset { border: 1px solid #232a35; border-radius: 6px; margin: 0 0 12px; padding: 10px 12px; }
 legend { color: #7f92a8; padding: 0 6px; }
 .actions { display: flex; align-items: center; gap: 12px; }

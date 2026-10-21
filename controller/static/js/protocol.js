@@ -16,9 +16,12 @@
  *   on_card_relate_effect  { from_player, from_cell_type, from_cell_index,
  *                            to_player, to_cell_type, to_cell_index }    卡片关联
  *   on_import_ydk          { player, ids, main, extra, side }            导入卡组
- *   on_dice                { player, value }                             掷骰子（value 1-6）
- *   on_coin                { player, value }                             投硬币（value 1=正面, 0=反面）
+ *   on_dice                { player, value }                             掷骰子（player 0=全部，value 1-6）
+ *   on_coin                { player, value }                             投硬币（player 0=全部，value 1=正面, 0=反面）
  *   on_guide               { show }                                      显示/隐藏 display 上的定位方块
+ *   on_mute                { mute }                                      静音/取消静音 display 的全部音频
+ *   on_game_reset          { battlefield }                             重新开始（center 清空战场并广播）
+ *   on_game_start          {}                                           开始决斗（center 广播给所有端）
  *
  * battlefield JSON 结构（由 controller 拟定，后续按需调整）：
  * {
@@ -216,6 +219,9 @@ export const MSG = {
   DICE: "on_dice",
   COIN: "on_coin",
   GUIDE: "on_guide",
+  MUTE: "on_mute",
+  RESET: "on_game_reset",
+  START: "on_game_start",
 };
 
 // 辅助：按 key 取 label

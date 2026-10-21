@@ -230,6 +230,18 @@ public partial class Connection : Node
                 on_coin(GetInt(data, "player"), GetInt(data, "value"));
                 break;
 
+            case "on_mute":
+                on_mute(GetBool(data, "mute"));
+                break;
+
+            case "on_game_reset":
+                on_game_reset(GetString(data, "battlefield"));
+                break;
+
+            case "on_game_start":
+                on_game_start();
+                break;
+
             case "ping":
                 // 服务器心跳探测，回复 pong
                 SendPong();
@@ -383,5 +395,27 @@ public partial class Connection : Node
     public void on_coin(int player, int value)
     {
         BattleManager.getInstance().showCoin(player, value);
+    }
+
+    /// <summary>静音 / 取消静音 display 的全部音频。</summary>
+    /// <param name="mute">true=静音，false=取消静音。</param>
+    public void on_mute(bool mute)
+    {
+        AudioManager.getInstance().setMute(mute);
+    }
+
+    /// <summary>重新开始：接收重置后的战场并刷新显示。</summary>
+    /// <param name="battlefield">重置后的 battlefield JSON 字符串。</param>
+    public void on_game_reset(string battlefield)
+    {
+        GD.Print(battlefield);
+        GD.Print("show battlefield (reset)");
+        BattleManager.getInstance().currentFieldStr = battlefield;  // 仅作记录
+        BattleManager.getInstance().mainUI.backToTitle();
+    }
+
+    /// <summary>开始决斗：预留 display 端处理接口。</summary>
+    public void on_game_start()
+    {
     }
 }

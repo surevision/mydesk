@@ -63,9 +63,12 @@ DEFAULT_CONFIG = {
     "dual": {
         "swap": False,            # 交换两个摄像头与玩家的对应
         # 两路必须填不同的地址（monitor 的 /video/0、/video/1）
+        # orientation：摄像头画面方向，horizontal=横向（3 行×7 列），vertical=竖向（7 行×3 列）
         "cameras": [
-            {"url": "http://10.10.1.105:4581/video/0", "player": 1},
-            {"url": "http://10.10.1.105:4581/video/1", "player": 2},
+            {"url": "http://10.10.1.105:4581/video/0", "player": 1,
+             "orientation": "horizontal"},
+            {"url": "http://10.10.1.105:4581/video/1", "player": 2,
+             "orientation": "horizontal"},
         ],
     },
 
@@ -82,7 +85,7 @@ DEFAULT_CONFIG = {
     "detect": {
         "front_conf": 0.1,      # 正面检测置信度阈值
         "back_conf": 0.5,       # 卡背置信度阈值
-        "name_thr": 0.1,        # 卡名识别置信度阈值（低于则视为未识别，id=-1）
+        "name_thr": 0.001,      # 卡名识别置信度阈值（低于则视为未识别，id=-1）
         "top_k": 15,            # 卡名识别候选数（有卡组时在前 top_k 中按卡组约束挑选）
         "interval": 0.1,        # 识别间隔（秒）
         "min_side": 30,         # 卡最小边长（像素），过小忽略

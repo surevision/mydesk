@@ -9,13 +9,13 @@ import {
   getCell, setCell, cloneBattlefield, zoneSize, ZONE_LABEL,
 } from "./state.js";
 import { buildBoard, renderBoard, setSelection, setSwapped } from "./render.js";
-import { initModals, openModal, closeModal, el, openConfigPanel, openLpPanel, openPhasePanel, openSummonPanel, openAttackPanel, openRelatePanel, openBgmPanel, openSePanel, openDicePanel, openCoinPanel, openImportPanel, openCardPanel, openCardActionPanel } from "./panels.js";
+import { initModals, openModal, closeModal, el, openConfigPanel, openLpPanel, openPhasePanel, openSummonPanel, openAttackPanel, openRelatePanel, openBgmPanel, openSePanel, openDicePanel, openCoinPanel, openImportPanel, openCardPanel, openCardActionPanel, openRollResultPanel, openResetPanel, rollTargetLabel } from "./panels.js";
 import { getConfig, saveConfig, uploadYdk } from "./api.js";
 import { CenterClient } from "./center.js";
 
 // ---- 全局状态 ----
 let battle = makeBattlefield();
-let config = { center_ip: "127.0.0.1", center_port: 4560 };
+let config = { center_ip: "127.0.0.1", center_port: 4560, dice_coin_choose_player: false };
 const center = new CenterClient();
 
 // 攻击 / 被攻击：点击卡片后记录，二者都可被后续选择覆盖
@@ -24,6 +24,9 @@ let target = null;   // { player, zone, index }
 
 // 仅前端视觉：是否交换 P1 / P2 的上下显示位置（不影响发送数据里的玩家编号）
 let swapped = false;
+
+// display 当前是否静音（由 center 广播同步）
+let muted = false;
 
 // 已导入卡组：{ "1": [id...], "2": [id...] }（供卡号「选择」弹窗使用）
 const decks = { "1": [], "2": [] };
@@ -74,6 +77,16 @@ function sendMsg(type, payload = {}) {
   center.send({ type, ...payload });
 }
 
+function showDuelGate() {
+  const gate = document.getElementById("duel-gate");
+  if (gate) gate.classList.remove("hidden");
+}
+
+function hideDuelGate() {
+  const gate = document.getElementById("duel-gate");
+  if (gate) gate.classList.add("hidden");
+}
+
 /** 发送完整战场快照 */
 function pushBattlefield() {
   center.send({ type: MSG.BATTLEFIELD, battlefield: JSON.stringify(cloneBattlefield(battle)) });
@@ -106,6 +119,18 @@ function onCenterMessage(data) {
       }
       break;
     }
+    case MSG.MUTE: {
+      muted = !!data.mute;
+      break;
+    }
+    case MSG.RESET: {
+      applyResetLocal();
+      showDuelGate();
+      break;
+    }
+    case MSG.START: {
+      break;
+    }
     default:
       console.log("[center] recv:", data);
   }
@@ -116,8 +141,15 @@ function updateStatus(status, url) {
   const txt = document.getElementById("conn-status");
   if (!dot || !txt) return;
   dot.className = "conn-dot " + status;
-  if (status === "connected") txt.textContent = "已连接";
-  else if (status === "connecting") txt.textContent = "连接中…";
+  if (status === "connected") {
+    txt.textContent = "已连接";
+    // 断线重连后补发已上传的卡组，供 center 限制卡名识别范围。
+    for (const p of ["1", "2"]) {
+      if (decks[p] && decks[p].length) {
+        sendMsg(MSG.IMPORT_YDK, { player: Number(p), ids: decks[p] });
+      }
+    }
+  } else if (status === "connecting") txt.textContent = "连接中…";
   else txt.textContent = "未连接";
   txt.title = url || "";
 }
@@ -258,7 +290,16 @@ function wireButtons() {
     if (node) node.addEventListener("click", fn);
   };
 
-  on("btn-config", () => openConfigPanel(config, saveAndReconnect));
+  on("btn-duel", () => {
+    hideDuelGate();
+    sendMsg(MSG.START);
+  });
+  on("btn-config", () => openConfigPanel({ ...config, muted }, saveAndReconnect, {
+    onImport: (p) => openImportPanel(p, (file) => importYdk(p, file)),
+    onSwap: toggleSwap,
+    onGuide: setGuide,
+    onMute: setMuted,
+  }));
   on("btn-reconnect", connectCenter);
 
   // 竖屏：点「操作」展开/收起顶部操作按钮（横屏由 CSS 直接显示，按钮不出现）
@@ -268,43 +309,28 @@ function wireButtons() {
     menuBtn.addEventListener("click", () => topbar.classList.toggle("menu-open"));
   }
 
-  on("btn-import-1", () => openImportPanel(1, (file) => importYdk(1, file)));
-  on("btn-import-2", () => openImportPanel(2, (file) => importYdk(2, file)));
-
   on("btn-phase", () => openPhasePanel(battle.phase, setPhase));
   on("btn-summon", () => openSummonPanel((t) => sendMsg(MSG.SUMMON, { summon_type: t })));
   on("btn-attack", () => openAttackPanel((a) => sendMsg(MSG.ATTACK, a)));
   on("btn-relate", () => openRelatePanel((r) => sendMsg(MSG.RELATE, r)));
   on("btn-bgm", () => openBgmPanel((name) => sendMsg(MSG.BGM, { bgm_filename: name })));
   on("btn-se", () => openSePanel((name) => sendMsg(MSG.SE, { se_filename: name })));
-  on("btn-dice", () => openDicePanel((d) => {
-    battle.dice = { player: d.player, value: d.value, ts: Date.now() };
-    renderBoard(battle);
-    sendMsg(MSG.DICE, d);
-  }));
-  on("btn-coin", () => openCoinPanel((c) => {
-    battle.coin = { player: c.player, value: c.value, ts: Date.now() };
-    renderBoard(battle);
-    sendMsg(MSG.COIN, c);
-  }));
 
-  // 交换 P1 / P2 的上下显示位置（仅前端视觉，不改动玩家编号）
-  on("btn-swap", () => {
-    swapped = !swapped;
-    setSwapped(swapped);
-    renderBoard(battle);
-    toast(swapped ? "已交换玩家显示位置（仅显示）" : "已恢复默认显示位置");
+  on("btn-dice", () => {
+    if (config.dice_coin_choose_player) {
+      openDicePanel(commitDice);
+    } else {
+      commitDice({ player: 0, value: 1 + Math.floor(Math.random() * 6) });
+    }
   });
-
-  // 显示 / 隐藏 display 上的定位方块
-  on("btn-guide-show", () => {
-    sendMsg(MSG.GUIDE, { show: true });
-    toast("已显示定位", "success");
+  on("btn-coin", () => {
+    if (config.dice_coin_choose_player) {
+      openCoinPanel(commitCoin);
+    } else {
+      commitCoin({ player: 0, value: Math.random() < 0.5 ? 1 : 0 });
+    }
   });
-  on("btn-guide-hide", () => {
-    sendMsg(MSG.GUIDE, { show: false });
-    toast("已隐藏定位", "success");
-  });
+  on("btn-reset", () => openResetPanel(resetGame));
 
   // LP 变更：点击 LP 数字（事件委托，交换位置重建棋盘后依然有效）
   const boardEl = document.getElementById("board");
@@ -319,7 +345,56 @@ function wireButtons() {
   }
 }
 
+function commitDice({ player, value }) {
+  battle.dice = { player, value, ts: Date.now() };
+  renderBoard(battle);
+  sendMsg(MSG.DICE, { player, value });
+  openRollResultPanel("骰子结果", "// DICE", String(value),
+    `点数 ${value} · ${rollTargetLabel(player)}`);
+}
+
+function commitCoin({ player, value }) {
+  battle.coin = { player, value, ts: Date.now() };
+  renderBoard(battle);
+  sendMsg(MSG.COIN, { player, value });
+  openRollResultPanel("硬币结果", "// COIN", value === 1 ? "正" : "反",
+    `${value === 1 ? "正面 (heads)" : "反面 (tails)"} · ${rollTargetLabel(player)}`);
+}
+
+function applyResetLocal() {
+  battle = makeBattlefield();
+  attacker = null;
+  target = null;
+  setSelection({ attackFrom: null, attackTo: null });
+  renderBoard(battle);
+}
+
+function resetGame() {
+  applyResetLocal();
+  sendMsg(MSG.RESET);
+  showDuelGate();
+}
+
+function toggleSwap() {
+  swapped = !swapped;
+  setSwapped(swapped);
+  renderBoard(battle);
+  toast(swapped ? "已交换玩家显示位置（仅显示）" : "已恢复默认显示位置");
+}
+
+function setGuide(show) {
+  sendMsg(MSG.GUIDE, { show });
+  toast(show ? "已显示定位" : "已隐藏定位", "success");
+}
+
+function setMuted(value) {
+  muted = !!value;
+  sendMsg(MSG.MUTE, { mute: muted });
+  toast(muted ? "已静音" : "已取消静音", "success");
+}
+
 async function saveAndReconnect(cfg) {
+  const prev = config;
   config = cfg;
   try {
     const res = await saveConfig(cfg);
@@ -328,7 +403,10 @@ async function saveAndReconnect(cfg) {
   } catch (e) {
     toast("配置保存失败", "danger");
   }
-  connectCenter();
+  if (prev.center_ip !== config.center_ip
+    || Number(prev.center_port) !== Number(config.center_port)) {
+    connectCenter();
+  }
 }
 
 async function importYdk(player, file) {

@@ -7,6 +7,8 @@ center 的管理页面 + 接口 + 视频预览。
   GET  /                 管理页面
   GET  /api/config       读取配置
   POST /api/config       保存配置（并重启识别）
+  GET  /api/blacklist    读取卡名黑名单
+  POST /api/blacklist    保存卡名黑名单（一行一个 card_id）
   GET  /api/state        当前战场 + 运行状态
   GET  /api/status       仅运行状态
   GET  /api/calib        当前定位（校准）结果
@@ -18,6 +20,8 @@ center 的管理页面 + 接口 + 视频预览。
   POST /api/calibrate_manual  手动标记 4 个定位标识（顺时针）建立定位
   POST /api/guide        显示/隐藏 display 上的定位方块
   POST /api/monitor_fps  通知采集端 monitor 修改采集帧率
+  GET  /api/monitor_status     读取采集端 monitor 状态
+  POST /api/monitor_resolution 通知采集端 monitor 修改采集分辨率
 """
 
 import json
@@ -28,7 +32,7 @@ import urllib.parse
 import urllib.request
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
-from calib import calibrate_player, calibrate_player_manual
+from calib import calibrate_player, calibrate_player_manual, normalize_orientation
 
 STATIC_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "static")
 
@@ -46,13 +50,15 @@ _MIME = {
 class AdminApp:
     """把各组件串起来，供 HTTP 处理函数调用。"""
 
-    def __init__(self, cfg, store, recognition, ws_server, save_config_fn, calib=None):
+    def __init__(self, cfg, store, recognition, ws_server, save_config_fn, calib=None,
+                 blacklist=None):
         self.cfg = cfg
         self.store = store
         self.recognition = recognition
         self.ws_server = ws_server
         self.save_config_fn = save_config_fn
         self.calib = calib
+        self.blacklist = blacklist
 
     def _monitor_bases(self):
         """从当前摄像头地址里取出唯一的采集端 monitor 基地址（scheme://host:port）。"""
@@ -97,22 +103,103 @@ class AdminApp:
                 errors[base] = str(e)
         return {"ok": not errors, "fps": fps, "results": results, "errors": errors}
 
+    def set_monitor_resolution(self, width, height):
+        """通知采集端 monitor 修改采集分辨率（POST {base}/api/resolution）。"""
+        try:
+            width = int(width)
+            height = int(height)
+        except (TypeError, ValueError):
+            raise RuntimeError("分辨率宽高必须是整数")
+        if not (160 <= width <= 7680 and 120 <= height <= 4320):
+            raise RuntimeError("分辨率超出范围")
+        bases = self._monitor_bases()
+        if not bases:
+            raise RuntimeError("没有可通知的采集端地址（本地摄像头无法远程改分辨率）")
+        results, errors = {}, {}
+        for base in bases:
+            try:
+                req = urllib.request.Request(
+                    base + "/api/resolution",
+                    data=json.dumps({"width": width, "height": height}).encode("utf-8"),
+                    headers={"Content-Type": "application/json"},
+                    method="POST")
+                with urllib.request.urlopen(req, timeout=5) as resp:
+                    results[base] = json.loads(resp.read().decode("utf-8") or "{}")
+            except Exception as e:  # noqa: BLE001
+                errors[base] = str(e)
+        return {"ok": not errors, "width": width, "height": height,
+                "results": results, "errors": errors}
+
+    def monitor_status(self):
+        """读取采集端 monitor 状态（GET {base}/status）。"""
+        bases = self._monitor_bases()
+        if not bases:
+            return {"ok": False, "results": {},
+                    "errors": {"monitor": "没有可访问的采集端地址"}}
+        results, errors = {}, {}
+        for base in bases:
+            try:
+                with urllib.request.urlopen(base + "/status", timeout=3) as resp:
+                    results[base] = json.loads(resp.read().decode("utf-8") or "[]")
+            except Exception as e:  # noqa: BLE001
+                errors[base] = str(e)
+        return {"ok": not errors, "results": results, "errors": errors}
+
     def status(self):
         st = self.recognition.status()
         st["ws_clients"] = self.ws_server.client_count
         st["ws_client_ids"] = self.ws_server.client_ids
         st["version"] = self.store.version
         st["calibrations"] = self.calib.status() if self.calib is not None else []
+        st["blacklist"] = len(self.blacklist) if self.blacklist is not None else 0
         return st
 
+    def blacklist_data(self):
+        if self.blacklist is None:
+            return {"ids": [], "text": ""}
+        return {"ids": self.blacklist.ids(), "text": self.blacklist.text()}
+
+    def save_blacklist(self, text):
+        if self.blacklist is None:
+            raise RuntimeError("未启用卡名黑名单")
+        if text is None:
+            text = ""
+        ids = self.blacklist.save(str(text))
+        return {"ok": True, "ids": ids, "text": self.blacklist.text()}
+
     def apply_config(self, new_cfg):
+        old_mode = self.cfg.get("mode")
+        old_orient = {
+            f"cam{i+1}": normalize_orientation(cam.get("orientation", "horizontal"))
+            for i, cam in enumerate(self.cfg.get("dual", {}).get("cameras", []))
+        }
         cfg = self.save_config_fn(new_cfg)          # 落盘并返回合并后的配置
+        if self.calib is not None:
+            # 方向变了，旧的网格/单应矩阵不再适用，清掉对应摄像头的校准
+            if old_mode != cfg.get("mode"):
+                self.calib.clear()
+            elif cfg.get("mode") == "dual":
+                for i, cam in enumerate(cfg.get("dual", {}).get("cameras", [])):
+                    cam_id = f"cam{i+1}"
+                    orientation = normalize_orientation(
+                        cam.get("orientation", "horizontal"))
+                    if old_orient.get(cam_id, "horizontal") != orientation:
+                        self.calib.clear(cam_id)
         self.cfg.clear()
         self.cfg.update(cfg)                          # 原地更新，worker 共享引用
         self.recognition.restart()
         return cfg
 
     # ---- 定位/校准 --------------------------------------------------------
+    def _camera_orientation(self, cam_id):
+        """取某路摄像头的画面方向；单摄像头固定为竖向。"""
+        if self.cfg.get("mode") != "dual":
+            return "vertical"
+        for i, cam in enumerate(self.cfg.get("dual", {}).get("cameras", [])):
+            if f"cam{i+1}" == str(cam_id):
+                return normalize_orientation(cam.get("orientation", "horizontal"))
+        return "horizontal"
+
     def calibrate(self, cam_id, rois):
         """
         rois: {player: [x0,y0,x1,y1]}（画面像素）。
@@ -124,10 +211,12 @@ class AdminApp:
         if frame is None:
             raise RuntimeError(f"摄像头 {cam_id} 暂无画面，无法定位")
         mode = self.cfg["mode"]
+        orientation = self._camera_orientation(cam_id)
         results, errors = {}, {}
         for player, roi in rois.items():
             try:
-                pc = calibrate_player(frame, roi, cam_id, str(player), mode)
+                pc = calibrate_player(frame, roi, cam_id, str(player), mode,
+                                      orientation=orientation)
                 self.calib.set(pc)
                 results[str(player)] = pc.status()
             except Exception as e:  # noqa: BLE001
@@ -149,7 +238,8 @@ class AdminApp:
             raise RuntimeError(f"摄像头 {cam_id} 暂无画面，无法定位")
         h, w = frame.shape[:2]
         pc = calibrate_player_manual(corners, cam_id, str(player),
-                                     self.cfg["mode"], (w, h))
+                                     self.cfg["mode"], (w, h),
+                                     orientation=self._camera_orientation(cam_id))
         self.calib.set(pc)
         self.store.rebroadcast()                 # 重新定位后重发战场快照
         return {"ok": True, "result": pc.status()}
@@ -205,8 +295,12 @@ class Handler(BaseHTTPRequestHandler):
                 return self._static("admin.html")
             if path == "/api/config":
                 return self._json(200, self.app.cfg)
+            if path == "/api/blacklist":
+                return self._json(200, self.app.blacklist_data())
             if path == "/api/status":
                 return self._json(200, self.app.status())
+            if path == "/api/monitor_status":
+                return self._json(200, self.app.monitor_status())
             if path == "/api/state":
                 return self._json(200, {"battlefield": self.app.store.snapshot(),
                                         "status": self.app.status()})
@@ -241,6 +335,11 @@ class Handler(BaseHTTPRequestHandler):
             if path == "/api/config":
                 cfg = self.app.apply_config(data)
                 return self._json(200, {"ok": True, "config": cfg})
+            if path == "/api/blacklist":
+                text = data.get("text")
+                if text is None:
+                    text = "\n".join(str(x) for x in data.get("ids", []))
+                return self._json(200, self.app.save_blacklist(text))
             if path == "/api/calibrate":
                 cam_id = str(data.get("cam_id", ""))
                 rois = data.get("rois", {})
@@ -261,6 +360,11 @@ class Handler(BaseHTTPRequestHandler):
                 if "fps" not in data:
                     return self._json(400, {"error": "缺少 fps"})
                 return self._json(200, self.app.set_monitor_fps(data.get("fps")))
+            if path == "/api/monitor_resolution":
+                if "width" not in data or "height" not in data:
+                    return self._json(400, {"error": "缺少 width / height"})
+                return self._json(200, self.app.set_monitor_resolution(
+                    data.get("width"), data.get("height")))
             return self._json(404, {"error": "not found"})
         except Exception as e:  # noqa: BLE001
             return self._json(500, {"error": str(e)})
