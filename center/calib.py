@@ -3,8 +3,10 @@
 calib.py
 定位/校准：用 4 个「二维码角块」样式定位方块建立单应变换，把画面坐标映射到
 「正空间」(0~1)，再在正空间里按布局查出 (玩家, 格子)。
-- 纵向（单摄像头）：移植自 test/regiontest.py（7 行 × 3 列，PARAMS_V）。
-- 横向（双摄像头）：移植自 test/h_regiontest.py（3 行 × 7 列，PARAMS_H）。
+- 纵向：移植自 test/regiontest.py（7 行 × 3 列，PARAMS_V）。
+- 横向：移植自 test/h_regiontest.py（3 行 × 7 列，PARAMS_H）。
+- 双摄像头每路可用 dual.cameras[i].orientation 单独设为 horizontal / vertical；
+  单摄像头仍固定为纵向。
 
 流程：
   1. 管理页手动框选玩家区域 ROI（one per player / per camera）。
@@ -42,7 +44,7 @@ PARAMS_V = {
     "same_col_auto": True,                   # 2 点同列：按 ROI 左右判断往哪边推
 }
 
-# 横向（双摄像头）：移植自 test/h_regiontest.py
+# 横向（双摄像头可选）：移植自 test/h_regiontest.py
 PARAMS_H = {
     "side_min_ratio": 0.04, "side_max_ratio": 0.10,  # 边长占 ROI 宽的比例
     "square_min": 0.75, "square_max": 1.35,
@@ -58,9 +60,23 @@ PARAMS_H = {
 }
 
 
-def params_for(mode):
-    """按摄像头模式取检测参数：dual 用横向参数，其余用纵向参数。"""
-    return PARAMS_H if str(mode) == "dual" else PARAMS_V
+ORIENTATION_H = "horizontal"
+ORIENTATION_V = "vertical"
+
+
+def normalize_orientation(value):
+    """把配置里的方向统一成 horizontal / vertical，缺省为 horizontal。"""
+    v = str(value).strip().lower()
+    if v in ("vertical", "portrait", "v", "纵向", "竖向", "竖"):
+        return ORIENTATION_V
+    return ORIENTATION_H
+
+
+def params_for(mode, orientation=ORIENTATION_H):
+    """按模式与方向取检测参数：横向用 PARAMS_H，纵向用 PARAMS_V。"""
+    if str(mode) == "dual" and normalize_orientation(orientation) == ORIENTATION_H:
+        return PARAMS_H
+    return PARAMS_V
 
 
 def _cv2():
@@ -134,11 +150,16 @@ DUAL = [
 TABLE_SINGLE = {"1": {"rows": GRID_ROWS, "cols": GRID_COLS, "cells": SINGLE_LEFT},
                 "2": {"rows": GRID_ROWS, "cols": GRID_COLS, "cells": SINGLE_RIGHT}}
 TABLE_DUAL = {"rows": 3, "cols": 7, "cells": DUAL}
+# 双摄像头 · 竖向图：等于 player1 的纵向布局 → 7 行 × 3 列。
+# 与横向 DUAL 一样，两路共用同一张绝对布局，不随 player / swap 改变。
+TABLE_DUAL_V = {"rows": GRID_ROWS, "cols": GRID_COLS, "cells": SINGLE_LEFT}
 
 
-def table_for(mode, player):
-    """按模式与玩家取格子表。dual 每路都是一方玩家的横向图，用同一张表。"""
+def table_for(mode, player, orientation=ORIENTATION_H):
+    """按模式、玩家与方向取格子表。dual 两路共用横向或竖向表。"""
     if str(mode) == "dual":
+        if normalize_orientation(orientation) == ORIENTATION_V:
+            return TABLE_DUAL_V
         return TABLE_DUAL
     return TABLE_SINGLE.get(str(player), TABLE_SINGLE["1"])
 
@@ -441,16 +462,18 @@ CORNERS = ("tl", "tr", "br", "bl")
 class PlayerCalib:
     """某摄像头 · 某玩家的校准结果：单应矩阵 + 正空间格子表。"""
 
-    def __init__(self, cam_id, player, mode, roi, corners, H, inv_H, frame_size):
+    def __init__(self, cam_id, player, mode, roi, corners, H, inv_H, frame_size,
+                 orientation=ORIENTATION_H):
         self.cam_id = cam_id
         self.player = str(player)
         self.mode = mode
+        self.orientation = normalize_orientation(orientation)
         self.roi = tuple(int(v) for v in roi)
         self.corners = {c: (float(corners[c][0]), float(corners[c][1])) for c in CORNERS}
         self.H = H
         self.inv_H = inv_H
         self.frame_size = tuple(int(v) for v in frame_size)   # (W, H)
-        self.regions = build_regions(table_for(mode, self.player))
+        self.regions = build_regions(table_for(mode, self.player, self.orientation))
 
     def map_point(self, px, py):
         """画面像素坐标 → (zone, index)；不在任何格子内返回 None。"""
@@ -490,6 +513,7 @@ class PlayerCalib:
     def status(self):
         return {
             "cam_id": self.cam_id, "player": self.player, "mode": self.mode,
+            "orientation": self.orientation,
             "roi": list(self.roi),
             "corners": {c: [int(round(self.corners[c][0])), int(round(self.corners[c][1]))]
                         for c in CORNERS},
@@ -497,15 +521,17 @@ class PlayerCalib:
         }
 
 
-def calibrate_player(img_bgr, roi, cam_id, player, mode):
+def calibrate_player(img_bgr, roi, cam_id, player, mode, orientation=ORIENTATION_H):
     """
     在 ROI 内检测定位方块并建立校准。
+    orientation：dual 每路的画面方向（horizontal / vertical），单摄像头忽略。
     成功返回 PlayerCalib；失败抛 ValueError（消息给管理页显示）。
     """
     cv2 = _cv2()
     roi = [int(v) for v in roi]
     h, w = img_bgr.shape[:2]
-    params = params_for(mode)          # dual → 横向参数（h_regiontest），其余 → 纵向
+    orientation = normalize_orientation(orientation)
+    params = params_for(mode, orientation)
     marks = find_markers_in_rect(img_bgr, roi, params)
     corners, real_count, detail = assign_corners(marks, roi_x0=roi[0], roi_x1=roi[2],
                                                  params=params)
@@ -513,10 +539,12 @@ def calibrate_player(img_bgr, roi, cam_id, player, mode):
         raise ValueError("未定位到 4 个定位方块：检出 %d 个，%s"
                          % (len(marks), detail.get("reason") or "无法分配 4 角"))
     H, inv_H = compute_homography(corners)
-    return PlayerCalib(cam_id, player, mode, roi, corners, H, inv_H, (w, h))
+    return PlayerCalib(cam_id, player, mode, roi, corners, H, inv_H, (w, h),
+                       orientation)
 
 
-def calibrate_player_manual(corners_pixels, cam_id, player, mode, frame_size):
+def calibrate_player_manual(corners_pixels, cam_id, player, mode, frame_size,
+                            orientation=ORIENTATION_H):
     """
     手动校准：直接使用用户框选的 4 个定位标识位置（画面像素），不再做自动检测。
 
@@ -526,6 +554,7 @@ def calibrate_player_manual(corners_pixels, cam_id, player, mode, frame_size):
     pts = [(float(p[0]), float(p[1])) for p in corners_pixels]
     if len(pts) != 4:
         raise ValueError("需要 4 个定位标识位置（tl→tr→br→bl 顺时针）")
+    orientation = normalize_orientation(orientation)
 
     corners = {c: pts[i] for i, c in enumerate(CORNERS)}
     tl, tr, br, bl = corners["tl"], corners["tr"], corners["br"], corners["bl"]
@@ -541,7 +570,8 @@ def calibrate_player_manual(corners_pixels, cam_id, player, mode, frame_size):
     xs = [p[0] for p in pts]
     ys = [p[1] for p in pts]
     roi = (int(min(xs)), int(min(ys)), int(max(xs)), int(max(ys)))
-    return PlayerCalib(cam_id, player, mode, roi, corners, H, inv_H, frame_size)
+    return PlayerCalib(cam_id, player, mode, roi, corners, H, inv_H, frame_size,
+                       orientation)
 
 
 # ============================================================

@@ -48,8 +48,10 @@ async function loadConfig() {
   const cams = cfg.dual.cameras || [];
   set("d_url1", cams[0] ? cams[0].url : "");
   set("d_p1", cams[0] ? cams[0].player : 1);
+  set("d_o1", cams[0] ? (cams[0].orientation || "horizontal") : "horizontal");
   set("d_url2", cams[1] ? cams[1].url : "");
   set("d_p2", cams[1] ? cams[1].player : 2);
+  set("d_o2", cams[1] ? (cams[1].orientation || "horizontal") : "horizontal");
   set("front_conf", cfg.detect.front_conf);
   set("back_conf", cfg.detect.back_conf);
   set("name_thr", cfg.detect.name_thr);
@@ -79,8 +81,16 @@ function collect() {
   cfg.dual = cfg.dual || {};
   cfg.dual.swap = f.d_swap.checked;
   cfg.dual.cameras = [
-    { url: f.d_url1.value.trim(), player: parseInt(f.d_p1.value, 10) },
-    { url: f.d_url2.value.trim(), player: parseInt(f.d_p2.value, 10) },
+    {
+      url: f.d_url1.value.trim(),
+      player: parseInt(f.d_p1.value, 10),
+      orientation: f.d_o1.value,
+    },
+    {
+      url: f.d_url2.value.trim(),
+      player: parseInt(f.d_p2.value, 10),
+      orientation: f.d_o2.value,
+    },
   ];
   cfg.detect = cfg.detect || {};
   cfg.detect.front_conf = parseFloat(f.front_conf.value);
@@ -118,6 +128,36 @@ form.addEventListener("submit", async (e) => {
   }
 });
 
+const blacklistText = document.getElementById("blacklist-text");
+const blacklistMsg = document.getElementById("blacklist-msg");
+
+async function loadBlacklist() {
+  try {
+    const data = await (await fetch("/api/blacklist")).json();
+    blacklistText.value = data.text || "";
+    blacklistMsg.textContent = `当前 ${data.ids ? data.ids.length : 0} 个`;
+  } catch (err) {
+    blacklistMsg.textContent = "读取失败：" + err.message;
+  }
+}
+
+document.getElementById("blacklist-save").addEventListener("click", async () => {
+  blacklistMsg.textContent = "保存中…";
+  try {
+    const r = await fetch("/api/blacklist", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ text: blacklistText.value }),
+    });
+    const data = await r.json();
+    if (!r.ok) throw new Error(data.error || r.statusText);
+    blacklistText.value = data.text || "";
+    blacklistMsg.textContent = `已保存（${data.ids.length} 个）`;
+  } catch (err) {
+    blacklistMsg.textContent = "保存失败：" + err.message;
+  }
+});
+
 async function poll() {
   try {
     const st = await (await fetch("/api/status")).json();
@@ -135,12 +175,15 @@ async function poll() {
 }
 
 loadConfig().then(poll);
+loadBlacklist();
 setInterval(poll, 1500);
 
 /* ---------------- 采集端 monitor ---------------- */
 
 const monitorFpsEl = document.getElementById("monitor-fps");
 const monitorFpsMsg = document.getElementById("monitor-fps-msg");
+const monitorResEl = document.getElementById("monitor-res");
+const monitorResMsg = document.getElementById("monitor-res-msg");
 
 document.getElementById("monitor-fps-send").addEventListener("click", async () => {
   const fps = parseInt(monitorFpsEl.value, 10);
@@ -167,6 +210,71 @@ document.getElementById("monitor-fps-send").addEventListener("click", async () =
   }
 });
 
+async function loadMonitorStatus() {
+  try {
+    const r = await fetch("/api/monitor_status");
+    const data = await r.json();
+    const lists = Object.values(data.results || {});
+    const cam = (lists[0] || [])[0];
+    if (!cam) {
+      const errs = Object.values(data.errors || {}).join("；");
+      if (errs) monitorResMsg.textContent = "读取失败：" + errs;
+      return;
+    }
+    if (!cam.width || !cam.height) {
+      monitorResMsg.textContent = "采集端未返回分辨率";
+      return;
+    }
+    const value = `${cam.width}x${cam.height}`;
+    if (![...monitorResEl.options].some((o) => o.value === value)) {
+      const opt = document.createElement("option");
+      opt.value = value;
+      opt.textContent = `${cam.width}×${cam.height}（当前）`;
+      monitorResEl.appendChild(opt);
+    }
+    monitorResEl.value = value;
+    if (cam.frame_width && cam.frame_height) {
+      monitorResMsg.textContent = `当前 ${cam.width}×${cam.height}，实际 ${cam.frame_width}×${cam.frame_height}`;
+    } else {
+      monitorResMsg.textContent = `当前 ${cam.width}×${cam.height}`;
+    }
+  } catch (err) {
+    monitorResMsg.textContent = "读取失败：" + err.message;
+  }
+}
+
+document.getElementById("monitor-res-send").addEventListener("click", async () => {
+  const [width, height] = monitorResEl.value.split("x").map(Number);
+  if (!(width > 0 && height > 0)) {
+    monitorResMsg.textContent = "分辨率无效";
+    return;
+  }
+  monitorResMsg.textContent = "下发中…";
+  try {
+    const r = await fetch("/api/monitor_resolution", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ width, height }),
+    });
+    const data = await r.json();
+    if (!r.ok) throw new Error(data.error || r.statusText);
+    if (data.ok) {
+      monitorResMsg.textContent =
+        `已下发 ${data.width}×${data.height} → ${Object.keys(data.results).join(", ")}`;
+      setTimeout(loadMonitorStatus, 1500);
+    } else {
+      const errs = Object.entries(data.errors || {}).map(([k, v]) => `${k}: ${v}`);
+      const oks = Object.keys(data.results || {});
+      monitorResMsg.textContent =
+        `部分成功${oks.length ? "（" + oks.join(", ") + "）" : ""}；失败：${errs.join("；")}`;
+    }
+  } catch (err) {
+    monitorResMsg.textContent = "失败：" + err.message;
+  }
+});
+
+loadMonitorStatus();
+
 /* ---------------- 定位 / 校准 ---------------- */
 
 const calibPreviews = document.getElementById("calib-previews");
@@ -183,8 +291,8 @@ function isManual() { return calibModeEl.value === "manual"; }
 
 function updateCalibHint() {
   calibHint.textContent = isManual()
-    ? "手动标记：在每个玩家区域按【左上 → 右上 → 右下 → 左下】顺时针依次框选 4 个定位标识（小方格）。单摄像头共 8 个（P1 4 + P2 4），双摄像头每路 4 个。"
-    : "自动检测：在每路画面上拖拽框选玩家区域（单摄像头需框两次：player1、player2；双摄像头每路框一次），再由 center 自动找 4 个定位方块。";
+    ? "手动标记：在每个玩家区域按【左上 → 右上 → 右下 → 左下】顺时针依次框选 4 个定位标识（小方格）。单摄像头共 8 个（P1 4 + P2 4），双摄像头每路 4 个。画面方向由上方双摄像头配置决定（横向 3×7 / 竖向 7×3）。"
+    : "自动检测：在每路画面上拖拽框选玩家区域（单摄像头需框两次：player1、player2；双摄像头每路框一次），再由 center 自动找 4 个定位方块。画面方向由上方双摄像头配置决定（横向 3×7 / 竖向 7×3）。";
 }
 
 // 计算需要框选的「摄像头 → 玩家」目标（与后端 worker 的玩家归属一致）
@@ -196,16 +304,22 @@ function calibTargets(cfg) {
     for (let i = 0; i < cams.length; i++) {
       let p = cams[i].player || (i + 1);
       if (swap) p = String(p) === "1" ? 2 : 1;
-      out.push({ cam_id: `cam${i + 1}`, players: [String(p)] });
+      out.push({
+        cam_id: `cam${i + 1}`,
+        players: [String(p)],
+        orientation: cams[i].orientation || "horizontal",
+      });
     }
-    return out.length ? out : [{ cam_id: "cam1", players: ["1"] }];
+    return out.length
+      ? out
+      : [{ cam_id: "cam1", players: ["1"], orientation: "horizontal" }];
   }
-  return [{ cam_id: "single", players: ["1", "2"] }];
+  return [{ cam_id: "single", players: ["1", "2"], orientation: "vertical" }];
 }
 
 function ensureCalibUI(cfg) {
   const targets = calibTargets(cfg);
-  const key = JSON.stringify(targets.map((t) => [t.cam_id, t.players]));
+  const key = JSON.stringify(targets.map((t) => [t.cam_id, t.players, t.orientation]));
   if (key === calib.key) return;   // 结构未变则不重建，保留已有框选
   calib.key = key;
   calib.targets = targets;
@@ -224,7 +338,8 @@ function ensureCalibUI(cfg) {
     wrap.append(img, canvas);
     const cap = document.createElement("div");
     cap.className = "cap";
-    cap.textContent = `${t.cam_id} → 玩家 ${t.players.join(", ")}（需框选 ${t.players.length} 个区域）`;
+    const grid = t.orientation === "vertical" ? "竖向 7×3" : "横向 3×7";
+    cap.textContent = `${t.cam_id} → 玩家 ${t.players.join(", ")}（${grid}，需框选 ${t.players.length} 个区域）`;
     box.append(wrap, cap);
     calibPreviews.append(box);
     t.img = img;

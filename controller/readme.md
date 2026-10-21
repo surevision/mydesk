@@ -29,8 +29,10 @@ python server.py          # 默认监听 0.0.0.0:4582
 python server.py 4582     # 指定端口
 ```
 
-用 Pad 浏览器打开 `http://<中心端IP>:4582/`。页面右上角「配置」可设置 center 的 ip/端口，
-保存后自动重连。
+用 Pad 浏览器打开 `http://<中心端IP>:4582/`。页面右上角「配置」可设置 center 的 ip/端口、
+骰子/硬币是否指定玩家、静音复选框，以及导入卡组、交换显示位置、显示/隐藏定位等快捷操作。
+勾选「骰子、硬币指定玩家」后，点击骰子/硬币先选择“全部 / player1 / player2”；
+不勾选则直接按“全部”投掷并显示结果。
 
 ### 目录
 
@@ -57,7 +59,7 @@ controller/
 | 方法 | 路径          | 说明 |
 |------|---------------|------|
 | GET  | `/api/config` | 读取 center 的 ip/端口配置 |
-| POST | `/api/config` | 保存配置，body: `{ "center_ip": "...", "center_port": 4560 }` |
+| POST | `/api/config` | 保存配置，body: `{ "center_ip": "...", "center_port": 4560, "dice_coin_choose_player": false }` |
 | POST | `/api/ydk`    | 上传并解析 ydk。multipart 字段 `player` + `file`，或 JSON `{player, content}` |
 
 `/api/ydk` 返回：`{ ok, player, main: [...], extra: [...], side: [...], ids: [...] }`
@@ -78,7 +80,18 @@ controller/
 | `on_play_se`            | `se_filename` |
 | `on_card_relate_effect` | `from_*`, `to_*`（同上） |
 | `on_import_ydk`         | `player`, `ids`, `main`, `extra`, `side` |
-| `on_dice`               | `player`, `value`（1-6，display 待支持） |
+| `on_dice`               | `player`（0=全部）, `value`（1-6） |
+| `on_coin`               | `player`（0=全部）, `value`（1=正面） |
+| `on_guide`              | `show` |
+| `on_mute`               | `mute`（true=静音） |
+| `on_game_reset`         | 无（center 清空战场并广播空战场给 display） |
+| `on_game_start`         | 无（center 广播给所有 controller 和 display） |
+
+上传 ydk 成功后立即发送 `on_import_ydk`，WebSocket 重连成功后也会补发已上传卡组；center 用这些 id 限制卡名识别范围。
+
+进入页面默认只显示中央大号「决斗」按钮，点击后隐藏按钮、显示正常界面并发送 `on_game_start`；center 广播给所有 controller 和 display，controller 收到后不处理，display 端接口预留。
+
+顶部「重新开始」按钮会先弹确认，确认后发送 `on_game_reset`；center 把战场复位为初始状态，并广播重置后的 `on_battlefield_change` 空战场，同时转发带 `battlefield` 字段的 `on_game_reset` 给其它 controller 和 display。controller 收到 `on_game_reset` 后重新显示「决斗」按钮并隐藏正常操作界面。
 
 ### battlefield 数据结构
 

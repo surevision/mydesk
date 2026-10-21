@@ -382,19 +382,69 @@ export function openCardActionPanel(info, cb, sel = {}) {
 // ---------------------------------------------------------------------------
 // 各控制面板
 // ---------------------------------------------------------------------------
-export function openConfigPanel(current, onSave) {
+export function openConfigPanel(current, onSave, actions = {}) {
   const ipIn = textInput(current.center_ip || "127.0.0.1");
   const portIn = numberInput(current.center_port || 4560, { min: 1, max: 65535 });
-  openModal({
-    title: "连接配置",
-    badge: "// CENTER",
+  const chooseIn = el("input", { type: "checkbox" });
+  chooseIn.checked = !!current.dice_coin_choose_player;
+
+  let muted = !!current.muted;
+  const muteIn = el("input", { class: "cy-checkbox", type: "checkbox" });
+  muteIn.checked = muted;
+  muteIn.addEventListener("change", () => {
+    muted = muteIn.checked;
+    if (actions.onMute) actions.onMute(muted);
+  });
+
+  const quick = el("div", { class: "quick-grid" }, [
+    el("button", {
+      class: "cy-btn cy-btn--sm", text: "导入卡组 player1", type: "button",
+      onclick: () => actions.onImport && actions.onImport(1),
+    }),
+    el("button", {
+      class: "cy-btn cy-btn--sm", text: "导入卡组 player2", type: "button",
+      onclick: () => actions.onImport && actions.onImport(2),
+    }),
+    el("button", {
+      class: "cy-btn cy-btn--sm", text: "交换位置", type: "button",
+      onclick: () => actions.onSwap && actions.onSwap(),
+    }),
+    el("button", {
+      class: "cy-btn cy-btn--sm", text: "显示定位", type: "button",
+      onclick: () => actions.onGuide && actions.onGuide(true),
+    }),
+    el("button", {
+      class: "cy-btn cy-btn--sm cy-btn--ghost", text: "隐藏定位", type: "button",
+      onclick: () => actions.onGuide && actions.onGuide(false),
+    }),
+  ]);
+
+  const modal = openModal({
+    title: "配置",
+    badge: "// SETUP",
+    width: "min(480px,94vw)",
     body: el("div", { class: "form" }, [
       fieldRow("center IP", ipIn),
       fieldRow("center 端口", portIn),
       el("p", { class: "hint", text: "留空或填 127.0.0.1 / localhost 时，自动使用当前打开本页的地址。" }),
+      fieldRow("骰子、硬币指定玩家", chooseIn),
+      el("p", { class: "hint", text: "勾选后先选择 player1 / player2；不勾选则直接按“全部”投掷并显示结果。" }),
+      fieldRow("静音", muteIn),
+      el("p", { class: "hint", text: "勾选后 display 端立即静音；取消勾选恢复播放。" }),
+      el("div", { class: "coord-title", text: "快捷操作" }),
+      quick,
     ]),
     buttons: [
-      { label: "保存并重连", class: "cy-btn--exec", onClick: () => { onSave({ center_ip: ipIn.value, center_port: Number(portIn.value) || 4560 }); closeModal(); } },
+      {
+        label: "保存", class: "cy-btn--exec", onClick: () => {
+          onSave({
+            center_ip: ipIn.value,
+            center_port: Number(portIn.value) || 4560,
+            dice_coin_choose_player: chooseIn.checked,
+          });
+          modal.close();
+        },
+      },
     ],
   });
 }
@@ -618,8 +668,18 @@ export function openSePanel(onApply) {
   });
 }
 
+const ROLL_TARGETS = [
+  { value: 0, label: "全部" },
+  { value: 1, label: "player1" },
+  { value: 2, label: "player2" },
+];
+
+export function rollTargetLabel(player) {
+  return player ? `player${player}` : "全部";
+}
+
 // 掷骰 / 硬币结果弹窗（大号结果，等待用户确认）
-function openRollResultPanel(title, badge, main, sub) {
+export function openRollResultPanel(title, badge, main, sub) {
   const body = el("div", { class: "roll-result" }, [
     el("div", { class: "roll-result__main", text: main }),
     el("div", { class: "roll-result__sub", text: sub }),
@@ -633,49 +693,66 @@ function openRollResultPanel(title, badge, main, sub) {
   });
 }
 
+// 重新开始确认弹窗
+export function openResetPanel(onConfirm) {
+  const modal = openModal({
+    title: "重新开始",
+    badge: "// RESET",
+    width: "min(360px,90vw)",
+    body: el("div", { class: "form" }, [
+      el("p", { class: "hint", text: "将清空双方战场并恢复初始状态，是否继续？" }),
+    ]),
+    buttons: [
+      { label: "取消", onClick: () => modal.close() },
+      {
+        label: "重新开始", class: "cy-btn--danger",
+        onClick: () => { modal.close(); onConfirm(); },
+      },
+    ],
+  });
+}
+
+function rollTargetGrid(onPick) {
+  return el("div", { class: "quick-grid" }, ROLL_TARGETS.map((t) =>
+    el("button", {
+      class: "cy-btn", text: t.label, type: "button",
+      onclick: () => { closeModal(); onPick(t.value); },
+    })
+  ));
+}
+
 export function openDicePanel(onApply) {
-  const player = select([{ value: 0, label: "公用" }, { value: 1, label: "P1" }, { value: 2, label: "P2" }], 0);
   openModal({
     title: "掷骰子（1-6）", badge: "// DICE",
-    body: el("div", { class: "form" }, [fieldRow("所属", player)]),
-    buttons: [{
-      label: "ROLL", class: "cy-btn--exec", onClick: () => {
-        const p = Number(player.value);
-        const value = 1 + Math.floor(Math.random() * 6);
-        onApply({ player: p, value });
-        closeModal();
-        openRollResultPanel("骰子结果", "// DICE", String(value),
-          `点数 ${value} · ${p ? `P${p}` : "公用"}`);
-      },
-    }],
+    body: rollTargetGrid((player) => {
+      const value = 1 + Math.floor(Math.random() * 6);
+      onApply({ player, value });
+      openRollResultPanel("骰子结果", "// DICE", String(value),
+        `点数 ${value} · ${rollTargetLabel(player)}`);
+    }),
   });
 }
 
 export function openCoinPanel(onApply) {
-  const player = select([{ value: 0, label: "公用" }, { value: 1, label: "P1" }, { value: 2, label: "P2" }], 0);
   openModal({
     title: "投硬币", badge: "// COIN",
-    body: el("div", { class: "form" }, [
-      fieldRow("所属", player),
+    body: el("div", {}, [
       el("p", { class: "hint", text: "正面 = heads，反面 = tails" }),
-    ]),
-    buttons: [{
-      label: "TOSS", class: "cy-btn--exec", onClick: () => {
-        const p = Number(player.value);
+      rollTargetGrid((player) => {
         const value = Math.random() < 0.5 ? 1 : 0; // 1=正面，0=反面
-        onApply({ player: p, value });
-        closeModal();
+        onApply({ player, value });
         openRollResultPanel("硬币结果", "// COIN", value === 1 ? "正" : "反",
-          `${value === 1 ? "正面 (heads)" : "反面 (tails)"} · ${p ? `P${p}` : "公用"}`);
-      },
-    }],
+          `${value === 1 ? "正面 (heads)" : "反面 (tails)"} · ${rollTargetLabel(player)}`);
+      }),
+    ]),
   });
 }
 
 export function openImportPanel(player, onPick) {
   const fileIn = el("input", { type: "file", accept: ".ydk,.txt", class: "cy-input" });
-  openModal({
-    title: `导入卡组 · P${player}`, badge: "// YDK",
+  const modal = openModal({
+    title: `导入卡组 · player${player}`, badge: "// YDK",
+    stack: true,
     body: el("div", { class: "form" }, [
       el("p", { class: "hint", text: "选择该玩家的 .ydk 文件，解析出卡号列表后发送给 center。" }),
       fieldRow("ydk 文件", fileIn),
@@ -685,7 +762,7 @@ export function openImportPanel(player, onPick) {
         const f = fileIn.files && fileIn.files[0];
         if (!f) return;
         onPick(f);
-        closeModal();
+        modal.close();
       },
     }],
   });

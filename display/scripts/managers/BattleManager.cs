@@ -6,6 +6,8 @@ public partial class BattleManager : Node
 {
     private static BattleManager instance = null;
 
+    public string currentFieldStr = "";
+
     public MainUI mainUI = null;
 
     public static BattleManager getInstance()
@@ -30,6 +32,7 @@ public partial class BattleManager : Node
 
     public void showField(string battlefield)
     {
+        currentFieldStr = battlefield;
         if (mainUI == null)
         {
             GD.Print("UI未就绪");
@@ -50,7 +53,7 @@ public partial class BattleManager : Node
             return;
         }
         GD.Print("set new lp ", player, " ", lp);
-        mainUI.setLp(player, lp);
+        mainUI.setLp(player, lp, 1);
     }
 
     public void showDice(int player, int val)

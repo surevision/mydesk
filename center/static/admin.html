@@ -1,4 +1,4 @@
-<!doctype html>
+﻿<!doctype html>
 <html lang="zh-CN">
 <head>
   <meta charset="utf-8">
@@ -51,11 +51,23 @@
             <label>对应玩家
               <select name="d_p1"><option value="1">player1</option><option value="2">player2</option></select>
             </label>
+            <label>画面方向
+              <select name="d_o1">
+                <option value="horizontal">横向（3×7）</option>
+                <option value="vertical">竖向（7×3）</option>
+              </select>
+            </label>
           </div>
           <div class="row">
             <label>摄像头2 视频源<input type="text" name="d_url2"></label>
             <label>对应玩家
               <select name="d_p2"><option value="1">player1</option><option value="2">player2</option></select>
+            </label>
+            <label>画面方向
+              <select name="d_o2">
+                <option value="horizontal">横向（3×7）</option>
+                <option value="vertical">竖向（7×3）</option>
+              </select>
             </label>
           </div>
         </fieldset>
@@ -63,17 +75,17 @@
         <fieldset>
           <legend>识别参数</legend>
           <div class="row">
-            <label>正面置信度<input type="number" step="0.05" min="0" max="1" name="front_conf"></label>
-            <label>卡背置信度<input type="number" step="0.05" min="0" max="1" name="back_conf"></label>
-            <label>卡名阈值<input type="number" step="0.01" min="0" max="1" name="name_thr"></label>
+            <label>正面置信度<input type="number" step="0.001" min="0" max="1" name="front_conf"></label>
+            <label>卡背置信度<input type="number" step="0.001" min="0" max="1" name="back_conf"></label>
+            <label>卡名阈值<input type="number" step="0.001" min="0" max="1" name="name_thr"></label>
           </div>
           <div class="row">
-            <label>识别间隔(秒)<input type="number" step="0.05" min="0.05" name="interval"></label>
+            <label>识别间隔(秒)<input type="number" step="0.001" min="0.05" name="interval"></label>
             <label>最小边长(px)<input type="number" step="1" min="1" name="min_side"></label>
           </div>
           <div class="row">
             <label>推理设备<input type="text" name="device" placeholder="0=GPU，cpu=CPU"></label>
-            <label>卡名缓存(秒)<input type="number" step="0.5" min="0" name="name_cache_ttl"></label>
+            <label>卡名缓存(秒)<input type="number" step="0.001" min="0" name="name_cache_ttl"></label>
             <label class="chk"><input type="checkbox" name="track"> OBB 跟踪</label>
           </div>
         </fieldset>
@@ -98,24 +110,44 @@
     </section>
 
     <section class="panel">
+      <h2>卡名黑名单 <small>（这些 card_id 不按卡面处理）</small></h2>
+      <p class="hint">一行一个 card_id，支持 <code>#</code> 注释。保存后立即生效，无需重启识别。</p>
+      <textarea id="blacklist-text" rows="8" spellcheck="false"></textarea>
+      <div class="actions">
+        <button type="button" id="blacklist-save">保存黑名单</button>
+        <span id="blacklist-msg"></span>
+      </div>
+    </section>
+
+    <section class="panel">
       <h2>视频预览 <small>（叠加框为识别到的卡牌；定位完成后再显示战场网格）</small></h2>
       <div id="previews" class="previews"></div>
     </section>
 
     <section class="panel">
       <h2>采集端 monitor</h2>
-      <p class="hint">采集端性能不足时，降低采集帧率以减小负载与带宽。会通知当前配置里的采集端改帧率（并写回其 config.json）。</p>
+      <p class="hint">会通知当前配置里的采集端修改帧率/分辨率，并写回其 config.json；修改分辨率后采集端会重新打开摄像头。</p>
       <div class="row">
         <label>采集帧率(fps)
           <input type="number" id="monitor-fps" min="1" max="60" step="1" value="5">
         </label>
-        <button type="button" id="monitor-fps-send">下发到采集端</button>
+        <button type="button" id="monitor-fps-send">下发帧率</button>
         <span id="monitor-fps-msg"></span>
+      </div>
+      <div class="row">
+        <label>采集分辨率
+          <select id="monitor-res">
+            <option value="1280x720">1280×720 (720p)</option>
+            <option value="1920x1080" selected>1920×1080 (1080p)</option>
+          </select>
+        </label>
+        <button type="button" id="monitor-res-send">下发分辨率</button>
+        <span id="monitor-res-msg"></span>
       </div>
     </section>
 
     <section class="panel">
-      <h2>定位 / 校准 <small>（框选玩家区域 → 定位方块 → 7×3 网格）</small></h2>
+      <h2>定位 / 校准 <small>（框选玩家区域 → 定位方块 → 横向 3×7 / 竖向 7×3 网格）</small></h2>
       <div class="row">
         <label>定位方式
           <select id="calib-mode">
@@ -144,3 +176,4 @@
   <script src="admin.js"></script>
 </body>
 </html>
+

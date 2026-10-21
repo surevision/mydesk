@@ -197,6 +197,7 @@ body { overflow: hidden; }
 /* ---- 弹窗表单 ---- */
 .form { display: flex; flex-direction: column; gap: 8px; }
 .form-row { display: flex; align-items: center; gap: 10px; }
+.cy-checkbox { width: 16px; height: 16px; accent-color: var(--cy-cyan); cursor: pointer; }
 .form-label { flex: 0 0 72px; font-family: var(--cy-mono); font-size: 12px; color: var(--cy-dim); }
 .form-row > .cy-input, .form-row > div, .form-row > div > .cy-input { flex: 1; }
 .form-row > div { min-width: 0; }
@@ -292,6 +293,23 @@ body { overflow: hidden; }
 .card-thumb.is-missing { border-style: dashed; }
 .card-thumb.is-missing .card-thumb__img { display: none; }
 .card-thumb.is-missing .card-thumb__ph { display: grid; }
+
+/* ---- 决斗开场 ---- */
+.duel-gate {
+  position: fixed; inset: 0; z-index: 150;
+  display: flex; align-items: center; justify-content: center;
+  background: radial-gradient(circle at 50% 45%, rgba(42,212,255,.12), transparent 55%), #05070d;
+}
+.duel-gate.hidden { display: none; }
+.duel-btn {
+  font-family: var(--cy-disp);
+  font-size: clamp(40px, 12vw, 120px);
+  letter-spacing: .35em;
+  padding: .25em .5em .25em .75em;
+  text-shadow: 0 0 18px rgba(255,60,168,.75);
+  box-shadow: 0 0 30px rgba(255,60,168,.35), inset 0 0 24px rgba(255,60,168,.18);
+}
+.duel-btn:hover { box-shadow: 0 0 44px rgba(255,60,168,.6), inset 0 0 28px rgba(255,60,168,.25); }
 
 /* ---- Toast ---- */
 .toast-root {

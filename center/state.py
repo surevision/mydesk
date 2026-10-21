@@ -70,6 +70,14 @@ class BattlefieldStore:
         return self._version
 
     # ---- 写入 -------------------------------------------------------------
+    def reset(self, emit=True):
+        with self._lock:
+            self._bf = empty_battlefield()
+            self._source.clear()
+            self._bump()
+        if emit:
+            self._emit("battlefield")
+
     def set_from_controller(self, bf):
         """整体替换战场；发生变化的格子标记为人工设置。"""
         with self._lock:

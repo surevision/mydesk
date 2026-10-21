@@ -11,12 +11,14 @@ center 端只需 cv2.VideoCapture("http://<本机IP>:<port>/video/<idx>")，不�
   GET /video           等价 /video/0（兼容单路）
   GET /snapshot/<idx>  单帧 JPEG（浏览器调试）
   GET /status          各路状态 JSON
+  POST /api/fps        改目标帧率 {fps, idx?}
+  POST /api/resolution 改采集分辨率 {width, height, idx?}（重开摄像头）
 
 运行：
   python monitor.py                    # 读取同目录 config.json
   python monitor.py --port 8081        # 覆盖端口
   python monitor.py --cams 0,1         # 覆盖摄像头索引（顺序即 /video/<idx>）
-  python monitor.py --width 1280 --height 720 --quality 70
+  python monitor.py --width 1920 --height 1080 --quality 70
 
 依赖：opencv-python（见 requirements.txt）
 
@@ -101,9 +103,12 @@ class CameraStream(threading.Thread):
         self.fps = int(spec.get("fps", 5))
         self.quality = int(quality)
         self._stop = threading.Event()
+        self._reopen = threading.Event()
         self._lock = threading.Lock()
         self._jpeg = None
-        self._seq = 0            # 帧序号（每次新帧 +1，供流端判断是否有新画面）
+        self._seq = 0            # 帧序号：每编码一帧 +1，客户端据此判断是否有新画面
+        self.frame_width = 0
+        self.frame_height = 0
         self.connected = False
         self.error = ""
         self.fps_real = 0.0
@@ -117,6 +122,18 @@ class CameraStream(threading.Thread):
         if fps != self.fps:
             print(f"[monitor] 摄像头 {self.idx} 目标帧率 {self.fps} → {fps} fps")
         self.fps = fps
+
+    def set_resolution(self, width, height):
+        """运行时修改采集分辨率；标记重开摄像头，下一轮按新尺寸打开。"""
+        width = max(1, int(width))
+        height = max(1, int(height))
+        if width == self.width and height == self.height:
+            return False
+        print(f"[monitor] 摄像头 {self.idx} 分辨率 {self.width}x{self.height} -> {width}x{height}")
+        self.width = width
+        self.height = height
+        self._reopen.set()
+        return True
 
     def latest(self):
         with self._lock:
@@ -154,6 +171,12 @@ class CameraStream(threading.Thread):
         t0 = time.time()
         next_t = 0.0
         while not self._stop.is_set():
+            if self._reopen.is_set():
+                self._reopen.clear()
+                if cap is not None:
+                    cap.release()
+                    cap = None
+                continue
             if cap is None:
                 cap = self._open(cv2)
                 if cap is None:
@@ -175,8 +198,10 @@ class CameraStream(threading.Thread):
                 self.error = "读帧失败，重连中"
                 time.sleep(0.3)
                 continue
+            self.frame_width = int(frame.shape[1])
+            self.frame_height = int(frame.shape[0])
             now = time.time()
-            # 限帧：只在到达目标间隔时编码/推送，多余帧直接丢弃（降负载/带宽）
+            # 降帧：只在到达目标间隔时编码/发送，其他帧直接丢弃，降低网络/编码压力
             if now < next_t:
                 continue
             next_t = now + 1.0 / max(1, self.fps)
@@ -197,6 +222,8 @@ class CameraStream(threading.Thread):
 
     def status(self):
         return {"idx": self.idx, "index": self.index,
+                "width": self.width, "height": self.height,
+                "frame_width": self.frame_width, "frame_height": self.frame_height,
                 "connected": self.connected, "fps": round(self.fps_real, 1),
                 "target_fps": self.fps, "error": self.error}
 
@@ -222,6 +249,24 @@ class MonitorApp:
             s.set_fps(fps)
             if i < len(cams):
                 cams[i]["fps"] = fps
+            applied.append(s.idx)
+        if self.cfg is not None and applied:
+            save_config(self.cfg)
+        return applied
+
+    def set_resolution(self, width, height, idx=None):
+        """改一路（idx）或全部摄像头的采集分辨率，并写入 config.json。"""
+        width = max(1, int(width))
+        height = max(1, int(height))
+        applied = []
+        cams = list(self.cfg.get("cameras", [])) if self.cfg else []
+        for i, s in enumerate(self.streams):
+            if idx is not None and s.idx != idx:
+                continue
+            s.set_resolution(width, height)
+            if i < len(cams):
+                cams[i]["width"] = width
+                cams[i]["height"] = height
             applied.append(s.idx)
         if self.cfg is not None and applied:
             save_config(self.cfg)
@@ -294,6 +339,21 @@ class Handler(BaseHTTPRequestHandler):
             body = json.dumps({"ok": True, "fps": fps, "applied": applied},
                               ensure_ascii=False)
             return self._send(200, body, "application/json; charset=utf-8")
+        if path == "/api/resolution":
+            try:
+                width = int(data.get("width"))
+                height = int(data.get("height"))
+            except (TypeError, ValueError):
+                return self._send(400, "bad width/height")
+            if not (160 <= width <= 7680 and 120 <= height <= 4320):
+                return self._send(400, "resolution out of range")
+            idx = data.get("idx")
+            applied = self.app.set_resolution(
+                width, height, int(idx) if idx is not None else None)
+            print(f"[monitor] 收到分辨率请求 {width}x{height} idx={idx} -> 生效 {applied}")
+            body = json.dumps({"ok": True, "width": width, "height": height,
+                               "applied": applied}, ensure_ascii=False)
+            return self._send(200, body, "application/json; charset=utf-8")
         return self._send(404, "not found")
 
     def do_OPTIONS(self):
@@ -339,7 +399,7 @@ class Handler(BaseHTTPRequestHandler):
         port = self.server.server_address[1]
         ip = _lan_ip()
         rows = "".join(
-            f"<li>摄像头 {s.idx}（index={s.index}）: "
+            f"<li>摄像头 {s.idx}（index={s.index}）: {s.width}x{s.height} "
             f"{'在线 %.1f fps' % s.fps_real if s.connected else '离线'}"
             f" &nbsp; <a href='/video/{s.idx}'>MJPEG</a>"
             f" | <a href='/snapshot/{s.idx}'>快照</a>"
@@ -397,7 +457,9 @@ def main():
     for s in streams:
         print(f"[monitor] /video/{s.idx}  ← 摄像头 index={s.index} @{s.fps}fps"
               f"   →  center 填 http://{ip}:{cfg['port']}/video/{s.idx}")
-    print("[monitor] 改帧率：POST /api/fps {\"fps\":5}（center 管理页也可下发）；Ctrl+C 退出")
+    print("[monitor] 改帧率：POST /api/fps {\"fps\":5}；"
+          "改分辨率：POST /api/resolution {\"width\":1920,\"height\":1080}。"
+          "center 管理页也可下发；Ctrl+C 退出")
 
     try:
         httpd.serve_forever()

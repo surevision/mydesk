@@ -6,8 +6,8 @@
 职责（按当前设计）：
   1. 提供静态页面：index.html、css/、js/、assets/，供 Pad 浏览器访问。
   2. 提供少量后端接口（后续可继续增加）：
-       GET  /api/config  读取 center 的 ip/端口配置
-       POST /api/config  保存 center 的 ip/端口配置（写入 config.json，方便手动修改）
+        GET  /api/config  读取 center 的 ip/端口及行为配置
+        POST /api/config  保存配置（写入 config.json，方便手动修改）
        POST /api/ydk     上传 ydk 文件并解析出卡号列表
 
 注意：
@@ -36,6 +36,7 @@ CONFIG_PATH = os.path.join(BASE_DIR, "config.json")
 DEFAULT_CONFIG = {
     "center_ip": "127.0.0.1",
     "center_port": 4560,
+    "dice_coin_choose_player": False,
 }
 
 # 静态文件扩展名 -> MIME
@@ -90,6 +91,7 @@ def save_config(cfg):
         merged["center_port"] = int(merged.get("center_port", DEFAULT_CONFIG["center_port"]))
     except (TypeError, ValueError):
         merged["center_port"] = DEFAULT_CONFIG["center_port"]
+    merged["dice_coin_choose_player"] = bool(merged.get("dice_coin_choose_player", False))
     with open(CONFIG_PATH, "w", encoding="utf-8") as f:
         json.dump(merged, f, ensure_ascii=False, indent=2)
     return merged

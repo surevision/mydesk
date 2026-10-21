@@ -1,8 +1,9 @@
 # -*- coding: utf-8 -*-
 """
 recognize.py
-摄像头识别：读取视频流 → YOLO(OBB) 检测卡牌 → 透视矫正/正反面/朝向 → 卡名识别
-→ 由卡牌中心坐标映射到 (玩家, 格子) → 写入 BattlefieldStore。
+摄像头识别：读取视频流 → YOLO(OBB) 检测卡牌 → 透视矫正/朝向 → 卡名识别
+（识别成功即正面）→ 未识别时由卡背模型判定，且区域为暗色才按反面，否则按卡面
+→ 中心坐标映射到 (玩家, 格子) → 写入 BattlefieldStore。
 
 多路并发：Models 只保存无状态共享资源（cv2/numpy、卡名 ONNX 会话、卡名库），
 每路摄像头各自建一个 Detector（独占 YOLO 实例与跟踪器、卡名缓存），
@@ -23,6 +24,7 @@ import threading
 import time
 
 import gridmap
+from calib import ORIENTATION_V, normalize_orientation
 from state import empty_card
 
 
@@ -168,6 +170,7 @@ class Models:
         self.names = None
         self.providers = []
         self.decks = None        # DeckStore：已导入卡组（卡名识别候选约束），可空
+        self.blacklist = None    # BlacklistStore：不按卡面处理的 card_id，可空
         self.ok = False          # 共享识别链路可用（cv2/numpy + ONNX + 卡名库）
         self.ready = False       # 至少 cv2 可用（能取流预览）
         self.reason = "未加载"
@@ -216,9 +219,9 @@ class Models:
         _log(self.reason)
         return True
 
-    def make_detector(self):
+    def make_detector(self, orientation="horizontal"):
         """为一路摄像头创建独立识别器（各自的 YOLO 实例与跟踪器）。"""
-        return Detector(self)
+        return Detector(self, orientation)
 
     def device_info(self):
         dev, note = _resolve_device(self.cfg["detect"].get("device", 0))
@@ -229,8 +232,9 @@ class Detector:
     """单摄像头的识别器：独占 YOLO(front/back) 实例与跟踪器、卡名缓存。
     多个 Detector 之间只共享无状态的 ONNX 会话，可安全并发。"""
 
-    def __init__(self, models):
+    def __init__(self, models, orientation="horizontal"):
         self.models = models
+        self.orientation = normalize_orientation(orientation)
         self.cfg = models.cfg
         self.cv2 = models.cv2
         self.np = models.np
@@ -239,6 +243,7 @@ class Detector:
         self.oname = models.oname
         self.names = models.names
         self.decks = models.decks      # DeckStore（卡名识别候选约束），可空
+        self.blacklist = models.blacklist  # BlacklistStore（不按卡面处理），可空
         self.front = None
         self.back = None
         self.front_onnx = False        # 正面检测是否用 ONNX（draw2 网页版同款）
@@ -309,20 +314,37 @@ class Detector:
         if deck:
             deck_str = {str(c) for c in deck}
             k = min(int(self.cfg["detect"].get("top_k", 15)), int(prob.shape[0]))
+            outside = None
             for idx in np.argsort(prob)[::-1][:k]:
                 if float(prob[idx]) < thr:
-                    break                     # 已按概率降序，后面更低
+                    break                     # 已按概率排序，后面更低
                 info = self.names.get(str(int(idx)))
-                if info and info.get("card_id") in deck_str:
-                    return {"card_id": _as_int(info.get("card_id")),
-                            "name": info.get("EN", ""), "score": float(prob[idx])}
+                if not info:
+                    continue
+                candidate = {"card_id": _as_int(info.get("card_id")),
+                             "name": info.get("EN", ""),
+                             "score": float(prob[idx])}
+                if info.get("card_id") in deck_str:
+                    if self.blacklist is not None and candidate["card_id"] in self.blacklist:
+                        return None
+                    return candidate
+                if outside is None:
+                    outside = candidate
+            # 卡组内没有达到阈值的候选；如果 draw2 认出了卡组外的卡，返回 outside 标记，
+            # 由 detect() 忽略该卡名，改用 HSV 亮度判定卡背/未知正面。
+            if outside is not None:
+                outside["outside"] = True
+                return outside
             return None
 
         idx = int(np.argmax(prob))
         if float(prob[idx]) < thr:
             return None
         info = self.names[str(idx)]
-        return {"card_id": _as_int(info.get("card_id")), "name": info.get("EN", ""),
+        card_id = _as_int(info.get("card_id"))
+        if self.blacklist is not None and card_id in self.blacklist:
+            return None
+        return {"card_id": card_id, "name": info.get("EN", ""),
                 "score": float(prob[idx])}
 
     def name_for(self, tid, crop, thr):
@@ -351,7 +373,7 @@ class Detector:
         self._cache[tid] = info
         return info
 
-    # ---- 透视矫正 + 正反面 + 朝向（移植 draw2：长边竖直 + 224 方图）-------
+    # ---- 透视矫正 + 朝向（移植 draw2：长边竖直 + 224 方图）----------------
     def analyze_card(self, corners, xywhr):
         cv2, np = self.cv2, self.np
         w_real = float(xywhr[2])
@@ -359,8 +381,8 @@ class Detector:
         if w_real < 30 or h_real < 30:
             return None, "未知", None
         orientation = "横向" if w_real > h_real else "纵向"
-        # 单摄像头画面相对双摄旋转 90°，纵横相反：只翻转朝向标记
-        if self.cfg.get("mode") == "single":
+        # 竖向/单摄像头画面相对横向画面旋转 90°，纵横相反：只翻转朝向标记
+        if self.orientation == ORIENTATION_V or self.cfg.get("mode") == "single":
             orientation = "纵向" if orientation == "横向" else "横向"
 
         # 角点重排：先统一绕向（与目标同向，避免镜像），再从「短边」起，
@@ -384,19 +406,21 @@ class Detector:
             crop = cv2.warpPerspective(self._frame, M, (S, S))
         except cv2.error:  # noqa: BLE001  个别奇异四边形
             return None, orientation, None
-        hsv = cv2.cvtColor(crop, cv2.COLOR_BGR2HSV)
-        h_ch, _s, v_ch = cv2.split(hsv)
-        cx0, cx1 = int(S * 0.25), int(S * 0.75)
-        cy0, cy1 = int(S * 0.25), int(S * 0.75)
-        center_v = v_ch[cy0:cy1, cx0:cx1]
-        dark = float(np.sum(center_v < 60) / center_v.size) if center_v.size else 0
-        mean_v = float(np.mean(center_v)) if center_v.size else 0
-        h_var = float(np.var(h_ch))
-        if dark > 0.6 and mean_v < 80:
-            return "反面", orientation, crop
-        if h_var > 500:
-            return "正面", orientation, crop
         return None, orientation, crop
+
+    def is_dark_back(self, crop):
+        """用中心区域亮度判断是否为暗色卡背；卡背模型命中、卡组外识别时使用。"""
+        if crop is None or crop.size == 0:
+            return False
+        hsv = self.cv2.cvtColor(crop, self.cv2.COLOR_BGR2HSV)
+        _h, _s, v_ch = self.cv2.split(hsv)
+        S = crop.shape[0]
+        center_v = v_ch[int(S * 0.25):int(S * 0.75), int(S * 0.25):int(S * 0.75)]
+        if center_v.size == 0:
+            return False
+        dark = float(self.np.sum(center_v < 60) / center_v.size)
+        mean_v = float(self.np.mean(center_v))
+        return dark > 0.6 and mean_v < 80
 
     # ---- 检测 -------------------------------------------------------------
     def detect(self, frame):
@@ -418,21 +442,66 @@ class Detector:
         now = time.time()
         if self.front_onnx:
             self._assign_tids(front, now)
+
+        def near(a, b):
+            return (abs(a["xywhr"][0] - b["xywhr"][0]) < 30
+                    and abs(a["xywhr"][1] - b["xywhr"][1]) < 30)
+
+        def classify(info, is_back, dark):
+            # 卡组外的卡名不输出，也不采信 draw2 的低阈值结果；
+            # 改用 HSV 亮度判断：暗色按卡背，否则按未知正面卡牌。
+            outside = bool(info and info.get("outside"))
+            if outside:
+                return "back" if dark else "front"
+            named = bool(info)
+            return "front" if named or not is_back else "back"
+
+        def visible_info(info):
+            return None if (info is None or info.get("outside")) else info
+
+        def source_of(info, side, has_back):
+            if side == "front":
+                if info and info.get("outside"):
+                    return "DECK/HSV"
+                return "ViT" if info else "ViT-none"
+            return "CB+HSV" if has_back else "HSV"
+
+        fronts = []
         for d in front:
-            side, ori, crop = self.analyze_card(d["corners"], d["xywhr"])
-            if side != "正面":
+            _side, ori, crop = self.analyze_card(d["corners"], d["xywhr"])
+            if crop is None:
                 continue
-            self._seen[d["tid"]] = now
             info = self.name_for(d["tid"], crop, cfg["name_thr"])
-            out.append(self._make(d, "front", ori, info, np))
+            dark = self.is_dark_back(crop) if (info and info.get("outside")) else False
+            fronts.append([d, ori, info, False, dark])
+
+        back_only = []
         for d in back:
-            side, ori, crop = self.analyze_card(d["corners"], d["xywhr"])
-            if side != "反面":
+            _side, ori, crop = self.analyze_card(d["corners"], d["xywhr"])
+            if crop is None:
                 continue
-            if any(abs(o["cx"] - d["xywhr"][0]) < 30 and abs(o["cy"] - d["xywhr"][1]) < 30 for o in out):
+            dark = self.is_dark_back(crop)
+            hit = next((f for f in fronts if near(d, f[0])), None)
+            if hit is not None:
+                if dark:
+                    hit[3] = True
+                    hit[4] = True
                 continue
+            info = self.name_for(d["tid"], crop, cfg["name_thr"])
+            back_only.append((d, ori, info, dark))
+
+        for d, ori, info, has_back, dark in fronts:
+            side = classify(info, has_back, dark)
             self._seen[d["tid"]] = now
-            out.append(self._make(d, "back", ori, None, np))
+            out.append(self._make(
+                d, side, ori, visible_info(info) if side == "front" else None, np,
+                source_of(info, side, has_back)))
+        for d, ori, info, dark in back_only:
+            side = classify(info, dark, dark)
+            self._seen[d["tid"]] = now
+            out.append(self._make(
+                d, side, ori, visible_info(info) if side == "front" else None, np,
+                source_of(info, side, dark)))
         # 清理过期缓存
         ttl = float(cfg.get("name_cache_ttl", 3.0))
         for tid in [t for t, ts in self._seen.items() if now - ts > ttl]:
@@ -458,12 +527,14 @@ class Detector:
             return []
         pts = r.obb.xyxyxyxy.cpu().numpy()
         xywhr = r.obb.xywhr.cpu().numpy()
+        confs = r.obb.conf.cpu().numpy()
         if r.obb.id is not None:
             ids = r.obb.id.cpu().numpy().astype(int)
         else:
             ids = self.np.arange(len(pts)) + id_offset
-        return [{"corners": c.copy(), "xywhr": b.copy(), "tid": int(t)}
-                for c, b, t in zip(pts, xywhr, ids)]
+        return [{"corners": c.copy(), "xywhr": b.copy(), "tid": int(t),
+                 "conf": float(cf)}
+                for c, b, t, cf in zip(pts, xywhr, ids, confs)]
 
     # ---- ONNX 检测（draw2 网页版写法）-------------------------------------
     def _infer_onnx(self, frame, conf):
@@ -500,23 +571,24 @@ class Detector:
             d["tid"] = int(best)
         return dets
 
-    def _make(self, d, side, ori, info, np):
+    def _make(self, d, side, ori, info, np, source=""):
         cx, cy = float(d["xywhr"][0]), float(d["xywhr"][1])
         return {
             "corners": d["corners"], "xywhr": d["xywhr"],
             "cx": cx, "cy": cy, "side": side,
             "orientation": "vertical" if ori == "纵向" else "horizontal",
-            "info": info,
+            "info": info, "source": source,
         }
 
 
 class CameraWorker(threading.Thread):
     def __init__(self, cam_id, url, players, store, models, cfg, frames,
-                 calib=None, raw_frames=None):
+                 calib=None, raw_frames=None, orientation="horizontal"):
         super().__init__(name=f"cam-{cam_id}", daemon=True)
         self.cam_id = cam_id
         self.url = url
         self.players = players           # 该摄像头负责的玩家列表 [1] 或 [1,2]
+        self.orientation = normalize_orientation(orientation)
         self.store = store
         self.models = models             # 共享资源（cv2 等）
         self.cfg = cfg
@@ -557,7 +629,7 @@ class CameraWorker(threading.Thread):
             return
         # 本路独立识别器：独占 YOLO 与跟踪器，和多路并发互不干扰
         if self.models.ok:
-            self.detector = self.models.make_detector()
+            self.detector = self.models.make_detector(self.orientation)
         cap = self._open()
         if not cap.isOpened():
             self.error = f"无法打开视频源: {self.url}"
@@ -659,10 +731,11 @@ class CameraWorker(threading.Thread):
             p, (zone, index) = hit
             card = empty_card(
                 face_up=(d["side"] == "front"), orientation=d["orientation"])
+            card["extra"] = {"source": d.get("source", "")}
             if d["info"]:
                 card["id"] = _as_int(d["info"].get("card_id"))
                 card["name"] = d["info"]["name"]
-                card["extra"] = {"score": d["info"]["score"]}
+                card["extra"]["score"] = d["info"]["score"]
             by_player[p][(zone, index)] = card
         for p in self.players:
             self.store.apply_recognition(p, by_player[p])
@@ -680,11 +753,14 @@ class CameraWorker(threading.Thread):
         for p in self.players:
             for (zone, index), card in sorted(by_player[p].items(), key=sort_key):
                 loc = f"P{p} {zone}{index + 1 if index else ''}"
+                extra = card.get("extra", {})
+                source = extra.get("source", "")
                 if card.get("name"):
                     items.append(f"{loc} {card['name']}({card['id']}) "
-                                 f"{card.get('extra', {}).get('score', 0):.2f}")
+                                 f"{extra.get('score', 0):.4f} [{source}]")
                 else:
-                    items.append(f"{loc} {'卡背' if not card.get('face_up') else '未识别'}")
+                    items.append(f"{loc} {'卡背' if not card.get('face_up') else '未识别'}"
+                                 f" [{source}]")
         txt = " | ".join(items)
         if txt != self._last_reco:
             self._last_reco = txt
@@ -702,9 +778,10 @@ class CameraWorker(threading.Thread):
                 color = (0, 255, 0) if d["side"] == "front" else (255, 0, 0)
                 pts = d["corners"].astype(int).reshape((-1, 1, 2))
                 cv2.polylines(img, [pts], True, color, 2)
-                label = d["side"]
+                source = d.get("source", "")
+                label = f"{source} {d['side']}"
                 if d["info"]:
-                    label = f"{d['info']['name'][:24]} {d['info']['score']:.2f}"
+                    label = f"{d['info']['name'][:24]} {d['info']['score']:.4f} [{source}]"
                 cv2.putText(img, label, (int(d["cx"]) - 40, int(d["cy"])),
                             cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, 1)
         ok, buf = cv2.imencode(".jpg", img, [int(cv2.IMWRITE_JPEG_QUALITY), 70])
@@ -733,6 +810,7 @@ class CameraWorker(threading.Thread):
     def status(self):
         return {
             "id": self.cam_id, "url": self.url, "players": self.players,
+            "orientation": self.orientation,
             "connected": self.connected, "fps": round(self.fps, 1),
             "detections": self.detections, "error": self.error,
             "model": self.detector.error if (self.detector and not self.detector.ready) else "",
@@ -740,13 +818,14 @@ class CameraWorker(threading.Thread):
 
 
 class RecognitionManager:
-    def __init__(self, store, cfg, calib=None, decks=None):
+    def __init__(self, store, cfg, calib=None, decks=None, blacklist=None):
         self.store = store
         self.cfg = cfg
         self.calib = calib
         self.decks = decks               # DeckStore（卡名识别候选约束），可空
         self.models = Models(cfg)
         self.models.decks = decks
+        self.models.blacklist = blacklist
         self.workers = []
         self.frames = {}
         self.raw_frames = {}
@@ -773,11 +852,13 @@ class RecognitionManager:
                         player = 2 if str(player) == "1" else 1
                     self.workers.append(CameraWorker(
                         f"cam{i+1}", cam["url"], [player], self.store, self.models, self.cfg,
-                        self.frames, self.calib, self.raw_frames))
+                        self.frames, self.calib, self.raw_frames,
+                        orientation=cam.get("orientation", "horizontal")))
             else:
                 self.workers.append(CameraWorker(
                     "single", self.cfg["single"]["url"], [1, 2], self.store, self.models, self.cfg,
-                    self.frames, self.calib, self.raw_frames))
+                    self.frames, self.calib, self.raw_frames,
+                    orientation="vertical"))
             for w in self.workers:
                 w.start()
 

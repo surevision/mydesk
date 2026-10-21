@@ -30,7 +30,7 @@
   "detect": {
     "front_conf": 0.05,
     "back_conf": 0.5,
-    "name_thr": 0.05,
+    "name_thr": 0.001,
     "interval": 0.1,
     "min_side": 30,
     "device": 0,
