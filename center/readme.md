@@ -32,11 +32,14 @@ conda run -n ygodesk python center.py
 - **cv2** 取流（`CAP_PROP_BUFFERSIZE=1`，读帧失败自动重连）。每路摄像头拆成 **采集 / 识别 / 发布** 三条线程：采集只管读帧，识别按 `detect.interval` 取最新帧（可慢），预览始终按采集帧率刷新，不会因为推理慢把管理页拖成 1fps。
 - **正面检测走纯 ONNX**（`models.yolo_front` 以 `.onnx` 结尾时）：`ygo_yolo.onnx`（draw2 网页版同款 YOLO11s-obb，输入 640、单类）。自己做 letterbox → onnxruntime 推理 → 解析 `[6,N]`(x,y,w,h,conf,angle) → OBB 近似 IoU NMS（`nms_iou`）。解析和 NMS 都做了整表向量化（8400 行逐元素循环在 Python 里要 ~1s）。路径为 `.pt` 时仍走 **ultralytics YOLO(OBB)**。**卡背检测**默认走纯 ONNX `detector.onnx`（640×384、BGR 0–255 输入，输出 `[N,7]`=`x,y,w,h,obj,正面分,卡背分`，取卡背类、得分 `obj×cls`）；该路径为 `.pt` 时退回 ultralytics。
 - **ultralytics** 推理设备 `detect.device` 默认 `0`，但会**自动判断**：`torch.cuda.is_available()` 为假（如 CPU 版 torch）时回退 `cpu`，卡号越界也会纠正；显式设 `cpu` 则强制 CPU。实际使用的设备在运行状态里显示。
-- **onnxruntime**：卡名识别 `vit_fp32.onnx`（带 `.onnx` 正面检测时复用同一批 `providers`），依次尝试 `CUDAExecutionProvider`→`CPUExecutionProvider`（实际使用的提供者在状态里显示）。**注意**：`onnxruntime-gpu` 1.2x 起要求 CUDA 13，而 torch 2.6+cu124 自带的是 CUDA 12；版本不匹配时 CUDA EP 建不起来会**静默退回 CPU**（启动日志里 PROVIDER 会只剩 CPU，正面推理 ~300ms）。装 `onnxruntime-gpu==1.20.1`（CUDA 12 + cuDNN 9）即可走 GPU（~10ms）。
+- **onnxruntime**：卡名识别 `vit_fp32.onnx`（带 `.onnx` 正面检测时复用同一批 `providers`），依次尝试 `CUDAExecutionProvider`→`CPUExecutionProvider`（实际生效的提供者在状态里显示）。**注意**：`onnxruntime-gpu` 1.2x 起要求 CUDA 13，而 torch 2.6+cu124 自带的是 CUDA 12；版本不匹配时 CUDA EP 建不起来会**静默退回 CPU**（启动日志里 PROVIDER 会只剩 CPU，正面推理 ~300ms）。装 `onnxruntime-gpu==1.20.x`（CUDA 12 + cuDNN 9）即可走 GPU（~10ms）。代码会在**导入 onnxruntime 前预载 torch 自带的 CUDA/cuDNN DLL**，并在会话建成后检查：想用 GPU 却仍在 CPU 会**显式打印警告**（不会静默退回）。
 - ONNX 模型**无内置跟踪器**，用自建 **IoU 跟踪**（`track_iou`/`track_ttl`）维持稳定 id；`.pt` 路径仍用 ultralytics 跟踪，但**显式指定 `bytetrack.yaml`**：默认 `tracktrack.yaml` 的 GMC 稀疏光流对固定机位无用，且送的是裁剪帧，尺寸一变就会每帧刷 `GMC failed` 警告。
-- 朝向/尺寸用 `xywhr` 判断。分类顺序：先跑 draw2 `vit_fp32.onnx` 识别卡名，识别成功即按正面；未识别时判反面。反面判定：`detector.onnx` 时直接采信其卡背类（该卡同时被正面模型看到则仍以卡名为准）；`cardback_best.pt` 时要求区域中心为暗色（`dark>0.6` 且 `mean_v<80`），避免把亮色正面卡误判成卡背。
+- 朝向/尺寸用 `xywhr` 判断。分类规则（**不再用 HSV 亮度判定卡面**）：
+  - **ygo_yolo（正面检测）框**：裁切送 `vit_fp32.onnx` 认卡名。**认出卡名 → 已知正面卡牌；没认出（含卡组外候选，不采信）→ 未知正面卡牌**。
+  - **detector.onnx 框**：模型输出「正面/卡背」两类，代码只取**卡背类**（`cls_index=1`，得分 `obj×cls_back`），正面类输出忽略，不涉及亮度。卡背框**独立成卡**（不再与 yolo 框合并）：即背面卡牌；与 yolo 框（纵使认出了卡名）落同一格时，后处理的卡背会**覆盖**该格结果——detector 说背面就按背面。
+  - `cardback_best.pt`（.pt 后备路径）例外：它不含正/反分类，仍用中心亮度判暗色卡背（`dark>0.6` 且 `mean_v<80`）。
 - 卡裁切移植 draw2：四个 OBB 角点先统一绕向、再从**短边**起重排，单应矫正成 `detect.crop_size`（默认 224）**方图**，使卡片长边始终竖直（横置/守备卡不再被压扁）。矫正后只剩 0°/180° 歧义：先用卡面上下亮度猜（正立时下半部更亮），置信度低于 `flip_low` 再试另一方向，且需比原方向好 `flip_margin` 倍才采纳。
-- 跟踪 id + **卡名缓存（TTL）**，避免每帧重复跑卡名 ONNX；卡名候选可用已导入卡组约束（`on_import_ydk` → `DeckStore`，前 `top_k` 个里挑选）。导入卡组后，draw2 认出卡组外的卡名不会输出，也不采信其低阈值识别结果；此时改用 HSV 亮度判断，暗色按卡背，否则按未知正面卡牌。**这个识别方法可能后续还会变更。**
+- 跟踪 id + **卡名缓存**：同一跟踪 id 的卡名识别结果只缓存 `name_cache_ttl` 秒（默认 3s），到点就用当前帧重跑 draw2 识别并更新——卡在不挪动的情况下翻面/换角度，卡名（或从「未识别」变「有卡名」）也会持续刷新，不必拿开重放；避免每帧重复跑卡名 ONNX。卡名候选可用已导入卡组约束（`on_import_ydk` → `DeckStore`，前 `top_k` 个里挑选）。导入卡组后，draw2 认出卡组外的卡名**不采信**（视为未识别 → 未知正面卡牌）。**这个识别方法可能后续还会变更。**
 - **卡名黑名单**：`blacklist.txt` 一行一个 `card_id`，命中后该卡名不按卡面处理。可直接编辑文件，也可在管理页「卡名黑名单」维护；保存后立即生效，无需重启识别。
 - 中心坐标 → `(玩家, 格子)`，落格结果写入战场（人工格优先）。
 
@@ -73,11 +76,13 @@ conda run -n ygodesk python center.py
 - 每路摄像头在**独立线程**里取流，并各有**独立的识别器**（独立 YOLO 实例与跟踪器、卡名缓存），因此两路可真正并发、OBB 跟踪 id 不会相互串号；只共享无状态的卡名 ONNX 会话。
 - 双摄像头要填**两个不同**的视频流地址（如采集端 monitor 的 `/video/0`、`/video/1`）；若两路填同一地址，实际只有一路画面。
 
-识别到的卡牌用**中心坐标**落到格子：若已做过定位（见下），走校准的单应映射；否则回退到「玩家区域矩形 + `layout` 归一化矩形」。
+识别到的卡牌用**中心坐标**落到格子：已定位（见下）走校准的单应映射。**定位成功前不启动解析**——本路所有玩家都完成校准且分辨率一致，才能开始检测与卡名识别，校准好会自动开始（「解析卡牌位置的回退方案」实际不会再用到）。
 
 ## 采集端（monitor）帧率 / 分辨率
 
-在管理页「采集端 monitor」区域可下发帧率和采集分辨率（360p / 480p / 540p / 720p / 1080p，均为 16:9；双摄各拍一侧卡区时用低分辨率即可）：center 会把 `POST /api/monitor_fps {fps}` / `POST /api/monitor_resolution {width,height}` 转发到当前配置里各摄像头地址所在的采集端（`scheme://host:port`）的 `/api/fps` 或 `/api/resolution`，采集端据此修改并写回其 config.json；改分辨率后会重新打开摄像头。center 收到的画面尺寸由采集端分辨率决定。本地摄像头索引地址（纯数字）不会转发。
+在管理页「采集端 monitor」区域可下发帧率和采集分辨率（360p / 480p / 540p / 720p / 1080p，均为 16:9；双摄各拍一侧卡区时用低分辨率即可）：center 会把 `POST /api/monitor_fps {fps}` / `POST /api/monitor_resolution {width,height}` 转发到当前配置里各摄像头地址所在的采集端（`scheme://host:port`）的 `/api/fps` 或 `/api/resolution`，采集端据此修改并写回其 config.json；改分辨率后会重新打开摄像头（此间流会断档数秒）。center 收到的画面尺寸由采集端分辨率决定。本地摄像头索引地址（纯数字）不会转发。
+
+断档期间 center 不会挂死：取流线程对读帧异常/失败**无限退避重连**（不设次数上限，之前的「重试 5 次后放弃」会造成预览永久卡在最后一帧——即「下发分辨率后预览一直卡住」的原因），且 FFmpeg 设了 `timeout=5s`：采集端长时间不吐数据也会走重连；VideoCapture 的创建/释放全部串行化，避免并发打开互相干扰。
 
 ## 定位 / 校准
 
@@ -90,7 +95,7 @@ conda run -n ygodesk python center.py
 
 定位结果保存在 `config/calib.json`（`CalibrationStore(path)` 自动读写）：管理页刷新或 `center` 重启后，面板会自动恢复上次的框选/标记，不用重新框选；要全部重来就删掉该文件（面板「清除框选」只清界面，`CalibrationStore.clear()` 会同时清文件）。定位成功后会自动重发一次当前战场快照给 control / display。
 
-**识别只在框选区域内进行**：每路取该路已校准格子区域的外接框（外扩 3% + 4px）裁剪后再送 YOLO / ONNX，检测框坐标会加回裁剪偏移，落格仍按整帧坐标 —— 框外不检测、也不做卡名识别；未校准时退回整帧识别。
+**识别只在框选区域内进行**：每路取该路已校准格子区域的外接框（外扩 3% + 4px）裁剪后再送 YOLO / ONNX，检测框坐标会加回裁剪偏移，落格仍按整帧坐标 —— 框外不检测、也不做卡名识别。**定位成功前整路不解析**（日志会提示「未完成定位，暂停解析」），等所有玩家校准完成才开始。
 
 相关接口：
 
@@ -109,4 +114,4 @@ conda run -n ygodesk python center.py
 
 - 某格这一轮**有卡但没认出名字**，而上次在该格认出了卡名 → 沿用上次结果（日志 `source` 显示 `keep`），避免卡名在 `ViT` / `未识别` 之间来回闪。
 - 该格出现**卡背**，或这一轮**没有卡**（没检测到）→ 清掉该格记忆；之后再来未知卡就按未知卡处理，不会把旧名字贴到新卡上。
-- 记忆在 `CameraWorker` 里按玩家+格子保存，重启识别（改配置）后清空；识别被暂停（`recognition_enabled=false`）、摄像头没帧、检测模型未就绪时也会清空 —— 这些时候卡可能已被拿走或换掉，恢复后不能拿旧名字去贴。
+- 记忆在 `CameraWorker` 里按玩家+格子保存，重启识别（改配置）后清空；识别被暂停（`recognition_enabled=false`）、摄像头没帧、检测模型未就绪、未完成定位时也会清空 —— 这些时候卡可能已被拿走或换掉，恢复后不能拿旧名字去贴。

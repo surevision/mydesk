@@ -163,11 +163,11 @@ async function poll() {
   try {
     const st = await (await fetch("/api/status")).json();
     const cams = (st.cameras || [])
-      .map((c) => `${c.id}:${c.connected ? "在线" : "离线"} ${c.fps}fps 识别${c.detections}${c.error ? " " + c.error : ""}`)
+      .map((c) => `${c.id}:${c.connected ? "在线" : "离线"} ${c.fps}fps 识别${c.detections}${c.located === false ? " 未定位" : ""}${c.error ? " " + c.error : ""}`)
       .join(" | ");
     statusLine.textContent =
       `WS客户端 ${st.ws_clients} | 模型 ${st.models_ok ? "就绪" : "未就绪"}（${st.models_reason}）`
-      + ` | 设备 ${st.device}${st.device_note ? "（" + st.device_note + "）" : ""} (${(st.providers || []).join("/") || "-"})`
+      + ` | 设备 ${st.device}${st.device_note ? "（" + st.device_note + "）" : ""} (${((st.active && st.active.length ? st.active : st.providers) || []).join("/") || "-"})`
       + (cams ? ` | ${cams}` : "");
     statusJson.textContent = JSON.stringify(st, null, 2);
   } catch (err) {

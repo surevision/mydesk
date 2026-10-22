@@ -294,6 +294,7 @@ public partial class MainUI : Node3D
             targetPath = string.Format("ui/player{0}/front/front{1}", player, index + 1);
             rotate = cardData.Orientation == Orientation.Horizontal;
         }
+        GD.Print("rotate ", cardData.Id, " ", cardData.Orientation == Orientation.Horizontal, " ", rotate, " ", cardData.Orientation);
         // 魔陷
         if (zoneType == ZoneType.Back)
         {
@@ -309,7 +310,7 @@ public partial class MainUI : Node3D
             // 设置光圈位置
             GD.Print("targetPath ", targetPath, " ", player, " ", index + 1, " ");
             particle.setTarget(this.GetNode<Control>(targetPath));
-            particle.rotate = rotate;
+            particle.setRotate(rotate);
             particle.Visible = true;
             particle.Name = nodeName;
             if (particle.GetParent() == null)
@@ -436,7 +437,7 @@ public partial class MainUI : Node3D
                     }
                     if (zoneType == ZoneType.Ex)
                     {
-                        sprite.GlobalRotation = new Vector3(0, 0, exRotate90);
+                        sprite.GlobalRotationDegrees = new Vector3(0, 0, exRotate90);
                     }
                     // 攻击防御图标
                     
@@ -450,6 +451,7 @@ public partial class MainUI : Node3D
                         var stateIcon = sprite.GetNodeOrNull<Sprite3D>(iconPath);
                         if (stateIcon != null) stateIcon.Visible = true;
                         if (sprite is CardShowNode cardNode) cardNode.stop = cardData.Orientation == Orientation.Horizontal;
+                        GD.Print("stop ", cardData.Id, " ", cardData.Orientation == Orientation.Horizontal, " ", ((CardShowNode)sprite).stop, " ", cardData.Orientation);
                     }
                 }
             }
@@ -523,7 +525,7 @@ public partial class MainUI : Node3D
                     sprite.Texture = texture;
                     if (zoneType == ZoneType.Ex)
                     {
-                        sprite.RotationDegrees = new Vector3(0, 0, exRotate90);
+                        sprite.GlobalRotationDegrees = new Vector3(0, 0, exRotate90);
                     }
                     if (zoneType == ZoneType.Front || zoneType == ZoneType.Ex)
                     {

@@ -2,7 +2,7 @@
 """
 recognize.py
 摄像头识别：读取视频流 → YOLO(OBB) 检测卡牌 → 透视矫正/朝向 → 卡名识别
-（识别成功即正面）→ 未识别时由卡背模型判定，且区域为暗色才按反面，否则按卡面
+（认出卡名=已知正面，没认出=未知正面）→ 卡背模型框独立判背面卡牌（同格覆盖）
 → 中心坐标映射到 (玩家, 格子) → 写入 BattlefieldStore。
 
 多路并发：Models 只保存无状态共享资源（cv2/numpy、卡名 ONNX 会话、卡名库），
@@ -14,6 +14,9 @@ recognize.py
 - 使用 OBB 跟踪 id + 卡名缓存（TTL）避免每帧重跑 ONNX。
 - 卡名识别用 onnxruntime，优先 CUDA( GPU ) 提供者。
 - YOLO 推理走 GPU（device 可配置）。
+- Windows 下先预载 torch 自带的 CUDA/cuDNN DLL 再建 ONNX 会话，
+  避免 CUDA provider 静默加载失败而退回 CPU。
+- 定位（校准）成功前不启动解析，校准好后自动开始。
 
 依赖 cv2 / numpy / ultralytics / onnxruntime，均为延迟导入，未装时仅预览。
 """
@@ -21,6 +24,7 @@ recognize.py
 import copy
 import json
 import os
+import sys
 import threading
 import time
 
@@ -31,6 +35,11 @@ from state import empty_card
 
 def _log(*a):
     print("[recog]", *a)
+
+
+# 调试标注里格子的简写：zone → 短代号（F=怪兽 B=魔陷 E=额外 EM=场地 GR=墓地 DK=卡组 ED=额外卡组）
+_ZONE_CODE = {"front": "F", "back": "B", "ex": "E",
+              "field": "EM", "grave": "GR", "deck": "DK", "exdeck": "ED"}
 
 
 def _as_int(v, default=-1):
@@ -175,6 +184,41 @@ def nms_obb(np, dets, iou_thr=0.5):
 # 探测 torch 的 CUDA 可用性（只探一次），返回 (可用, 卡数, 说明)
 _torch_state = None
 
+# cv2 视频源（VideoCapture）的创建/销毁互斥：Windows 上并发操作偶发互相干扰
+_cap_open_lock = threading.RLock()
+
+
+# 预载 CUDA DLL（只做一次）。Windows 上 onnxruntime 的 CUDA provider 依赖
+# cublasLt64_xx.dll / cudnn64_x.dll 等，不装 CUDA Toolkit 时找不到这些 DLL，
+# provider 会加载失败并静默回退 CPU。torch（cuXX 版）自带这些 DLL，
+# 在导入 onnxruntime 前先加入 DLL 搜索路径即可。
+_cuda_dll_done = [False]
+
+
+def _ensure_cuda_dlls():
+    if _cuda_dll_done[0] or sys.platform != "win32":
+        _cuda_dll_done[0] = True
+        return
+    _cuda_dll_done[0] = True
+    try:
+        import torch
+        lib = os.path.join(os.path.dirname(torch.__file__), "lib")
+        if os.path.isdir(lib):
+            os.add_dll_directory(lib)
+    except Exception as e:  # noqa: BLE001
+        _log(f"预载 CUDA DLL 失败（推理可能回退 CPU）: {e}")
+
+
+def _session_on_cpu(label, providers, sess):
+    """会话建成后检查是否静默回退 CPU；期望 CUDA 却没生效就大声说出来。"""
+    if sess is None:
+        return
+    used = sess.get_providers()
+    if providers and "CUDAExecutionProvider" in providers \
+            and "CUDAExecutionProvider" not in used:
+        _log(f"警告：{label} 想用 GPU 但 CUDA provider 未生效，实际跑在 CPU "
+             f"（{'/'.join(used)}）——检查 CUDA/cuDNN DLL 是否在搜索路径上")
+
 
 def _torch_cuda():
     global _torch_state
@@ -253,6 +297,7 @@ class Models:
             _log(self.reason)
             return False
         try:
+            _ensure_cuda_dlls()
             import onnxruntime as ort
             from ultralytics import YOLO  # noqa: F401  （实际实例在 Detector 里建）
         except Exception as e:  # noqa: BLE001
@@ -265,6 +310,7 @@ class Models:
             self.providers = [p for p in ("CUDAExecutionProvider", "CPUExecutionProvider")
                               if p in avail]
             self.sess = ort.InferenceSession(m["name_onnx"], providers=self.providers or None)
+            _session_on_cpu("卡名识别", self.providers, self.sess)
             self.iname = self.sess.get_inputs()[0].name
             self.oname = self.sess.get_outputs()[0].name
             with open(m["names_json"], "r", encoding="utf-8") as f:
@@ -285,7 +331,11 @@ class Models:
 
     def device_info(self):
         dev, note = _resolve_device(self.cfg["detect"].get("device", 0))
-        return {"providers": self.providers, "device": dev, "device_note": note}
+        st = {"providers": self.providers, "device": dev, "device_note": note}
+        # 实际生效的 provider（可能是 CUDA，也可能是被静默回退的 CPU）
+        if self.sess is not None:
+            st["active"] = self.sess.get_providers()
+        return st
 
 
 class Detector:
@@ -319,7 +369,7 @@ class Detector:
         self.ready = False
         self.error = ""
         self._frame = None
-        self._cache = {}         # tid -> info | None
+        self._cache = {}         # tid -> (info | None, 上次识别时间)；到 name_cache_ttl 重跑更新
         self._seen = {}          # tid -> 最近出现时间
         self.timing = {}         # 上次 detect 各段耗时（秒）
         # ONNX 无内置跟踪器，用简单的 IoU 跟踪维持稳定 id（卡名缓存的键）
@@ -337,9 +387,11 @@ class Detector:
         m = self.cfg["models"]
         try:
             if str(m["yolo_front"]).lower().endswith(".onnx"):
+                _ensure_cuda_dlls()
                 import onnxruntime as ort
                 self.front_sess = ort.InferenceSession(
                     m["yolo_front"], providers=models.providers or None)
+                _session_on_cpu("正面检测", models.providers, self.front_sess)
                 self.front_iname = self.front_sess.get_inputs()[0].name
                 self.front_oname = self.front_sess.get_outputs()[0].name
                 shp = self.front_sess.get_inputs()[0].shape
@@ -353,9 +405,11 @@ class Detector:
                 self.front = YOLO(m["yolo_front"])
             back_path = str(m["yolo_back"])
             if back_path.lower().endswith(".onnx"):
+                _ensure_cuda_dlls()
                 import onnxruntime as ort
                 self.back_sess = ort.InferenceSession(
                     back_path, providers=models.providers or None)
+                _session_on_cpu("卡背检测", models.providers, self.back_sess)
                 self.back_iname = self.back_sess.get_inputs()[0].name
                 self.back_oname = self.back_sess.get_outputs()[0].name
                 shp = self.back_sess.get_inputs()[0].shape
@@ -410,7 +464,7 @@ class Detector:
                 if outside is None:
                     outside = candidate
             # 卡组内没有达到阈值的候选；如果 draw2 认出了卡组外的卡，返回 outside 标记，
-            # 由 detect() 忽略该卡名，改用 HSV 亮度判定卡背/未知正面。
+            # 由 detect() 不采信该卡名（视为未识别 → 未知正面卡牌）。
             if outside is not None:
                 outside["outside"] = True
                 return outside
@@ -427,8 +481,14 @@ class Detector:
                 "score": float(prob[idx])}
 
     def name_for(self, tid, crop, thr):
-        if tid in self._cache:
-            return self._cache[tid]
+        # 缓存不是永久：每 name_cache_ttl 秒用当前帧重跑一次卡名识别并更新。
+        # 之前「命中缓存就永远直接返回」会让同一张卡（跟踪 id 不丢）一直沿用
+        # 第一次的识别结果——翻面/换角度后不拿开重放就再不出卡名。
+        now = time.time()
+        ttl = float(self.cfg["detect"].get("name_cache_ttl", 3.0))
+        hit = self._cache.get(tid)
+        if hit is not None and now - hit[1] < ttl:
+            return hit[0]
         cv2 = self.cv2
         # 移植 draw2：矫正后只剩 0°/180° 歧义。先用卡面上下亮度猜（正立时
         # 卡名条在下半部更亮，实测正立卡下半 15% 平均亮度更高），置信度太低
@@ -449,7 +509,7 @@ class Detector:
             if alt is not None and alt["score"] > base * self.flip_margin \
                     and (info is None or alt["score"] > info["score"]):
                 info = alt
-        self._cache[tid] = info
+        self._cache[tid] = (info, now)
         return info
 
     # ---- 透视矫正 + 朝向（移植 draw2：长边竖直 + 224 方图）----------------
@@ -488,7 +548,8 @@ class Detector:
         return None, orientation, crop
 
     def is_dark_back(self, crop):
-        """用中心区域亮度判断是否为暗色卡背；卡背模型命中、卡组外识别时使用。"""
+        """用中心区域亮度判断是否为暗色卡背；仅 back 模型为 .pt（cardback_best.pt，
+        输出不含正/反分类）时判反面用。detector.onnx 不走亮度，卡面判定也不再走亮度。"""
         if crop is None or crop.size == 0:
             return False
         hsv = self.cv2.cvtColor(crop, self.cv2.COLOR_BGR2HSV)
@@ -557,18 +618,15 @@ class Detector:
             self._assign_tids(front, now)
         if self.back_onnx:
             self._assign_tids(back, now)
-
-        def near(a, b):
-            return (abs(a["xywhr"][0] - b["xywhr"][0]) < 30
-                    and abs(a["xywhr"][1] - b["xywhr"][1]) < 30)
+        for d in back:
+            d["_from_back"] = True     # 标记来源是卡背检测模型（右上角 debug 用）
 
         def classify(info, is_back, dark):
-            # 卡组外的卡名不输出，也不采信 draw2 的低阈值结果；
-            # 改用 HSV 亮度判断：暗色按卡背，否则按未知正面卡牌。
-            outside = bool(info and info.get("outside"))
-            if outside:
-                return "back" if dark else "front"
-            named = bool(info)
+            # 认出卡名（且不是「卡组外不采信」的候选）→ 已知正面卡牌；
+            # 没认出（含卡组外候选）→ 未知正面卡牌。不再用 HSV 亮度改判卡面。
+            # detector 卡背框不再和 yolo 框合并（见 back_only）：
+            # 只有 .pt 后备路径的卡背框带卡名时才认名按正面处理。
+            named = bool(info) and not bool(info.get("outside"))
             return "front" if named or not is_back else "back"
 
         def visible_info(info):
@@ -576,9 +634,7 @@ class Detector:
 
         def source_of(info, side, has_back):
             if side == "front":
-                if info and info.get("outside"):
-                    return "DECK/HSV"
-                return "ViT" if info else "ViT-none"
+                return "ViT" if (info and not info.get("outside")) else "ViT-none"
             return "CB" if (self.back_onnx and has_back) else ("CB+HSV" if has_back else "HSV")
 
         fronts = []
@@ -587,8 +643,9 @@ class Detector:
             if crop is None:
                 continue
             info = self.name_for(d["tid"], crop, cfg["name_thr"])
-            dark = self.is_dark_back(crop) if (info and info.get("outside")) else False
-            fronts.append([d, ori, info, False, dark])
+            # 只按卡名判定：认出卡名=已知正面卡牌，没认出=未知正面卡牌；
+            # 不再用 HSV 亮度把卡面改判成卡背
+            fronts.append([d, ori, info])
 
         back_only = []
         for d in back:
@@ -596,26 +653,21 @@ class Detector:
             if crop is None:
                 continue
             if self.back_onnx:
-                # detector.onnx 直接输出「正面/卡背」两类，卡背类直接采信，不再用亮度或卡名反推
+                # detector.onnx 直接输出「正面/卡背」两类，卡背类直接采信，
+                # 不再用亮度或卡名反推。且不再与 yolo 框合并：
+                # 卡背框独立成卡，与 yolo 框落同格时以卡背为准（后处理覆盖）
                 dark = True
             else:
                 dark = self.is_dark_back(crop)
-            hit = next((f for f in fronts if near(d, f[0])), None)
-            if hit is not None:
-                if dark:
-                    hit[3] = True
-                    hit[4] = True
-                continue
             info = None if self.back_onnx else self.name_for(
                 d["tid"], crop, cfg["name_thr"])
             back_only.append((d, ori, info, dark))
 
-        for d, ori, info, has_back, dark in fronts:
-            side = classify(info, has_back, dark)
+        for d, ori, info in fronts:
             self._seen[d["tid"]] = now
             out.append(self._make(
-                d, side, ori, visible_info(info) if side == "front" else None, np,
-                source_of(info, side, has_back)))
+                d, "front", ori, visible_info(info), np,
+                source_of(info, "front", False)))
         for d, ori, info, dark in back_only:
             side = classify(info, dark, dark)
             self._seen[d["tid"]] = now
@@ -712,6 +764,8 @@ class Detector:
             "cx": cx, "cy": cy, "side": side,
             "orientation": "vertical" if ori == "纵向" else "horizontal",
             "info": info, "source": source,
+            "from_back": bool(d.get("_from_back")),
+            "conf": float(d.get("conf", 0.0)),
         }
 
 
@@ -752,15 +806,20 @@ class CameraWorker(threading.Thread):
         is_local = str(self.url).isdigit()
         src = int(self.url) if is_local else self.url
         if not is_local:
-            # 网络流：让 FFmpeg 不缓存、低延迟，尽量取最新帧（否则积压导致画面落后几秒）
+            # 网络流：让 FFmpeg 不缓存、低延迟，尽量取最新帧（否则积压导致画面落后几秒）；
+            # timeout=5s：采集端长时间不吐数据（如重开摄像头期间）时报错走重连，
+            # 而不是在 read() 里永久阻塞（表现就是预览卡死）
             os.environ.setdefault(
                 "OPENCV_FFMPEG_CAPTURE_OPTIONS",
-                "fflags;nobuffer|flags;low_delay|reorder_queue_size;0")
-        cap = cv2.VideoCapture(src)
-        try:
-            cap.set(cv2.CAP_PROP_BUFFERSIZE, 1)
-        except Exception:  # noqa: BLE001
-            pass
+                "fflags;nobuffer|flags;low_delay|reorder_queue_size;0|timeout;5000000")
+        # cv2 视频源的创建在 Windows 上并发打开有一定概率互相干扰（卡住/失败），
+        # 全部串行化
+        with _cap_open_lock:
+            cap = cv2.VideoCapture(src)
+            try:
+                cap.set(cv2.CAP_PROP_BUFFERSIZE, 1)
+            except Exception:  # noqa: BLE001
+                pass
         return cap
 
     def run(self):
@@ -782,41 +841,103 @@ class CameraWorker(threading.Thread):
         self._publish_loop()
 
     def _reader(self):
-        """持续读帧，只更新最新帧；读帧失败自动重连。"""
-        cap = self._open()
-        if not cap.isOpened():
-            self.error = f"无法打开视频源: {self.url}"
-            _log(self.error)
-            return
-        self.connected = True
-        self.error = ""
-        retries = 0
+        """持续读帧，只更新最新帧；读帧失败/异常都退避重连，不设次数上限：
+        采集端重开摄像头（如下发分辨率）会造成较长的流断档，中途放弃重连
+        会让预览永久停在最后一帧，且画面明显卡住却状态无异常、难发现。"""
         _t = time.perf_counter
+        backoff = 0.5
+        cap = None
+        last_err = ""
+        tag = f"[{self.cam_id}]"
         while not self._stopping.is_set():
+            if cap is None:
+                try:
+                    cap = self._open()
+                except Exception as e:  # noqa: BLE001
+                    cap = None
+                if cap is None or not cap.isOpened():
+                    if cap is not None:
+                        with _cap_open_lock:
+                            try:
+                                cap.release()
+                            except Exception:  # noqa: BLE001
+                                pass
+                    cap = None
+                    self.connected = False
+                    self.error = last_err = self._log_err(
+                        last_err, f"{tag} 打开视频源失败，重试中: {self.url}")
+                    time.sleep(backoff)
+                    backoff = min(2.0, backoff * 1.5)
+                    continue
+                backoff = 0.5
+                self.connected = True
+                self.error = last_err = self._log_err(last_err, "")
             tr = _t()
-            ret, frame = cap.read()
+            try:
+                ret, frame = cap.read()
+            except Exception as e:  # noqa: BLE001
+                # cv2/FFmpeg 内部错误绝不能让线程死掉：释放重连即可
+                self.error = last_err = self._log_err(
+                    last_err, f"{tag} 读帧异常，重连中: {e}")
+                with _cap_open_lock:
+                    try:
+                        cap.release()
+                    except Exception:  # noqa: BLE001
+                        pass
+                cap = None
+                self.connected = False
+                time.sleep(0.5)
+                continue
             dt = _t() - tr
             if not ret or frame is None:
                 self.connected = False
-                retries += 1
-                cap.release()
-                if retries > 5:
-                    self.error = "连续读帧失败，已停止重连"
-                    break
+                self.error = last_err = self._log_err(last_err, f"{tag} 读帧失败，重连中")
+                with _cap_open_lock:
+                    try:
+                        cap.release()
+                    except Exception:  # noqa: BLE001
+                        pass
+                cap = None
                 time.sleep(0.5)
-                cap = self._open()
-                self.connected = cap.isOpened()
                 continue
-            retries = 0
             self.connected = True
+            if self.error:
+                self.error = last_err = self._log_err(last_err, "")
             self._read_avg = dt if not self._read_avg else self._read_avg * 0.8 + dt * 0.2
             self._latest = frame
             self._latest_seq += 1
-        cap.release()
+        if cap is not None:
+            with _cap_open_lock:
+                try:
+                    cap.release()
+                except Exception:  # noqa: BLE001
+                    pass
         self.connected = False
 
+    @staticmethod
+    def _log_err(cur, new):
+        """错误文案变化时打一条日志（带路号），避免重连刷屏；返回当前值。"""
+        if new != cur:
+            if new:
+                _log(new)
+            return new
+        return cur
+
+    def _located(self, frame):
+        """定位是否成功：本路所有玩家都已校准，且与当前帧分辨率一致。
+        解析（检测+卡名识别）在定位成功前不启动——未校准时无法可靠落格。"""
+        if self.calib is None or frame is None:
+            return False
+        h, w = frame.shape[:2]
+        for p in self.players:
+            pc = self.calib.get(self.cam_id, p)
+            if pc is None or tuple(pc.frame_size) != (w, h):
+                return False
+        return True
+
     def _detector_loop(self, interval):
-        """取最新帧做识别（按 interval 限频），结果给发布线程复用。"""
+        """取最新帧做识别（按 interval 限频），结果给发布线程复用。
+        定位未成功（未完成校准）时不启动解析，等校准好后自动开始。"""
         _t = time.perf_counter
         last_seq = -1
         last = 0.0
@@ -826,12 +947,16 @@ class CameraWorker(threading.Thread):
             seq = self._latest_seq
             now = time.time()
             enabled = bool(self.cfg.get("recognition_enabled", True))
-            # 暂停/断线/模型未就绪：这一轮根本不会识别，卡可能已被拿走或换掉
-            idle = frame is None or not enabled or not self.detector.ready
+            located = self._located(frame)
+            # 暂停/断线/模型未就绪/未定位：这一轮根本不会识别，
+            # 卡可能已被拿走或换掉（暂停恢复时清卡名记忆）
+            idle = frame is None or not enabled or not self.detector.ready or not located
             if idle or seq == last_seq or now - last < interval:
                 if idle and not paused:
                     self._keep.clear()
                     paused = True
+                    if frame is not None and enabled and self.detector.ready and not located:
+                        _log(f"[{self.cam_id}] 未完成定位，暂停解析（等待定位方块校准）")
                 time.sleep(0.01)
                 continue
             paused = False
@@ -942,6 +1067,9 @@ class CameraWorker(threading.Thread):
                     hit = (p, cell)
                     break
             if not hit:
+                # 未落格的卡背框也保留右上角 debug 文本（格子未知用 ? 占位）
+                if d.get("from_back"):
+                    d["_dbgcb"] = f"P?-?:{d.get('conf', 0.0):.3f}"
                 continue
             p, (zone, index) = hit
             card = empty_card(
@@ -951,6 +1079,20 @@ class CameraWorker(threading.Thread):
                 card["id"] = _as_int(d["info"].get("card_id"))
                 card["name"] = d["info"]["name"]
                 card["extra"]["score"] = d["info"]["score"]
+                # 调试标注：预览左上角直列模型原始识别卡名（含不采信的 out 候选）
+                num = index + 1 if index is not None else ""
+                out = "(out)" if d["info"].get("outside") else ""
+                code = _ZONE_CODE.get(zone, zone)
+                info = d["info"]
+                cid = _as_int(info.get("card_id"))
+                d["_dbg"] = (f"P{p}-{code}{num}:"
+                             f"{info.get('name', '')}({cid})"
+                             f",{info.get('score', 0):.4f}{out}")
+            if d.get("from_back"):
+                # 调试标注：卡背检测模型的框（右上角列表，只列格子与该框得分）
+                num = index + 1 if index is not None else ""
+                code = _ZONE_CODE.get(zone, zone)
+                d["_dbgcb"] = f"P{p}-{code}{num}:{d.get('conf', 0.0):.3f}"
             by_player[p][(zone, index)] = card
         self._keep_names(by_player)
         for p in self.players:
@@ -1024,11 +1166,44 @@ class CameraWorker(threading.Thread):
                 pts = d["corners"].astype(int).reshape((-1, 1, 2))
                 cv2.polylines(img, [pts], True, color, 2)
                 source = d.get("source", "")
-                label = f"{source} {d['side']}"
+                ori = "V" if d.get("orientation") == "vertical" else "H"
+                label = f"{source} {d['side']} {ori}"
                 if d["info"]:
-                    label = f"{d['info']['name'][:24]} {d['info']['score']:.4f} [{source}]"
+                    label = f"{d['info']['name'][:24]} {d['info']['score']:.4f} [{source}] {ori}"
                 cv2.putText(img, label, (int(d["cx"]) - 40, int(d["cy"])),
                             cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, 1)
+            # 调试：左上角直列模型识别出的卡名（【P1-F1:卡名(卡号),置信度】格式）
+            y = 26
+            for d in dets:
+                dbg = d.get("_dbg")
+                if not dbg:
+                    continue
+                dbg = f"[{dbg}]"
+                cv2.putText(img, dbg, (9, y + 2), cv2.FONT_HERSHEY_SIMPLEX, 0.62,
+                            (0, 0, 0), 3, cv2.LINE_AA)
+                cv2.putText(img, dbg, (7, y), cv2.FONT_HERSHEY_SIMPLEX, 0.62,
+                            (0, 255, 0), 2, cv2.LINE_AA)
+                y += 28
+                if y > 360:          # 行数太多时截断，避免糊满画面
+                    break
+            # 调试：右上角直列卡背检测模型的框（[CB P1-B2:0.873]，蓝色右对齐）
+            ycb = 26
+            W = img.shape[1]
+            for d in dets:
+                dbg = d.get("_dbgcb")
+                if not dbg:
+                    continue
+                text = f"[CB {dbg}]"
+                (tw, _th), _ = cv2.getTextSize(text, cv2.FONT_HERSHEY_SIMPLEX,
+                                               0.62, 2)
+                x = W - tw - 9
+                cv2.putText(img, text, (x + 2, ycb + 2), cv2.FONT_HERSHEY_SIMPLEX,
+                            0.62, (0, 0, 0), 3, cv2.LINE_AA)
+                cv2.putText(img, text, (x, ycb), cv2.FONT_HERSHEY_SIMPLEX,
+                            0.62, (255, 160, 0), 2, cv2.LINE_AA)
+                ycb += 28
+                if ycb > 360:
+                    break
         ok, buf = cv2.imencode(".jpg", img, [int(cv2.IMWRITE_JPEG_QUALITY), 70])
         if ok:
             self.frames[self.cam_id] = buf.tobytes()
@@ -1058,8 +1233,13 @@ class CameraWorker(threading.Thread):
             "orientation": self.orientation,
             "connected": self.connected, "fps": round(self.fps, 1),
             "detections": self.detections, "error": self.error,
+            "located": self._self_located(),
             "model": self.detector.error if (self.detector and not self.detector.ready) else "",
         }
+
+    def _self_located(self):
+        frame = self._latest
+        return bool(frame is not None and self._located(frame))
 
 
 class RecognitionManager:

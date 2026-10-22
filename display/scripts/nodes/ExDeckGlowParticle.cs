@@ -10,9 +10,10 @@ public partial class ExDeckGlowParticle : CpuParticles2D
     [Export]
     public bool rotate = false; // 是否旋转90度
     [Export]
-    public Vector2 lineSize = new Vector2(890, 540);
-    [Export]
     public Vector2 imageSize = new Vector2(1024, 1024);
+    [Export]
+    public Vector2 baseLineSize = new Vector2(890, 540);
+    public Vector2 lineSize = new Vector2(890, 540);
 
     private Control target;
     private float distance = 0.0f;
@@ -23,7 +24,24 @@ public partial class ExDeckGlowParticle : CpuParticles2D
         target = targetNode;
         if (rotate)
         {
-            lineSize = new Vector2(lineSize.Y, lineSize.X);
+            lineSize = new Vector2(baseLineSize.Y, baseLineSize.X);
+        }
+        else
+        {
+            lineSize = new Vector2(baseLineSize.X, baseLineSize.Y);
+        }
+    }
+
+    public void setRotate(bool rotate)
+    {
+        this.rotate = rotate;
+        if (rotate)
+        {
+            lineSize = new Vector2(baseLineSize.Y, baseLineSize.X);
+        }
+        else
+        {
+            lineSize = new Vector2(baseLineSize.X, baseLineSize.Y);
         }
     }
 

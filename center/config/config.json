@@ -3,7 +3,7 @@
   "http_port": 4580,
   "ws_host": "0.0.0.0",
   "ws_port": 4560,
-  "mode": "single",
+  "mode": "dual",
   "single": {
     "url": "http://192.168.0.254:4581/video/0",
     "player1_side": "left"
@@ -12,12 +12,12 @@
     "swap": false,
     "cameras": [
       {
-        "url": "http://127.0.0.1:4581/video/0",
+        "url": "http://192.168.0.254:4581/video/0",
         "player": 1,
         "orientation": "horizontal"
       },
       {
-        "url": "http://127.0.0.1:4581/video/1",
+        "url": "http://192.168.0.254:4581/video/1",
         "player": 2,
         "orientation": "horizontal"
       }
@@ -32,13 +32,13 @@
   "detect": {
     "front_conf": 0.05,
     "back_conf": 0.5,
-    "name_thr": 0.001,
+    "name_thr": 0.002,
     "top_k": 15,
     "interval": 0.1,
     "min_side": 30,
     "device": 0,
     "track": true,
-    "name_cache_ttl": 3,
+    "name_cache_ttl": 1,
     "crop_size": 224,
     "flip_low": 0.15,
     "flip_margin": 1.25,

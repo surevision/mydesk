@@ -101,7 +101,7 @@ DEFAULT_CONFIG = {
         "min_side": 30,         # 卡最小边长（像素），过小忽略
         "device": 0,            # 推理设备：0=第一块 GPU；"cpu"=CPU
         "track": True,          # 使用 OBB 跟踪（稳定身份 + 卡名缓存）
-        "name_cache_ttl": 3.0,  # 卡名缓存存活时间（秒）
+        "name_cache_ttl": 3.0,  # 同一跟踪 id 重跑卡名识别的间隔（秒）；到点用当前帧重识别并更新卡名
         # 移植 draw2：透视矫正成 crop_size×crop_size 方图，只残余 0°/180°
         "crop_size": 224,       # ViT 输入边长（方图，与训练分布一致）
         "flip_low": 0.15,       # 置信度低于此值才尝试 180° 翻转
