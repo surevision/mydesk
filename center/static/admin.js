@@ -60,6 +60,8 @@ async function loadConfig() {
   set("device", cfg.detect.device);
   set("track", cfg.detect.track);
   set("name_cache_ttl", cfg.detect.name_cache_ttl);
+  set("cell_hold", cfg.detect.cell_hold);
+  set("marker_drop_radius", cfg.detect.marker_drop_radius);
   set("m_yolo_front", cfg.models.yolo_front);
   set("m_yolo_back", cfg.models.yolo_back);
   set("m_name_onnx", cfg.models.name_onnx);
@@ -103,6 +105,8 @@ function collect() {
   cfg.detect.device = dev === "cpu" ? "cpu" : (dev === "" ? 0 : parseInt(dev, 10));
   cfg.detect.track = f.track.checked;
   cfg.detect.name_cache_ttl = parseFloat(f.name_cache_ttl.value);
+  cfg.detect.cell_hold = parseFloat(f.cell_hold.value);
+  cfg.detect.marker_drop_radius = parseInt(f.marker_drop_radius.value, 10);
   cfg.models = cfg.models || {};
   cfg.models.yolo_front = f.m_yolo_front.value.trim();
   cfg.models.yolo_back = f.m_yolo_back.value.trim();

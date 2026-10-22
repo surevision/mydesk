@@ -88,6 +88,10 @@
             <label>卡名重识别间隔(秒)<input type="number" step="0.001" min="0" name="name_cache_ttl"></label>
             <label class="chk"><input type="checkbox" name="track"> OBB 跟踪</label>
           </div>
+          <div class="row">
+            <label>丢帧防闪保持(秒)<input type="number" step="0.1" min="0" name="cell_hold" title="这一轮没识别到的格沿用上一轮的卡，超时才真清空；0=关闭"></label>
+            <label>定位方块屏蔽(px)<input type="number" step="1" min="0" name="marker_drop_radius" title="校准方块中心半径内直接丢弃检测框（过滤鬼影卡）；0=不屏蔽"></label>
+          </div>
         </fieldset>
 
         <fieldset>

@@ -37,7 +37,9 @@
     "min_side": 30,
     "device": 0,
     "track": true,
-    "name_cache_ttl": 3.0
+    "name_cache_ttl": 3.0,
+    "marker_drop_radius": 60,
+    "cell_hold": 1.0
   },
   "layout": {
     "col_count": 5,

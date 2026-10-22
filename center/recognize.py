@@ -784,6 +784,9 @@ class CameraWorker(threading.Thread):
         self.calib = calib              # CalibrationStore 或 None
         self.raw_frames = raw_frames    # {cam_id: bgr frame} 原始帧（校准用）
         self.detector = None            # 本摄像头独立的识别器（在 run 里创建）
+        self._keep = {}                 # (player, zone, index) -> card 卡名保持记忆
+        self._cells_keep = {}           # (player, zone, index) -> (card, 时间) 短暂丢失保持
+        self._last_reco = ""            # 识别日志去重
         self._stopping = threading.Event()
         self.connected = False
         self.fps = 0.0
@@ -797,6 +800,7 @@ class CameraWorker(threading.Thread):
         self._proc_avg = self._front_avg = self._back_avg = 0.0
         self._proc_n = 0
         self._keep = {}                 # player -> {(zone, idx): {"card":..., "miss": n}}
+        self._cells_keep = {}           # player -> {(zone, idx): (card, 时间)} 短暂丢失保持
 
     def stop(self):
         self._stopping.set()
@@ -954,6 +958,7 @@ class CameraWorker(threading.Thread):
             if idle or seq == last_seq or now - last < interval:
                 if idle and not paused:
                     self._keep.clear()
+                    self._cells_keep.clear()
                     paused = True
                     if frame is not None and enabled and self.detector.ready and not located:
                         _log(f"[{self.cam_id}] 未完成定位，暂停解析（等待定位方块校准）")
@@ -1043,8 +1048,35 @@ class CameraWorker(threading.Thread):
         return (max(0, int(x0 - mx)), max(0, int(y0 - my)),
                 min(w, int(x1 + mx)), min(h, int(y1 + my)))
 
+    def _marker_filter(self, dets):
+        """丢掉中心落在定位方块附近的检测框。
+
+        打印的定位标识纸会被正面模型稳定检出（conf ~0.9+），而它恰好在棋盘
+        四角，被错误映射进附近的格子（鬼影卡），会把真卡顶掉或被顶掉。
+        校准记录了 4 个方块中心（画面像素），marker_drop_radius 内的框直接丢弃。"""
+        if self.calib is None or not dets:
+            return dets
+        rad = float(self.cfg["detect"].get("marker_drop_radius", 60))
+        if rad <= 0:
+            return dets
+        pts = []
+        for p in self.players:
+            pc = self.calib.get(self.cam_id, p)
+            if pc is not None:
+                pts.extend(pc.quad())
+        if not pts:
+            return dets
+        out = []
+        for d in dets:
+            cx, cy = d["cx"], d["cy"]
+            if any(abs(cx - mx) < rad and abs(cy - my) < rad for mx, my in pts):
+                continue
+            out.append(d)
+        return out
+
     def _process(self, frame):
         dets = self.detector.detect(frame, self._calib_roi(frame))
+        dets = self._marker_filter(dets)
         by_player = {p: {} for p in self.players}
         layout = self.cfg["layout"]
         mode = self.cfg["mode"]
@@ -1095,6 +1127,7 @@ class CameraWorker(threading.Thread):
                 d["_dbgcb"] = f"P{p}-{code}{num}:{d.get('conf', 0.0):.3f}"
             by_player[p][(zone, index)] = card
         self._keep_names(by_player)
+        self._hold_cells(by_player)
         for p in self.players:
             self.store.apply_recognition(p, by_player[p])
         self.detections = sum(len(v) for v in by_player.values())
@@ -1129,6 +1162,28 @@ class CameraWorker(threading.Thread):
                 kept["orientation"] = card.get("orientation") or kept.get("orientation")
                 kept.setdefault("extra", {})["source"] = "keep"
                 cells[key] = kept
+
+    def _hold_cells(self, by_player):
+        """短暂丢失保持：识别偶尔丢一帧（卡背/弱框在阈值边缘抖动）时，
+        「这一轮没识别到」的格子在 display 端立刻清空就是闪烁的根源。
+        cell_hold 秒内缺席的格沿用上一轮的卡原地补回；超过才真的清空。
+        卡被物理拿走时最长显示 cell_hold 秒的余像，属可接受代价。
+        暂停/断线/未定位恢复时记忆会被清（_keeper 的 _cells_keep.clear()）。"""
+        nowt = time.time()
+        hold = float(self.cfg["detect"].get("cell_hold", 1.0))
+        if hold <= 0:
+            return
+        for p in self.players:
+            cur = by_player[p]
+            mem = self._cells_keep.setdefault(p, {})
+            for key, cardv in cur.items():
+                mem[key] = (copy.deepcopy(cardv), nowt)   # 仍在：刷新时间与内容
+            for key in list(mem):
+                if key not in cur and nowt - mem[key][1] > hold:
+                    mem.pop(key, None)                    # 超时：真的拿走了
+            for key, (card, ts) in list(mem.items()):
+                if key not in cur and nowt - ts <= hold:
+                    cur[key] = copy.deepcopy(card)  # 补回这一轮缺席的格
 
     def _log_reco(self, by_player):
         """打印卡名识别结果（内容变化时才打印，避免每个识别周期刷屏）。"""
