@@ -523,7 +523,7 @@ public partial class MainUI : Node3D
                     sprite.Texture = texture;
                     if (zoneType == ZoneType.Ex)
                     {
-                        sprite.GlobalRotation = new Vector3(0, 0, exRotate90);
+                        sprite.RotationDegrees = new Vector3(0, 0, exRotate90);
                     }
                     if (zoneType == ZoneType.Front || zoneType == ZoneType.Ex)
                     {

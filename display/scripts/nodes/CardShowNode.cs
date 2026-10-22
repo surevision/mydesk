@@ -22,7 +22,6 @@ public partial class CardShowNode : Sprite3D
         {
             direction = -1;
         }
-        this.Rotation = new Vector3(this.Rotation.X, this.Rotation.Y, 90.0f);
     }
 
 

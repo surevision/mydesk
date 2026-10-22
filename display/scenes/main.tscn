@@ -10,7 +10,6 @@
 [ext_resource type="Texture2D" uid="uid://d04hl5w46xgwo" path="res://static/ground/bg1.png" id="10_a8y0u"]
 [ext_resource type="Script" uid="uid://bnq4hj0tm5qeg" path="res://scripts/nodes/CardShowNode.cs" id="11_ya4ey"]
 [ext_resource type="Texture2D" uid="uid://dyix72e8ant06" path="res://static/common/sword.png" id="14_dp3eg"]
-[ext_resource type="Texture2D" uid="uid://cdgpawnp8f7jo" path="res://static/picture_test/closeup/10000.png" id="14_muem4"]
 [ext_resource type="Texture2D" uid="uid://ct13614wsfudl" path="res://static/common/shield.png" id="15_gqmmt"]
 [ext_resource type="Texture2D" uid="uid://dsa0xkg87yo70" path="res://ui_themes/cyberpunk/images/frame_square_round.png" id="15_jkv2x"]
 [ext_resource type="Texture2D" uid="uid://cw1t4x8xp68s4" path="res://static/ground/cardbg1.png" id="15_muem4"]
@@ -1189,7 +1188,6 @@ texture = ExtResource("15_gqmmt")
 [node name="card2" type="Sprite3D" parent="showfield/middle/cards/ex" unique_id=1408297250]
 transform = Transform3D(-4.371139e-08, 0.9999999, 0, -1, -4.3711385e-08, 8.2904493e-16, 8.2904504e-16, 3.6238705e-23, 0.9999999, 0, 4, 0)
 pixel_size = 0.008
-texture = ExtResource("14_muem4")
 script = ExtResource("11_ya4ey")
 
 [node name="state_attack" type="Sprite3D" parent="showfield/middle/cards/ex/card2" unique_id=885361644]
