@@ -137,8 +137,11 @@
       <div class="row">
         <label>采集分辨率
           <select id="monitor-res">
+            <option value="640x360">640×360 (360p)</option>
+            <option value="854x480">854×480 (480p)</option>
+            <option value="960x540" selected>960×540 (540p)</option>
             <option value="1280x720">1280×720 (720p)</option>
-            <option value="1920x1080" selected>1920×1080 (1080p)</option>
+            <option value="1920x1080">1920×1080 (1080p)</option>
           </select>
         </label>
         <button type="button" id="monitor-res-send">下发分辨率</button>

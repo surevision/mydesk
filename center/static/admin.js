@@ -215,30 +215,35 @@ async function loadMonitorStatus() {
   try {
     const r = await fetch("/api/monitor_status");
     const data = await r.json();
-    const lists = Object.values(data.results || {});
-    const cam = (lists[0] || [])[0];
-    if (!cam) {
+    const cams = [];
+    for (const list of Object.values(data.results || {})) {
+      if (Array.isArray(list)) cams.push(...list);
+    }
+    if (!cams.length) {
       const errs = Object.values(data.errors || {}).join("；");
       if (errs) monitorResMsg.textContent = "读取失败：" + errs;
       return;
     }
-    if (!cam.width || !cam.height) {
+    const first = cams[0];
+    if (!first.width || !first.height) {
       monitorResMsg.textContent = "采集端未返回分辨率";
       return;
     }
-    const value = `${cam.width}x${cam.height}`;
+    const value = `${first.width}x${first.height}`;
     if (![...monitorResEl.options].some((o) => o.value === value)) {
       const opt = document.createElement("option");
       opt.value = value;
-      opt.textContent = `${cam.width}×${cam.height}（当前）`;
+      opt.textContent = `${first.width}×${first.height}（当前）`;
       monitorResEl.appendChild(opt);
     }
     monitorResEl.value = value;
-    if (cam.frame_width && cam.frame_height) {
-      monitorResMsg.textContent = `当前 ${cam.width}×${cam.height}，实际 ${cam.frame_width}×${cam.frame_height}`;
-    } else {
-      monitorResMsg.textContent = `当前 ${cam.width}×${cam.height}`;
-    }
+    const parts = cams.map((c, i) => {
+      const set = c.width && c.height ? `${c.width}×${c.height}` : "?";
+      const act = c.frame_width && c.frame_height
+        ? `（实际 ${c.frame_width}×${c.frame_height}）` : "";
+      return `#${i} ${set}${act}`;
+    });
+    monitorResMsg.textContent = "当前 " + parts.join("；");
   } catch (err) {
     monitorResMsg.textContent = "读取失败：" + err.message;
   }

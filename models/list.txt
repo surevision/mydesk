@@ -1,2 +1,3 @@
 https://huggingface.co/HichTala/draw2
 https://huggingface.co/AlecKarfonta/cardcaptor-v3#1
+https://github.com/ryangswe/riftsight-vision/blob/main/docs/model-card.md

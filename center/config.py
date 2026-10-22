@@ -85,7 +85,8 @@ DEFAULT_CONFIG = {
     "models": {
         # 正面：.onnx 走纯 ONNX（draw2 网页版同款，无需 ultralytics）；.pt 走 ultralytics
         "yolo_front": os.path.join(MODELS_DIR, "ygo_yolo.onnx"),
-        "yolo_back": os.path.join(MODELS_DIR, "cardback_best.pt"),  # 卡背检测（暂用 ultralytics .pt）
+        # 卡背：.onnx 走纯 ONNX（detector.onnx，正面/卡背二分类）；.pt 走 ultralytics
+        "yolo_back": os.path.join(MODELS_DIR, "detector.onnx"),
         "name_onnx": os.path.join(MODELS_DIR, "vit_fp32.onnx"),     # 卡名识别 ONNX
         "names_json": os.path.join(MODELS_DIR, "cardnames_onnx.json"),
     },

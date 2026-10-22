@@ -104,6 +104,47 @@ def parse_onnx_obb(np, out, scale, padx, pady, conf_thr, nms_iou=0.5):
     return nms_obb(np, dets, iou_thr=nms_iou)
 
 
+def onnx_letterbox_bgr(cv2, np, frame, w, h, color=114):
+    """等比缩放 + 灰边填充到 w×h，保持 BGR、0-255。
+    detector.onnx（卡背二分类）的输入约定：喂 RGB/255 时输出会全零，必须原样送 BGR。"""
+    ih, iw = frame.shape[:2]
+    scale = min(w / iw, h / ih)
+    nw, nh = max(1, int(round(iw * scale))), max(1, int(round(ih * scale)))
+    padx, pady = (w - nw) // 2, (h - nh) // 2
+    canvas = np.full((h, w, 3), color, dtype=np.uint8)
+    canvas[pady:pady + nh, padx:padx + nw] = cv2.resize(
+        frame, (nw, nh), interpolation=cv2.INTER_LINEAR)
+    chw = canvas.transpose(2, 0, 1)[None]
+    return np.ascontiguousarray(chw, dtype=np.float32), scale, padx, pady
+
+
+def parse_detector_onnx(np, out, scale, padx, pady, conf, cls_index=1, nms_iou=0.5):
+    """解析 detector.onnx：输出 [N,7] = x,y,w,h,obj,cls_front,cls_back。
+    取第 cls_index 类（默认 1=卡背），置信度 = obj × cls；模型不输出角度，按轴对齐矩形处理。
+    返回结构与 parse_onnx_obb 一致（corners/xywhr/conf）。"""
+    data = out[0] if getattr(out, "ndim", 2) == 3 else out
+    if data.shape[0] < data.shape[1]:                # [7,N] → [N,7]
+        data = data.T
+    score = data[:, 4] * data[:, 5 + cls_index]
+    sel = np.where(score >= conf)[0]
+    if sel.shape[0] == 0:
+        return []
+    d = data[sel]
+    cx = (d[:, 0] - padx) / scale
+    cy = (d[:, 1] - pady) / scale
+    bw = d[:, 2] / scale
+    bh = d[:, 3] / scale
+    hw, hh = bw / 2.0, bh / 2.0
+    xs = np.stack([cx - hw, cx + hw, cx + hw, cx - hw], axis=1)
+    ys = np.stack([cy - hh, cy - hh, cy + hh, cy + hh], axis=1)
+    corners = np.stack([xs, ys], axis=2).astype(np.float32)      # [k, 4, 2]
+    dets = [{"corners": corners[i],
+             "xywhr": np.array([cx[i], cy[i], bw[i], bh[i], 0.0], dtype=np.float32),
+             "conf": float(score[sel[i]])}
+            for i in range(sel.shape[0])]
+    return nms_obb(np, dets, iou_thr=nms_iou)
+
+
 def nms_obb(np, dets, iou_thr=0.5):
     """按置信度贪心 NMS（用四边形外接框的近似 IoU，整表向量化）。"""
     n = len(dets)
@@ -269,6 +310,11 @@ class Detector:
         self.front_sess = None
         self.front_iname = None
         self.front_oname = None
+        self.back_onnx = False         # 卡背检测是否用 ONNX（detector.onnx，正面/卡背二分类）
+        self.back_sess = None
+        self.back_iname = None
+        self.back_oname = None
+        self.back_w, self.back_h = 640, 384
         self.imgsz = 640
         self.ready = False
         self.error = ""
@@ -305,8 +351,22 @@ class Detector:
             else:
                 from ultralytics import YOLO
                 self.front = YOLO(m["yolo_front"])
-            from ultralytics import YOLO
-            self.back = YOLO(m["yolo_back"])
+            back_path = str(m["yolo_back"])
+            if back_path.lower().endswith(".onnx"):
+                import onnxruntime as ort
+                self.back_sess = ort.InferenceSession(
+                    back_path, providers=models.providers or None)
+                self.back_iname = self.back_sess.get_inputs()[0].name
+                self.back_oname = self.back_sess.get_outputs()[0].name
+                shp = self.back_sess.get_inputs()[0].shape
+                if len(shp) == 4 and isinstance(shp[2], int) and isinstance(shp[3], int):
+                    self.back_h, self.back_w = int(shp[2]), int(shp[3])
+                self.back_onnx = True
+                _log(f"卡背检测使用 ONNX：{os.path.basename(back_path)} "
+                     f"（{self.back_w}x{self.back_h}，{'/'.join(self.back_sess.get_providers())}）")
+            else:
+                from ultralytics import YOLO
+                self.back = YOLO(back_path)
             self.ready = True
             _log(f"识别器就绪，设备 {self.device}（{self.device_note}）")
         except Exception as e:  # noqa: BLE001
@@ -484,7 +544,10 @@ class Detector:
             front = self._infer(self.front, src, cfg["front_conf"], 0)
         t_front = _t() - t0
         t0 = _t()
-        back = self._infer(self.back, src, cfg["back_conf"], 100000)
+        if self.back_onnx:
+            back = self._infer_back_onnx(src, cfg["back_conf"])
+        else:
+            back = self._infer(self.back, src, cfg["back_conf"], 100000)
         t_back = _t() - t0
         if ox or oy:
             self._shift(front, ox, oy)
@@ -492,6 +555,8 @@ class Detector:
         now = time.time()
         if self.front_onnx:
             self._assign_tids(front, now)
+        if self.back_onnx:
+            self._assign_tids(back, now)
 
         def near(a, b):
             return (abs(a["xywhr"][0] - b["xywhr"][0]) < 30
@@ -514,7 +579,7 @@ class Detector:
                 if info and info.get("outside"):
                     return "DECK/HSV"
                 return "ViT" if info else "ViT-none"
-            return "CB+HSV" if has_back else "HSV"
+            return "CB" if (self.back_onnx and has_back) else ("CB+HSV" if has_back else "HSV")
 
         fronts = []
         for d in front:
@@ -530,14 +595,19 @@ class Detector:
             _side, ori, crop = self.analyze_card(d["corners"], d["xywhr"])
             if crop is None:
                 continue
-            dark = self.is_dark_back(crop)
+            if self.back_onnx:
+                # detector.onnx 直接输出「正面/卡背」两类，卡背类直接采信，不再用亮度或卡名反推
+                dark = True
+            else:
+                dark = self.is_dark_back(crop)
             hit = next((f for f in fronts if near(d, f[0])), None)
             if hit is not None:
                 if dark:
                     hit[3] = True
                     hit[4] = True
                 continue
-            info = self.name_for(d["tid"], crop, cfg["name_thr"])
+            info = None if self.back_onnx else self.name_for(
+                d["tid"], crop, cfg["name_thr"])
             back_only.append((d, ori, info, dark))
 
         for d, ori, info, has_back, dark in fronts:
@@ -598,6 +668,17 @@ class Detector:
             _log(f"ONNX 推理失败: {e}")
             return []
         return parse_onnx_obb(self.np, out, scale, padx, pady, conf, self.nms_iou)
+
+    def _infer_back_onnx(self, frame, conf):
+        """卡背检测（detector.onnx）：BGR 0-255、灰边、非方形输入；取卡背类，得分 = obj×cls。"""
+        try:
+            tensor, scale, padx, pady = onnx_letterbox_bgr(
+                self.cv2, self.np, frame, self.back_w, self.back_h)
+            out = self.back_sess.run([self.back_oname], {self.back_iname: tensor})[0]
+        except Exception as e:  # noqa: BLE001
+            _log(f"卡背 ONNX 推理失败: {e}")
+            return []
+        return parse_detector_onnx(self.np, out, scale, padx, pady, conf, 1, self.nms_iou)
 
     def _assign_tids(self, dets, now):
         """简单 IoU 跟踪：给 ONNX 检测分配稳定 id（卡名缓存的键）。就地写 d['tid']。"""
