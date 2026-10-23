@@ -83,6 +83,20 @@ def send_json(host, port, obj, timeout=3.0):
             return False
 
         _send_text_frame(sock, json.dumps(obj, ensure_ascii=False))
+
+        # 优雅收尾：center 在握手后立刻会推送战场快照/静音等消息，
+        # 若此时直接 close 会因「有未读数据」触发 RST，center 可能丢掉我们的指令。
+        # 先半关闭写端（FIN），再把对端数据读掉，等对端关闭或短暂超时后再断开。
+        try:
+            sock.shutdown(socket.SHUT_WR)
+        except OSError:
+            pass
+        sock.settimeout(0.5)
+        try:
+            while sock.recv(4096):
+                pass
+        except (socket.timeout, OSError):
+            pass
         return True
     except (OSError, ValueError):
         return False

@@ -39,14 +39,13 @@ python voice.py
 
 | 串口文本 | 动作 | 发给 center |
 | --- | --- | --- |
-| `voice_game_start` | 决斗 | `{"type": "on_game_start"}` |
-| `voice_game_reset` | 决斗结束 | `{"type": "on_game_reset"}` |
-| `voice_dice` | 掷骰子 | `{"type": "on_dice", "player": 0, "value": 1-6}` |
-| `voice_coin` | 掷硬币 | `{"type": "on_coin", "player": 0, "value": 0/1}` |
+| `VGS` | 决斗 | `{"type": "on_game_start"}` |
+| `VGR` | 决斗结束 | `{"type": "on_game_reset"}` |
+| `VD` | 掷骰子 | `{"type": "on_dice", "player": 0, "value": 1-6}` |
+| `VC` | 掷硬币 | `{"type": "on_coin", "player": 0, "value": 0/1}` |
 
 - `player: 0` 表示双方（与 controller 默认「全部」一致），数值在模块内随机。
 - 每条消息附带 `"source": "voice"`，center 收到后会打印一条 `[center] 收到语音指令: {...}` 日志；center 不会把该字段转发给其它端。
-- 重复指令照常发送：已开始时再说「决斗」、未开始时再说「决斗结束」都会转发给 center（center 照常广播，由 display 端自行判断是否重复）。
 - 其它文本只记录到页面「最近收到」，不做处理。
 
 ## 行为说明

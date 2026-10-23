@@ -11,10 +11,10 @@ voice 模块入口：串口语音指令 → center WebSocket 消息。
 - 只发送、不接收 center 的消息；发送失败忽略；串口失败 5 秒后重试。
 
 串口消息与 center 指令的对应关系：
-    voice_game_start  → {"type": "on_game_start"}
-    voice_game_reset  → {"type": "on_game_reset"}
-    voice_dice        → {"type": "on_dice", "player": 0, "value": 1-6}
-    voice_coin        → {"type": "on_coin", "player": 0, "value": 0/1}
+    VGS → {"type": "on_game_start"}
+    VGR → {"type": "on_game_reset"}
+    VD  → {"type": "on_dice", "player": 0, "value": 1-6}
+    VC  → {"type": "on_coin", "player": 0, "value": 0/1}
 """
 
 import json
@@ -31,13 +31,20 @@ from ws_client import send_json
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 STATIC_DIR = os.path.join(BASE_DIR, "static")
 
-# 串口文本 → 动作
+# 串口文本 → 动作（语音模块实际发送 VGS/VGR/VD/VC）
 MESSAGE_ACTIONS = {
     "VGS": "game_start",
     "VGR": "game_reset",
     "VD": "dice",
     "VC": "coin",
 }
+_ACTIONS_LOWER = {k.lower(): v for k, v in MESSAGE_ACTIONS.items()}
+
+
+def resolve_action(text):
+    """大小写不敏感地查串口文本对应的动作；未识别返回 None。"""
+    return MESSAGE_ACTIONS.get(text) or _ACTIONS_LOWER.get(text.lower())
+
 
 CONTENT_TYPES = {
     ".html": "text/html; charset=utf-8",
@@ -61,7 +68,7 @@ class VoiceApp:
 
     # ---- 串口消息 → center ------------------------------------------------
     def on_voice(self, text):
-        action = MESSAGE_ACTIONS.get(text) or MESSAGE_ACTIONS.get(text.lower())
+        action = resolve_action(text)
         if not action:
             return
         with self._lock:

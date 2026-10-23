@@ -19,6 +19,7 @@ public partial class MainUI : Node3D
     {
         base._Ready();
         BattleManager.getInstance().mainUI = this;
+        AudioManager.getInstance().playSESync("yugioh-lp-shows-sfx");
     }
 
     /// <summary>
@@ -55,7 +56,7 @@ public partial class MainUI : Node3D
         if (playSfxType == 0)
         {   
             // 初始音效
-            AudioManager.getInstance().playSESync("yugioh-lp-shows-sfx");
+            // AudioManager.getInstance().playSESync("yugioh-lp-shows-sfx");
         }
         if (playSfxType == 1)
         {   
@@ -710,7 +711,7 @@ public partial class MainUI : Node3D
         clearField();
         currField = new Battlefield();
         // 返回标题界面
-         Node fadeFancy = GetNode("/root/FadeFancy");
+         Node fadeFancy = GetNode("/root/FancyFade");
          fadeFancy.Call("blurry_noise", titleBig.Instantiate());
          BattleManager.getInstance().mainUI = null;
     }
