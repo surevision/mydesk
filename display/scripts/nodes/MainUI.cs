@@ -752,4 +752,11 @@ public partial class MainUI : Node3D
         }
     }
 
+    public void light(bool on=false)
+    {
+        Color color = on ? Colors.White : Colors.Black;
+        this.GetNode<ColorRect>("ui/player1/backcolor").Color = color;
+        this.GetNode<ColorRect>("ui/player2/backcolor").Color = color;
+    }
+
 }

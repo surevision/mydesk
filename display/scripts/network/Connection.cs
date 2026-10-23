@@ -234,6 +234,10 @@ public partial class Connection : Node
                 on_mute(GetBool(data, "mute"));
                 break;
 
+            case "on_light":
+                on_light(GetBool(data, "on"));
+                break;
+
             case "on_game_reset":
                 on_game_reset(GetString(data, "battlefield"));
                 break;
@@ -402,6 +406,13 @@ public partial class Connection : Node
     public void on_mute(bool mute)
     {
         AudioManager.getInstance().setMute(mute);
+    }
+
+    /// <summary>开启 / 关闭照明。</summary>
+    /// <param name="on">true=开启照明，false=关闭照明。</param>
+    public void on_light(bool on)
+    {
+        BattleManager.getInstance().light(on);
     }
 
     /// <summary>重新开始：接收重置后的战场并刷新显示。</summary>

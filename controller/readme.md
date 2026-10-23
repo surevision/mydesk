@@ -84,6 +84,7 @@ controller/
 | `on_coin`               | `player`（0=全部）, `value`（1=正面） |
 | `on_guide`              | `show` |
 | `on_mute`               | `mute`（true=静音） |
+| `on_light`              | `on`（true=开启照明，false=关闭照明） |
 | `on_game_reset`         | 无（center 清空战场、置为未开始并广播空战场） |
 | `on_game_start`         | 无（center 置为已开始并广播给所有 controller 和 display） |
 

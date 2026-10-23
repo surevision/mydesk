@@ -461,6 +461,7 @@ script = ExtResource("8_brc7b")
 _max_size = 86
 _outline_ratio = 0.0
 _current_font_size = 84
+_size_just_modified_by_autosizer = true
 _editor_defaults_set = true
 metadata/_custom_type_script = "uid://bttgnk3bb2a8i"
 
@@ -850,6 +851,7 @@ clip_text = true
 script = ExtResource("8_brc7b")
 _max_size = 86
 _current_font_size = 84
+_size_just_modified_by_autosizer = true
 _editor_defaults_set = true
 metadata/_custom_type_script = "uid://bttgnk3bb2a8i"
 
@@ -895,6 +897,30 @@ color_ramp = SubResource("Gradient_glowramp_p2")
 script = ExtResource("9_pmnuy")
 
 [node name="items" type="Node2D" parent="ui/ring" unique_id=1829413270]
+
+[node name="ui_middle" type="Control" parent="ui" unique_id=102470709]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="items" type="Control" parent="ui/ui_middle" unique_id=374233129]
+custom_minimum_size = Vector2(1, 1)
+custom_maximum_size = Vector2(1, 1)
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -0.5
+offset_top = -0.5
+offset_right = 0.5
+offset_bottom = 0.5
+grow_horizontal = 2
+grow_vertical = 2
 
 [node name="showfield" type="Node3D" parent="." unique_id=276305112]
 
@@ -1255,5 +1281,7 @@ bounce_count = 4.0
 gravity_direction = 1
 result_side = 2
 result_hold_seconds = 2.0
+
+[node name="items" type="Node3D" parent="showfield/middle" unique_id=1432971673]
 
 [node name="DirectionalLight3D" type="DirectionalLight3D" parent="showfield" unique_id=1057183181]

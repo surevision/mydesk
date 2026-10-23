@@ -3,6 +3,7 @@
 [ext_resource type="Script" uid="uid://ya5q4a4gwifs" path="res://scripts/nodes/TitleUI.cs" id="1_b3w7a"]
 [ext_resource type="Theme" uid="uid://hvoqjp4bicl6" path="res://ui_themes/cyberpunk/cyberpunk.tres" id="2_6xbdy"]
 [ext_resource type="Texture2D" uid="uid://vd4vsoo727fu" path="res://static/ground/blue3.png" id="3_bvhoh"]
+[ext_resource type="Script" uid="uid://dynulhnyq5hpq" path="res://addons/kenyoni/qr_code/qr_code_rect.gd" id="5_4rr2b"]
 [ext_resource type="Texture2D" uid="uid://dgcqxsk1jewco" path="res://ui_themes/cyberpunk/images/lp2.png" id="6_oftjj"]
 [ext_resource type="Script" uid="uid://bttgnk3bb2a8i" path="res://addons/font_auto_size_labels/auto_size_label.gd" id="7_xu2ek"]
 
@@ -406,6 +407,57 @@ _current_font_size = 86
 _editor_defaults_set = true
 metadata/_custom_type_script = "uid://bttgnk3bb2a8i"
 
+[node name="QrContriner" type="VBoxContainer" parent="ui_big/player1" unique_id=1758370118]
+layout_mode = 1
+anchors_preset = 11
+anchor_left = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 128.0
+offset_right = 128.0
+grow_horizontal = 0
+grow_vertical = 2
+alignment = 1
+
+[node name="qrCodeTemplate" type="TextureRect" parent="ui_big/player1/QrContriner" unique_id=1788582701]
+visible = false
+custom_minimum_size = Vector2(128, 128)
+layout_mode = 2
+expand_mode = 1
+stretch_mode = 3
+script = ExtResource("5_4rr2b")
+auto_update = true
+mode = 1
+error_correction = 1
+use_eci = false
+data = ""
+auto_version = true
+auto_mask_pattern = true
+light_module_color = Color(1, 1, 1, 1)
+dark_module_color = Color(0, 0, 0, 1)
+auto_module_size = true
+quiet_zone_size = 4
+
+[node name="ip" type="Label" parent="ui_big/player1/QrContriner/qrCodeTemplate" unique_id=650028063]
+layout_mode = 1
+anchors_preset = 6
+anchor_left = 1.0
+anchor_top = 0.5
+anchor_right = 1.0
+anchor_bottom = 0.5
+offset_left = -91.0
+offset_top = 6.0
+offset_right = 165.0
+offset_bottom = 46.0
+grow_horizontal = 0
+grow_vertical = 2
+rotation = 1.5707964
+pivot_offset_ratio = Vector2(0.5, 0)
+theme_override_font_sizes/font_size = 18
+text = "127.0.0.1:8080"
+horizontal_alignment = 1
+vertical_alignment = 1
+
 [node name="player2" type="Control" parent="ui_big" unique_id=1481827237]
 layout_mode = 1
 anchors_preset = 11
@@ -780,6 +832,56 @@ _outline_ratio = 0.0
 _current_font_size = 86
 _editor_defaults_set = true
 metadata/_custom_type_script = "uid://bttgnk3bb2a8i"
+
+[node name="QrContriner" type="VBoxContainer" parent="ui_big/player2" unique_id=1999144057]
+layout_mode = 1
+anchors_preset = 11
+anchor_left = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -128.0
+grow_horizontal = 0
+grow_vertical = 2
+alignment = 1
+
+[node name="qrCodeTemplate" type="TextureRect" parent="ui_big/player2/QrContriner" unique_id=1217513482]
+visible = false
+custom_minimum_size = Vector2(128, 128)
+layout_mode = 2
+expand_mode = 1
+stretch_mode = 3
+script = ExtResource("5_4rr2b")
+auto_update = true
+mode = 1
+error_correction = 1
+use_eci = false
+data = ""
+auto_version = true
+auto_mask_pattern = true
+light_module_color = Color(1, 1, 1, 1)
+dark_module_color = Color(0, 0, 0, 1)
+auto_module_size = true
+quiet_zone_size = 4
+
+[node name="ip" type="Label" parent="ui_big/player2/QrContriner/qrCodeTemplate" unique_id=1410986403]
+layout_mode = 1
+anchors_preset = 6
+anchor_left = 1.0
+anchor_top = 0.5
+anchor_right = 1.0
+anchor_bottom = 0.5
+offset_left = -296.0
+offset_top = 6.0
+offset_right = -40.0
+offset_bottom = 46.0
+grow_horizontal = 0
+grow_vertical = 2
+rotation = -1.5707964
+pivot_offset_ratio = Vector2(0.5, 0)
+theme_override_font_sizes/font_size = 18
+text = "127.0.0.1:8080"
+horizontal_alignment = 1
+vertical_alignment = 1
 
 [node name="Camera2D" type="Camera2D" parent="ui_big" unique_id=2040473244]
 anchor_mode = 0

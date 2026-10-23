@@ -417,6 +417,14 @@ export function openConfigPanel(current, onSave, actions = {}) {
       class: "cy-btn cy-btn--sm cy-btn--ghost", text: "隐藏定位", type: "button",
       onclick: () => actions.onGuide && actions.onGuide(false),
     }),
+    el("button", {
+      class: "cy-btn cy-btn--sm", text: "开启照明", type: "button",
+      onclick: () => actions.onLight && actions.onLight(true),
+    }),
+    el("button", {
+      class: "cy-btn cy-btn--sm cy-btn--ghost", text: "关闭照明", type: "button",
+      onclick: () => actions.onLight && actions.onLight(false),
+    }),
   ]);
 
   const modal = openModal({

@@ -359,7 +359,13 @@ function openConfig() {
     onSwap: toggleSwap,
     onGuide: setGuide,
     onMute: setMuted,
+    onLight: setLight,
   });
+}
+
+function setLight(on) {
+  sendMsg(MSG.LIGHT, { on: !!on });
+  toast(on ? "已发送：开启照明" : "已发送：关闭照明", "success");
 }
 
 function commitDice({ player, value }) {

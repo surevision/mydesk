@@ -100,4 +100,14 @@ public partial class BattleManager : Node
         }
         titleUI.onDuel();
     }
+
+    public void light(bool on)
+    {
+        if (mainUI == null)
+        {
+            GD.Print("UI未就绪");
+            return;
+        }
+        mainUI.light(on);
+    }
 }

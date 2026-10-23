@@ -20,6 +20,7 @@
  *   on_coin                { player, value }                             投硬币（player 0=全部，value 1=正面, 0=反面）
  *   on_guide               { show }                                      显示/隐藏 display 上的定位方块
  *   on_mute                { mute }                                      静音/取消静音 display 的全部音频
+ *   on_light               { on }                                        开启/关闭照明（on=true 开启）
  *   on_game_reset          { battlefield }                             决斗结束（清空战场、置为未开始并广播）
  *   on_game_start          {}                                           开始决斗（置为已开始并广播）
  *
@@ -221,6 +222,7 @@ export const MSG = {
   COIN: "on_coin",
   GUIDE: "on_guide",
   MUTE: "on_mute",
+  LIGHT: "on_light",
   RESET: "on_game_reset",
   START: "on_game_start",
 };
