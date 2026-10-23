@@ -1,0 +1,8 @@
+{
+  "serial_port": "COM3",
+  "baudrate": 115200,
+  "center_host": "127.0.0.1",
+  "center_port": 4560,
+  "http_host": "0.0.0.0",
+  "http_port": 4583
+}

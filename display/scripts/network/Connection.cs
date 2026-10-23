@@ -411,11 +411,12 @@ public partial class Connection : Node
         GD.Print(battlefield);
         GD.Print("show battlefield (reset)");
         BattleManager.getInstance().currentFieldStr = battlefield;  // 仅作记录
-        BattleManager.getInstance().mainUI.backToTitle();
+        BattleManager.getInstance().backToTitle();
     }
 
     /// <summary>开始决斗：预留 display 端处理接口。</summary>
     public void on_game_start()
     {
+        BattleManager.getInstance().startDuel();
     }
 }

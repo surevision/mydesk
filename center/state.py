@@ -34,6 +34,7 @@ def empty_player():
 
 def empty_battlefield():
     return {
+        "started": False,        # 游戏是否已开始（未开始时不识别）；由「决斗 / 决斗结束」切换
         "phase": "draw", "turn_player": 0, "dice": None, "coin": None,
         "players": {"1": empty_player(), "2": empty_player()},
     }
@@ -68,6 +69,23 @@ class BattlefieldStore:
     @property
     def version(self):
         return self._version
+
+    @property
+    def started(self):
+        """游戏是否已开始；未开始时摄像头识别不运行。"""
+        with self._lock:
+            return bool(self._bf.get("started"))
+
+    def set_started(self, started):
+        """切换「开始/未开始」，变化时广播战场快照（含 started）。"""
+        started = bool(started)
+        with self._lock:
+            if bool(self._bf.get("started")) == started:
+                return False
+            self._bf["started"] = started
+            self._bump()
+        self._emit("battlefield")
+        return True
 
     # ---- 写入 -------------------------------------------------------------
     def reset(self, emit=True):

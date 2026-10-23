@@ -10,7 +10,14 @@
 <body>
   <div id="app">
     <div id="duel-gate" class="duel-gate">
-      <button class="cy-btn cy-btn--exec duel-btn" id="btn-duel">决斗</button>
+      <div class="duel-inner">
+        <div class="duel-status">
+          <span class="conn-dot disconnected" id="gate-conn-dot"></span>
+          <span class="conn-text" id="gate-conn-status">未连接</span>
+          <button class="cy-btn cy-btn--sm" id="gate-btn-config">配置</button>
+        </div>
+        <button class="cy-btn cy-btn--exec duel-btn" id="btn-duel">决斗</button>
+      </div>
     </div>
 
     <header class="topbar">
@@ -37,7 +44,7 @@
         <button class="cy-btn cy-btn--sm" id="btn-se">音效</button>
         <button class="cy-btn cy-btn--sm" id="btn-dice">骰子</button>
         <button class="cy-btn cy-btn--sm" id="btn-coin">硬币</button>
-        <button class="cy-btn cy-btn--sm cy-btn--danger" id="btn-reset">重新开始</button>
+        <button class="cy-btn cy-btn--sm cy-btn--danger" id="btn-reset">决斗结束</button>
       </div>
     </header>
 

@@ -301,6 +301,11 @@ body { overflow: hidden; }
   background: radial-gradient(circle at 50% 45%, rgba(42,212,255,.12), transparent 55%), #05070d;
 }
 .duel-gate.hidden { display: none; }
+.duel-inner { display: flex; flex-direction: column; align-items: center; gap: 24px; padding: 16px; }
+.duel-status { display: flex; align-items: center; gap: 10px; }
+/* 决斗界面也能打开配置弹窗：弹窗需盖住 gate（z-index 150） */
+.cy-modal-mask { z-index: 160; }
+.cy-modal-mask--stack { z-index: 170; }
 .duel-btn {
   font-family: var(--cy-disp);
   font-size: clamp(40px, 12vw, 120px);

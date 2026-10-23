@@ -84,19 +84,20 @@ controller/
 | `on_coin`               | `player`（0=全部）, `value`（1=正面） |
 | `on_guide`              | `show` |
 | `on_mute`               | `mute`（true=静音） |
-| `on_game_reset`         | 无（center 清空战场并广播空战场给 display） |
-| `on_game_start`         | 无（center 广播给所有 controller 和 display） |
+| `on_game_reset`         | 无（center 清空战场、置为未开始并广播空战场） |
+| `on_game_start`         | 无（center 置为已开始并广播给所有 controller 和 display） |
 
 上传 ydk 成功后立即发送 `on_import_ydk`，WebSocket 重连成功后也会补发已上传卡组；center 用这些 id 限制卡名识别范围。
 
-进入页面默认只显示中央大号「决斗」按钮，点击后隐藏按钮、显示正常界面并发送 `on_game_start`；center 广播给所有 controller 和 display，controller 收到后不处理，display 端接口预留。
+进入页面默认只显示决斗界面：中央大号「决斗」按钮，上方显示 center 连接状态和「配置」按钮（含「导入卡组」，用于赛前上传卡组）。点击「决斗」后隐藏决斗界面、显示正常界面，发送 `on_game_start`，center 把战场属性 `started` 置为 `true` 并广播；**未开始时 center 不做识别**（预览、定位、摄像头/识别区域等设置仍可用）。
 
-顶部「重新开始」按钮会先弹确认，确认后发送 `on_game_reset`；center 把战场复位为初始状态，并广播重置后的 `on_battlefield_change` 空战场，同时转发带 `battlefield` 字段的 `on_game_reset` 给其它 controller 和 display。controller 收到 `on_game_reset` 后重新显示「决斗」按钮并隐藏正常操作界面。
+顶部「决斗结束」按钮会先弹确认，确认后发送 `on_game_reset`；center 把战场复位为初始状态（`started=false`），并广播重置后的 `on_battlefield_change` 空战场，同时转发带 `battlefield` 字段的 `on_game_reset` 给其它 controller 和 display。controller 收到后重新显示决斗界面并隐藏正常操作界面。
 
 ### battlefield 数据结构
 
 见 `static/js/protocol.js` 顶部注释。要点：
 
+- 顶层字段：`started`(是否已开始)、`phase`、`turn_player`、`dice`、`coin`、`players`。
 - 每方区域：`exdeck`×1、`deck`×1、`grave`×1（堆叠单格）、`field`×1、`front`×5、`back`×5、`ex`×2。
 - 格子类型（cell_type）：`front` / `back` / `ex` / `field` / `exdeck` / `grave` / `deck`。
   - `deck` 不支持手动设置；`front`/`back`/`ex` 有下标（0 起）。

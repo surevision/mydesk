@@ -693,19 +693,19 @@ export function openRollResultPanel(title, badge, main, sub) {
   });
 }
 
-// 重新开始确认弹窗
+// 决斗结束确认弹窗
 export function openResetPanel(onConfirm) {
   const modal = openModal({
-    title: "重新开始",
-    badge: "// RESET",
+    title: "决斗结束",
+    badge: "// END",
     width: "min(360px,90vw)",
     body: el("div", { class: "form" }, [
-      el("p", { class: "hint", text: "将清空双方战场并恢复初始状态，是否继续？" }),
+      el("p", { class: "hint", text: "将清空双方战场、结束本次决斗并暂停识别，是否继续？" }),
     ]),
     buttons: [
       { label: "取消", onClick: () => modal.close() },
       {
-        label: "重新开始", class: "cy-btn--danger",
+        label: "决斗结束", class: "cy-btn--danger",
         onClick: () => { modal.close(); onConfirm(); },
       },
     ],

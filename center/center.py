@@ -61,6 +61,9 @@ def main():
     def on_message(client, obj):
         nonlocal muted
         t = obj.get("type")
+        # voice 模块的指令带 source=voice：统一打印一条日志（source 不转发给其它端）
+        if obj.pop("source", None) == "voice":
+            print(f"[center] 收到语音指令: {json.dumps(obj, ensure_ascii=False)}")
         if t == "on_battlefield_change":
             bf = obj.get("battlefield")
             if isinstance(bf, str):
@@ -83,18 +86,21 @@ def main():
             print(f"[center] 记录 P{obj.get('player', 1)} 卡组 {n} 张（用于卡名识别约束）")
             ws.broadcast(obj, exclude=client)
             return
-        # 重新开始：复位战场，并把重置后的空战场随 on_game_reset 一起下发给其它端
+        # 决斗结束：复位战场（同时把「是否开始」置为未开始），并广播空战场
+        # 不论当前是否已开始都照常广播（重复指令由显示端自行忽略）
         if t == "on_game_reset":
             store.reset(emit=False)
             bf = json.dumps(store.snapshot(), ensure_ascii=False)
             ws.broadcast({"type": "on_game_reset", "battlefield": bf}, exclude=client)
             ws.broadcast({"type": "on_battlefield_change", "battlefield": bf})
-            print("[center] 重新开始：战场已清空并广播")
+            print("[center] 决斗结束：战场已清空（未开始状态，暂停识别）")
             return
-        # 开始决斗：广播给所有 controller 和 display（controller 收到不处理）
+        # 开始决斗：置为已开始（恢复识别），再广播给所有 controller / display
+        # 不论当前是否已开始都照常广播（重复指令由显示端自行忽略）
         if t == "on_game_start":
+            store.set_started(True)
             ws.broadcast({"type": "on_game_start"})
-            print("[center] 开始决斗")
+            print("[center] 开始决斗（恢复识别）")
             return
         # 骰子 / 硬币：转发给其它端（display 播放对应动画/音效）
         if t in ("on_dice", "on_coin"):

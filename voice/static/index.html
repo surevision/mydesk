@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>YGO DESK · 语音模块</title>
+  <style>
+    :root {
+      --bg: #070a12;
+      --panel: #0d1320;
+      --line: #1e2a44;
+      --ink: #d7e6ff;
+      --dim: #7f92b3;
+      --cy: #2ad4ff;
+      --mag: #ff3ca8;
+      --green: #38e08a;
+      --red: #ff4d6a;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0; padding: 24px 16px; background: var(--bg); color: var(--ink);
+      font-family: "Segoe UI", "Microsoft YaHei", system-ui, sans-serif;
+      min-height: 100vh;
+    }
+    .wrap { max-width: 720px; margin: 0 auto; }
+    h1 {
+      font-size: 20px; letter-spacing: .12em; margin: 0 0 4px;
+      display: flex; align-items: center; gap: 10px;
+    }
+    h1 small { font-size: 11px; color: var(--dim); letter-spacing: .08em; }
+    .sub { color: var(--dim); font-size: 12px; margin-bottom: 18px; }
+    .card {
+      background: var(--panel); border: 1px solid var(--line); border-radius: 10px;
+      padding: 16px; margin-bottom: 16px;
+    }
+    .card h2 {
+      font-size: 13px; font-weight: 600; color: var(--cy); margin: 0 0 14px;
+      letter-spacing: .1em;
+    }
+    .row { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 12px; }
+    .field { display: flex; flex-direction: column; gap: 6px; flex: 1 1 200px; }
+    .field.small { flex: 0 1 130px; }
+    label { font-size: 12px; color: var(--dim); }
+    input, select {
+      background: #060a13; color: var(--ink); border: 1px solid var(--line);
+      border-radius: 8px; padding: 9px 10px; font-size: 14px; outline: none;
+      font-family: inherit;
+    }
+    input:focus, select:focus { border-color: var(--cy); box-shadow: 0 0 0 2px rgba(42,212,255,.15); }
+    button {
+      background: linear-gradient(180deg, rgba(42,212,255,.22), rgba(42,212,255,.08));
+      color: var(--ink); border: 1px solid rgba(42,212,255,.5);
+      border-radius: 8px; padding: 9px 18px; font-size: 14px; cursor: pointer;
+      font-family: inherit; letter-spacing: .06em;
+    }
+    button:hover { border-color: var(--cy); box-shadow: 0 0 14px rgba(42,212,255,.25); }
+    button.ghost { background: transparent; border-color: var(--line); color: var(--dim); padding: 9px 12px; }
+    button.ghost:hover { color: var(--ink); border-color: var(--cy); }
+    .actions { display: flex; align-items: center; gap: 12px; }
+    .msg { font-size: 12px; color: var(--dim); }
+    .msg.ok { color: var(--green); }
+    .msg.err { color: var(--red); }
+    .status { display: grid; grid-template-columns: 130px 1fr; gap: 8px 12px; font-size: 13px; }
+    .status dt { color: var(--dim); }
+    .status dd { margin: 0; word-break: break-all; }
+    .dot {
+      display: inline-block; width: 9px; height: 9px; border-radius: 50%;
+      background: var(--red); margin-right: 6px; vertical-align: middle;
+    }
+    .dot.on { background: var(--green); box-shadow: 0 0 8px var(--green); }
+    code {
+      background: #060a13; border: 1px solid var(--line); border-radius: 5px;
+      padding: 1px 5px; font-size: 12px;
+    }
+    .hint { color: var(--dim); font-size: 12px; line-height: 1.7; }
+    ul.hint { margin: 6px 0 0; padding-left: 18px; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>语音模块 <small>VOICE · 串口 → center</small></h1>
+    <div class="sub">读取 CH340 串口的语音指令并转发给 center；只发送，不接收 center 的消息。</div>
+
+    <div class="card">
+      <h2>连接配置</h2>
+      <div class="row">
+        <div class="field">
+          <label for="serial_port">串口（CH340，通常 COM1 / COM3）</label>
+          <input id="serial_port" list="port-list" placeholder="COM3" autocomplete="off">
+          <datalist id="port-list"></datalist>
+        </div>
+        <div class="field small" style="flex-basis:auto">
+          <label>&nbsp;</label>
+          <button class="ghost" id="btn-refresh" type="button">刷新串口</button>
+        </div>
+        <div class="field small">
+          <label for="baudrate">波特率</label>
+          <input id="baudrate" type="number" min="300" step="1" list="baud-list" placeholder="9600">
+          <datalist id="baud-list">
+            <option value="9600"></option>
+            <option value="19200"></option>
+            <option value="38400"></option>
+            <option value="57600"></option>
+            <option value="115200"></option>
+          </datalist>
+        </div>
+      </div>
+      <div class="row">
+        <div class="field">
+          <label for="center_host">center 地址</label>
+          <input id="center_host" placeholder="127.0.0.1 或 ws://192.168.1.5:4560" autocomplete="off">
+        </div>
+        <div class="field small">
+          <label for="center_port">center 端口</label>
+          <input id="center_port" type="number" min="1" max="65535" placeholder="4560">
+        </div>
+      </div>
+      <div class="actions">
+        <button id="btn-save" type="button">保存配置</button>
+        <span class="msg" id="save-msg"></span>
+      </div>
+      <p class="hint">保存串口/波特率后会自动重连；center 发送失败会被忽略，下次指令再重试。串口连接失败每 5 秒自动重试。</p>
+    </div>
+
+    <div class="card">
+      <h2>运行状态</h2>
+      <dl class="status">
+        <dt>串口</dt>
+        <dd><span class="dot" id="st-dot"></span><span id="st-serial">-</span></dd>
+        <dt>center</dt>
+        <dd id="st-center">-</dd>
+        <dt>最近收到</dt>
+        <dd id="st-line">-</dd>
+        <dt>接收条数</dt>
+        <dd id="st-rx">0</dd>
+        <dt>发送成功 / 失败</dt>
+        <dd id="st-tx">0 / 0</dd>
+        <dt>最近发送</dt>
+        <dd id="st-sent">-</dd>
+        <dt>错误</dt>
+        <dd id="st-error">-</dd>
+      </dl>
+    </div>
+
+    <div class="card">
+      <h2>指令对照</h2>
+      <ul class="hint">
+        <li><code>voice_game_start</code> → 决斗（<code>on_game_start</code>）</li>
+        <li><code>voice_game_reset</code> → 决斗结束（<code>on_game_reset</code>）</li>
+        <li><code>voice_dice</code> → 掷骰子（<code>on_dice</code>，随机 1-6，双方）</li>
+        <li><code>voice_coin</code> → 掷硬币（<code>on_coin</code>，随机正/反，双方）</li>
+      </ul>
+    </div>
+  </div>
+
+  <script>
+    const $ = (id) => document.getElementById(id);
+
+    async function getJson(url) {
+      const r = await fetch(url, { cache: "no-store" });
+      const data = await r.json();
+      if (!r.ok) throw new Error(data.error || r.statusText);
+      return data;
+    }
+
+    function fillPorts(ports) {
+      const list = $("port-list");
+      list.innerHTML = "";
+      for (const p of ports) {
+        const opt = document.createElement("option");
+        opt.value = p.device;
+        opt.label = p.description ? `${p.device} — ${p.description}` : p.device;
+        list.appendChild(opt);
+      }
+    }
+
+    async function loadPorts() {
+      try {
+        const data = await getJson("/api/ports");
+        fillPorts(data.ports || []);
+        if (!data.serial_available) {
+          $("save-msg").textContent = "未安装 pyserial，串口不可用（pip install pyserial）";
+          $("save-msg").className = "msg err";
+        }
+      } catch (e) {
+        fillPorts([]);
+      }
+    }
+
+    async function loadConfig() {
+      const data = await getJson("/api/config");
+      const cfg = data.config;
+      $("serial_port").value = cfg.serial_port || "";
+      $("baudrate").value = cfg.baudrate || 9600;
+      $("center_host").value = cfg.center_host || "127.0.0.1";
+      $("center_port").value = cfg.center_port || 4560;
+    }
+
+    async function save() {
+      const msg = $("save-msg");
+      msg.className = "msg";
+      msg.textContent = "保存中…";
+      try {
+        const r = await fetch("/api/config", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            serial_port: $("serial_port").value.trim(),
+            baudrate: Number($("baudrate").value) || 9600,
+            center_host: $("center_host").value.trim(),
+            center_port: Number($("center_port").value) || 4560,
+          }),
+        });
+        const data = await r.json();
+        if (!r.ok) throw new Error(data.error || r.statusText);
+        $("center_host").value = data.config.center_host;
+        $("center_port").value = data.config.center_port;
+        msg.className = "msg ok";
+        msg.textContent = "已保存";
+        poll();
+      } catch (e) {
+        msg.className = "msg err";
+        msg.textContent = "保存失败：" + e.message;
+      }
+    }
+
+    function setText(id, text) {
+      $(id).textContent = text;
+    }
+
+    async function poll() {
+      try {
+        const st = await getJson("/api/status");
+        const s = st.serial;
+        $("st-dot").className = "dot" + (s.connected ? " on" : "");
+        setText("st-serial", s.connected
+          ? `${s.port} @ ${s.baudrate}`
+          : `${s.port || "未配置"}（未连接）`);
+        setText("st-center", st.center_url);
+        setText("st-line", s.last_line || "-");
+        setText("st-rx", String(s.rx_count));
+        setText("st-tx", `${st.tx_ok} / ${st.tx_fail}`);
+        setText("st-sent", st.last_sent || "-");
+        setText("st-error", s.error || "-");
+        $("st-error").style.color = s.error ? "var(--red)" : "";
+      } catch (e) {
+        $("st-dot").className = "dot";
+        setText("st-serial", "页面与模块失去连接");
+      }
+    }
+
+    $("btn-save").addEventListener("click", save);
+    $("btn-refresh").addEventListener("click", loadPorts);
+
+    loadConfig().catch((e) => {
+      $("save-msg").className = "msg err";
+      $("save-msg").textContent = "读取配置失败：" + e.message;
+    });
+    loadPorts();
+    poll();
+    setInterval(poll, 2000);
+  </script>
+</body>
+</html>

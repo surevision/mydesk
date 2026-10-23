@@ -74,6 +74,7 @@ export function makePlayer() {
 /** 初始战场 */
 export function makeBattlefield() {
   return {
+    started: false,
     phase: "draw",
     turn_player: 1,
     dice: null,
@@ -88,6 +89,7 @@ export function normalizeBattlefield(raw) {
   if (!raw || typeof raw !== "object") return bf;
 
   if (typeof raw.phase === "string") bf.phase = raw.phase;
+  bf.started = !!raw.started;   // 是否已开始（由 center 的「决斗 / 决斗结束」维护）
   if (raw.turn_player === 1 || raw.turn_player === 2 || raw.turn_player === 0) {
     bf.turn_player = raw.turn_player;
   }

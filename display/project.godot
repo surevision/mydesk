@@ -19,6 +19,8 @@ config/icon="res://icon.svg"
 
 Connection="*uid://xjfueqs8cd3o"
 AudioHost="*uid://c7leb1uf0myni"
+Transitions="*uid://chtyxsfqcu8ux"
+FancyFade="*uid://dabf414hbka5l"
 
 [display]
 

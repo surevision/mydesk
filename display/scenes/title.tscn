@@ -1,8 +1,11 @@
 [gd_scene format=3 uid="uid://crnydn2ouvsat"]
 
 [ext_resource type="Script" uid="uid://ya5q4a4gwifs" path="res://scripts/nodes/TitleUI.cs" id="1_b3w7a"]
+[ext_resource type="PackedScene" uid="uid://5xtd3pe3cv8g" path="res://scenes/main_big.tscn" id="2_4rr2b"]
 [ext_resource type="Theme" uid="uid://hvoqjp4bicl6" path="res://ui_themes/cyberpunk/cyberpunk.tres" id="2_6xbdy"]
 [ext_resource type="Texture2D" uid="uid://vd4vsoo727fu" path="res://static/ground/blue3.png" id="3_bvhoh"]
+[ext_resource type="PackedScene" uid="uid://ke1ibeeqvvba" path="res://scenes/main_mid.tscn" id="3_ia1n6"]
+[ext_resource type="PackedScene" uid="uid://bcp3cped5j70q" path="res://scenes/main_small.tscn" id="4_hiwto"]
 [ext_resource type="Texture2D" uid="uid://dgcqxsk1jewco" path="res://ui_themes/cyberpunk/images/lp2.png" id="6_oftjj"]
 [ext_resource type="Script" uid="uid://bttgnk3bb2a8i" path="res://addons/font_auto_size_labels/auto_size_label.gd" id="7_xu2ek"]
 
@@ -32,6 +35,9 @@ sky = SubResource("Sky_tbgi4")
 
 [node name="main" type="Node3D" unique_id=356765844]
 script = ExtResource("1_b3w7a")
+mainBig = ExtResource("2_4rr2b")
+mainMid = ExtResource("3_ia1n6")
+mainSmall = ExtResource("4_hiwto")
 
 [node name="ui_big" type="Control" parent="." unique_id=129540259]
 layout_mode = 3

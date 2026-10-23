@@ -20,11 +20,12 @@
  *   on_coin                { player, value }                             投硬币（player 0=全部，value 1=正面, 0=反面）
  *   on_guide               { show }                                      显示/隐藏 display 上的定位方块
  *   on_mute                { mute }                                      静音/取消静音 display 的全部音频
- *   on_game_reset          { battlefield }                             重新开始（center 清空战场并广播）
- *   on_game_start          {}                                           开始决斗（center 广播给所有端）
+ *   on_game_reset          { battlefield }                             决斗结束（清空战场、置为未开始并广播）
+ *   on_game_start          {}                                           开始决斗（置为已开始并广播）
  *
  * battlefield JSON 结构（由 controller 拟定，后续按需调整）：
  * {
+ *   "started": false,            // 是否已开始（未开始时 center 不做识别）
  *   "phase": "main1",            // 当前阶段: draw/standby/main1/battle/main2/end
  *   "turn_player": 1,            // 当前回合玩家 1/2（0 未知）
  *   "dice": null | { "player": 1, "value": 4, "ts": 1699999999999 },

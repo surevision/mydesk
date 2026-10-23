@@ -87,6 +87,13 @@ function hideDuelGate() {
   if (gate) gate.classList.add("hidden");
 }
 
+// 「是否开始」：开始则隐藏决斗界面、结束则显示（未开始时 center 不做识别）
+function applyStarted(started) {
+  battle.started = !!started;
+  if (battle.started) hideDuelGate();
+  else { showDuelGate(); applyResetLocal(); }
+}
+
 /** 发送完整战场快照 */
 function pushBattlefield() {
   center.send({ type: MSG.BATTLEFIELD, battlefield: JSON.stringify(cloneBattlefield(battle)) });
@@ -102,6 +109,7 @@ function onCenterMessage(data) {
       }
       battle = normalizeBattlefield(bf);
       renderBoard(battle);
+      applyStarted(battle.started);
       break;
     }
     case MSG.LP: {
@@ -124,11 +132,11 @@ function onCenterMessage(data) {
       break;
     }
     case MSG.RESET: {
-      applyResetLocal();
-      showDuelGate();
+      applyStarted(false);
       break;
     }
     case MSG.START: {
+      applyStarted(true);
       break;
     }
     default:
@@ -137,21 +145,24 @@ function onCenterMessage(data) {
 }
 
 function updateStatus(status, url) {
-  const dot = document.getElementById("conn-dot");
-  const txt = document.getElementById("conn-status");
-  if (!dot || !txt) return;
-  dot.className = "conn-dot " + status;
+  let label = "未连接";
   if (status === "connected") {
-    txt.textContent = "已连接";
+    label = "已连接";
     // 断线重连后补发已上传的卡组，供 center 限制卡名识别范围。
     for (const p of ["1", "2"]) {
       if (decks[p] && decks[p].length) {
         sendMsg(MSG.IMPORT_YDK, { player: Number(p), ids: decks[p] });
       }
     }
-  } else if (status === "connecting") txt.textContent = "连接中…";
-  else txt.textContent = "未连接";
-  txt.title = url || "";
+  } else if (status === "connecting") label = "连接中…";
+
+  // 顶栏与「决斗」界面各有一份连接指示
+  for (const [dotId, txtId] of [["conn-dot", "conn-status"], ["gate-conn-dot", "gate-conn-status"]]) {
+    const dot = document.getElementById(dotId);
+    const txt = document.getElementById(txtId);
+    if (dot) dot.className = "conn-dot " + status;
+    if (txt) { txt.textContent = label; txt.title = url || ""; }
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -291,15 +302,11 @@ function wireButtons() {
   };
 
   on("btn-duel", () => {
-    hideDuelGate();
+    applyStarted(true);
     sendMsg(MSG.START);
   });
-  on("btn-config", () => openConfigPanel({ ...config, muted }, saveAndReconnect, {
-    onImport: (p) => openImportPanel(p, (file) => importYdk(p, file)),
-    onSwap: toggleSwap,
-    onGuide: setGuide,
-    onMute: setMuted,
-  }));
+  on("btn-config", openConfig);
+  on("gate-btn-config", openConfig);
   on("btn-reconnect", connectCenter);
 
   // 竖屏：点「操作」展开/收起顶部操作按钮（横屏由 CSS 直接显示，按钮不出现）
@@ -345,6 +352,16 @@ function wireButtons() {
   }
 }
 
+// 打开配置面板（含「导入卡组」快捷操作，用于赛前上传卡组）
+function openConfig() {
+  openConfigPanel({ ...config, muted }, saveAndReconnect, {
+    onImport: (p) => openImportPanel(p, (file) => importYdk(p, file)),
+    onSwap: toggleSwap,
+    onGuide: setGuide,
+    onMute: setMuted,
+  });
+}
+
 function commitDice({ player, value }) {
   battle.dice = { player, value, ts: Date.now() };
   renderBoard(battle);
@@ -370,9 +387,8 @@ function applyResetLocal() {
 }
 
 function resetGame() {
-  applyResetLocal();
+  applyStarted(false);
   sendMsg(MSG.RESET);
-  showDuelGate();
 }
 
 function toggleSwap() {

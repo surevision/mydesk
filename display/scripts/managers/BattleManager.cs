@@ -9,6 +9,7 @@ public partial class BattleManager : Node
     public string currentFieldStr = "";
 
     public MainUI mainUI = null;
+    public TitleUI titleUI = null;
 
     public static BattleManager getInstance()
     {
@@ -76,5 +77,27 @@ public partial class BattleManager : Node
         }
         GD.Print("show coin ", player, " ", val);
         mainUI.showCoin(player, val);
+    }
+
+    public void backToTitle()
+    {
+        
+        if (mainUI == null)
+        {
+            GD.Print("UI未就绪");
+            return;
+        }
+        mainUI.backToTitle();
+    }
+
+    public void startDuel()
+    {
+        
+        if (titleUI == null)
+        {
+            GD.Print("UI未就绪");
+            return;
+        }
+        titleUI.onDuel();
     }
 }

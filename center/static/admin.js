@@ -171,6 +171,7 @@ async function poll() {
       .join(" | ");
     statusLine.textContent =
       `WS客户端 ${st.ws_clients} | 模型 ${st.models_ok ? "就绪" : "未就绪"}（${st.models_reason}）`
+      + ` | 游戏 ${st.started ? "进行中" : "未开始（暂停识别）"}`
       + ` | 设备 ${st.device}${st.device_note ? "（" + st.device_note + "）" : ""} (${((st.active && st.active.length ? st.active : st.providers) || []).join("/") || "-"})`
       + (cams ? ` | ${cams}` : "");
     statusJson.textContent = JSON.stringify(st, null, 2);

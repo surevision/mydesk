@@ -950,15 +950,18 @@ class CameraWorker(threading.Thread):
             frame = self._latest
             seq = self._latest_seq
             now = time.time()
-            enabled = bool(self.cfg.get("recognition_enabled", True))
+            # 游戏未开始（还没点「决斗」）时不识别；预览/校准/设置等其余功能照常
+            started = self.store.started if self.store is not None else True
+            enabled = bool(self.cfg.get("recognition_enabled", True)) and started
             located = self._located(frame)
-            # 暂停/断线/模型未就绪/未定位：这一轮根本不会识别，
+            # 暂停/断线/模型未就绪/未定位/游戏未开始：这一轮根本不会识别，
             # 卡可能已被拿走或换掉（暂停恢复时清卡名记忆）
             idle = frame is None or not enabled or not self.detector.ready or not located
             if idle or seq == last_seq or now - last < interval:
                 if idle and not paused:
                     self._keep.clear()
                     self._cells_keep.clear()
+                    self._result = None          # 清掉预览上的旧识别框
                     paused = True
                     if frame is not None and enabled and self.detector.ready and not located:
                         _log(f"[{self.cam_id}] 未完成定位，暂停解析（等待定位方块校准）")
@@ -1360,6 +1363,7 @@ class RecognitionManager:
             workers = [w.status() for w in self.workers]
         st = {
             "mode": self.cfg["mode"],
+            "started": self.store.started if self.store is not None else False,
             "models_ok": self.models.ok,
             "models_ready": self.models.ready,
             "models_reason": self.models.reason,

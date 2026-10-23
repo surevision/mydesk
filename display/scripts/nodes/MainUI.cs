@@ -4,6 +4,8 @@ using System.IO;
 
 public partial class MainUI : Node3D
 {
+    [Export]
+    public PackedScene titleBig;
     private Tween p1lpTween;
     private Tween p2lpTween;
     private Label p1lpLabel;
@@ -704,9 +706,13 @@ public partial class MainUI : Node3D
 
     public void backToTitle()
     {
+        GD.Print("back to title");
         clearField();
         currField = new Battlefield();
         // 返回标题界面
+         Node fadeFancy = GetNode("/root/FadeFancy");
+         fadeFancy.Call("blurry_noise", titleBig.Instantiate());
+         BattleManager.getInstance().mainUI = null;
     }
 
     public void clearField()

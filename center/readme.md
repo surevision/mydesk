@@ -64,10 +64,11 @@ conda run -n ygodesk python center.py
 - 收到 `on_lp_change` / `on_phase_anim`：更新 `state` 并广播对应消息。
 - 收到 `on_guide`：转换为 `on_marker_guide`（附带定位四角坐标）后广播给 display。
 - 收到 `on_mute`：记录全局静音状态并广播 `{ type: "on_mute", mute }`，display 控制 Master 总线静音。
-- 收到 `on_game_start`：广播给所有 controller 和 display（controller 收到后不处理，display 端接口预留）。
-- 收到 `on_game_reset`：把战场复位为初始状态，随后广播 `on_battlefield_change`（重置后的空战场），并向其它端转发带 `battlefield` 字段的 `on_game_reset`；display 端用该字段返回标题/刷新显示。
+- 收到 `on_game_start`：把战场属性 `started` 置为 `true`（恢复识别）并广播给所有 controller 和 display（display 端接口预留）。**不论当前是否已开始都照常广播**（重复指令由显示端自行判断处理）。
+- 收到 `on_game_reset`：把战场复位为初始状态（`started=false`，同时暂停识别），随后广播 `on_battlefield_change`（重置后的空战场），并向其它端转发带 `battlefield` 字段的 `on_game_reset`；display 端用该字段返回标题/刷新显示。**不论当前是否已开始都照常广播**（重复指令由显示端自行判断处理）。
 - 其余 `on_*`（召唤/破坏/攻击/关联/音效/导入/骰子等）：原样转发给其它端（主要是 display）。
 - 新客户端连接时，立即下发一次当前战场快照和静音状态。
+- voice 模块发来的指令带 `source: "voice"`：center 收到后打印 `[center] 收到语音指令: {...}`，该字段不会转发给其它端。
 
 ## 摄像头模式
 
@@ -77,6 +78,8 @@ conda run -n ygodesk python center.py
 - 双摄像头要填**两个不同**的视频流地址（如采集端 monitor 的 `/video/0`、`/video/1`）；若两路填同一地址，实际只有一路画面。
 
 识别到的卡牌用**中心坐标**落到格子：已定位（见下）走校准的单应映射。**定位成功前不启动解析**——本路所有玩家都完成校准且分辨率一致，才能开始检测与卡名识别，校准好会自动开始（「解析卡牌位置的回退方案」实际不会再用到）。
+
+**游戏未开始时（还没点「决斗」，即 `started=false`）整路不解析**：战场属性 `started` 由 controller 的「决斗 / 决斗结束」维护（`on_game_start` / `on_game_reset`），未开始时检测与卡名识别都不运行，但预览、定位校准、摄像头/识别区域等设置照常可用；开始后自动恢复。
 
 ## 采集端（monitor）帧率 / 分辨率
 
@@ -116,7 +119,7 @@ conda run -n ygodesk python center.py
 
 - 某格这一轮**有卡但没认出名字**，而上次在该格认出了卡名 → 沿用上次结果（日志 `source` 显示 `keep`），避免卡名在 `ViT` / `未识别` 之间来回闪。
 - 该格出现**卡背**，或这一轮**没有卡**（没检测到）→ 清掉该格记忆；之后再来未知卡就按未知卡处理，不会把旧名字贴到新卡上。
-- 记忆在 `CameraWorker` 里按玩家+格子保存，重启识别（改配置）后清空；识别被暂停（`recognition_enabled=false`）、摄像头没帧、检测模型未就绪、未完成定位时也会清空 —— 这些时候卡可能已被拿走或换掉，恢复后不能拿旧名字去贴。
+- 记忆在 `CameraWorker` 里按玩家+格子保存，重启识别（改配置）后清空；识别被暂停（`recognition_enabled=false`）、游戏未开始（`started=false`）、摄像头没帧、检测模型未就绪、未完成定位时也会清空 —— 这些时候卡可能已被拿走或换掉，恢复后不能拿旧名字去贴。
 
 ## 格子短暂丢失保持（防闪烁）
 
