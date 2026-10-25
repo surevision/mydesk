@@ -13,3 +13,7 @@ pydantic>=2.7.0
 
 # GPU 提速（可选，与上面的 onnxruntime 二选一）：让卡名 ONNX 走 CUDA
 onnxruntime-gpu
+
+# 手部遮挡暂停（可选）：手在玩家卡牌区域内时暂停该玩家识别
+# 未装则该项功能自动禁用，其余识别不受影响
+mediapipe

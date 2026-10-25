@@ -121,6 +121,21 @@ conda run -n ygodesk python center.py
 - 该格出现**卡背**，或这一轮**没有卡**（没检测到）→ 清掉该格记忆；之后再来未知卡就按未知卡处理，不会把旧名字贴到新卡上。
 - 记忆在 `CameraWorker` 里按玩家+格子保存，重启识别（改配置）后清空；识别被暂停（`recognition_enabled=false`）、游戏未开始（`started=false`）、摄像头没帧、检测模型未就绪、未完成定位时也会清空 —— 这些时候卡可能已被拿走或换掉，恢复后不能拿旧名字去贴。
 
+## 卡背框记忆（漏检兜底）
+
+- 某格本轮检出**卡背**（`detector.onnx`，落格成功才记；未落进玩家格子的卡背不处理）→ 记下该卡背的**检测框**和**框内图像**（灰度小图，`back_patch_size`，默认 64）。
+- 下一轮该格**既没检出卡背、也没变成任何正面**（含未认出名/未识别的**未知正面**）时才比对：用记忆的检测框裁当前帧，与记忆图像做相似度比对（`TM_CCOEFF_NORMED`，抗亮暗变化）。够像（`back_patch_sim`，默认 0.75）→ 仍判卡背，`source` 显示 `CB*`、`extra.sim` 是相似度；不像或超过 `back_patch_ttl`（默认 5s）→ 忘掉记忆。**该格出现正面（哪怕是未知正面）就不再比对**。
+- 比对通过时用当前图像刷新记忆（缓慢自适应光照/角度漂移），检测框保持记忆里的那个（不动）。
+- 开关 `back_patch`（默认开）；`back_patch=False` 时只保留原有逻辑。暂停/断线/未定位恢复时记忆与卡名保持一起清空。
+
+## 手部遮挡暂停（MediaPipe Hands）
+
+- 只在**每个玩家的卡牌区域**内做手部检测（不整帧识别）：已校准用该玩家格子多边形的外接框（外扩 3%+4px），未校准回退玩家区域矩形。
+- 某玩家区域内**检到手**时，这一帧**暂停该玩家的卡牌识别**：不落格、不更新卡名/卡背记忆，`BattlefieldStore` 里该玩家上一帧的战场状态原样保留；手离开（含 `hand_hold` 防抖窗口，默认 0.4s）后自动恢复。
+- 只影响被遮挡的那名玩家，同一路摄像头另一位玩家照常识别；日志会打印「手在 P1 卡牌区域内，暂停本帧识别」/「P1 手已离开，恢复识别」，管理页状态行显示 `手遮挡P1`。
+- 需要 `mediapipe`（`pip install mediapipe`）；未安装时功能自动禁用并打印一条日志。**兼容两代 API**：旧版（`mp.solutions.hands`）直接用；新版（mediapipe ≥1.0，只剩 `tasks`）用 `HandLandmarker` + `hand_landmarker.task` 模型（VIDEO 模式），模型缺失且 `hand_download=True`（默认）时启动自动从官方地址下载一次（约 7MB）到 `detect.hand_model`（默认 `models/hand_landmarker.task`）。
+- 参数：`hand_pause` 开关、`hand_hold` 保持秒数、`hand_conf` 置信度、`hand_complexity`（旧版模型复杂度，0=lite）、`hand_model`/`hand_download`/`hand_delegate`（新版：模型路径/自动下载/推理后端 cpu|gpu）。
+
 ## 格子短暂丢失保持（防闪烁）
 
 - `BattlefieldStore.apply_recognition` 每轮会把「这一轮没识别到的识别格」清空，而检测框/卡背框偶尔丢一帧（置信度在阈值边缘抖动）时格子在 display 端就会闪烁。

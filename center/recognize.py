@@ -17,8 +17,11 @@ recognize.py
 - Windows 下先预载 torch 自带的 CUDA/cuDNN DLL 再建 ONNX 会话，
   避免 CUDA provider 静默加载失败而退回 CPU。
 - 定位（校准）成功前不启动解析，校准好后自动开始。
+- 手部遮挡暂停（可选）：MediaPipe Hands 只在每个玩家的卡牌区域内找手，
+  手在区域内时暂停该玩家这一帧的识别（保持上一帧战场状态），需要 mediapipe。
 
-依赖 cv2 / numpy / ultralytics / onnxruntime，均为延迟导入，未装时仅预览。
+依赖 cv2 / numpy / ultralytics / onnxruntime，均为延迟导入，未装时仅预览；
+mediapipe 亦延迟导入，未装时手部遮挡暂停自动禁用。
 """
 
 import copy
@@ -769,6 +772,188 @@ class Detector:
         }
 
 
+# 新版 mediapipe（>=1.0）只有 tasks API，需要 hand_landmarker.task 模型文件
+HAND_MODEL_URL = ("https://storage.googleapis.com/mediapipe-models/hand_landmarker/"
+                  "hand_landmarker/float16/latest/hand_landmarker.task")
+
+
+def _ensure_hand_model(path, allow_download=True):
+    """确保手部模型存在；缺失且允许时从官方地址下载一次。返回 (ok, 说明)。"""
+    if path and os.path.exists(path) and os.path.getsize(path) > 100_000:
+        return True, ""
+    if not path:
+        return False, "未配置 detect.hand_model（新版 mediapipe 需要 .task 模型文件）"
+    if not allow_download:
+        return False, f"模型文件不存在: {path}（可下载 {HAND_MODEL_URL}）"
+    try:
+        import urllib.request
+        parent = os.path.dirname(path)
+        if parent:
+            os.makedirs(parent, exist_ok=True)
+        _log(f"下载 MediaPipe 手部模型到 {path} …")
+        tmp = path + ".part"
+        urllib.request.urlretrieve(HAND_MODEL_URL, tmp)
+        os.replace(tmp, path)
+        _log(f"手部模型下载完成（{os.path.getsize(path) // 1024} KB）")
+        return True, ""
+    except Exception as e:  # noqa: BLE001
+        return False, f"下载失败: {e}（可手动下载 {HAND_MODEL_URL} 存为 {path}）"
+
+
+class HandDetector:
+    """手部检测封装：只在「该玩家的卡牌区域」内找手（不整帧识别），用于
+    「手在卡牌区域里时暂停该玩家的识别」，避免放手/手势/遮挡被误判。
+
+    兼容两代 MediaPipe：
+    - 旧版（有 `mp.solutions`）：用 `solutions.hands.Hands`；
+    - 新版（>=1.0，仅有 `tasks`）：用 `HandLandmarker` + `.task` 模型
+      （VIDEO 模式），模型缺失时按 `hand_download` 自动下载一次。
+    完全不可用时 available=False，功能自动禁用（只打日志，不影响识别）。
+    MediaPipe 对象非线程安全：每路摄像头各持一个实例。
+    抖动抑制：最后一次检到手后再多暂停 hand_hold 秒。
+    """
+
+    def __init__(self, cfg, label=""):
+        self.cfg = cfg
+        self.label = label            # 日志前缀（如 "[cam1] "），便于区分多路
+        self.cv2 = None
+        self.np = None
+        self.mp = None
+        self.legacy = None            # 旧版 Hands 实例
+        self.tasks = None             # 新版 HandLandmarker 实例
+        self.available = False
+        self.reason = ""
+        self._ts = 0                  # Tasks VIDEO 模式时间戳（毫秒，必须递增）
+        self._active_until = {}       # player -> 时间戳（检到手后的保持窗口）
+        self._load()
+
+    def _load(self):
+        try:
+            import cv2
+            import numpy as np
+        except Exception as e:  # noqa: BLE001
+            self.reason = f"缺少 cv2/numpy，手部遮挡暂停不可用: {e}"
+            _log(self.label + self.reason)
+            return
+        self.cv2, self.np = cv2, np
+        try:
+            import mediapipe as mp
+        except Exception as e:  # noqa: BLE001
+            self.reason = f"未安装 mediapipe，手部遮挡暂停不可用: {e}"
+            _log(self.label + self.reason)
+            return
+        self.mp = mp
+        conf = float(self.cfg.get("hand_conf", 0.5))
+
+        # 旧版 API（mediapipe < 1.0）
+        legacy = getattr(getattr(mp, "solutions", None), "hands", None)
+        if legacy is not None:
+            try:
+                self.legacy = legacy.Hands(
+                    static_image_mode=False, max_num_hands=2,
+                    model_complexity=int(self.cfg.get("hand_complexity", 0)),
+                    min_detection_confidence=conf, min_tracking_confidence=0.5)
+                self.available = True
+                _log(self.label + "手部检测已启用（MediaPipe Hands 旧版 solutions API）")
+                return
+            except Exception as e:  # noqa: BLE001
+                _log(self.label + f"旧版 Hands 初始化失败，尝试新版 Tasks API: {e}")
+
+        # 新版 API（mediapipe >= 1.0）：HandLandmarker + .task 模型
+        try:
+            from mediapipe.tasks.python.core.base_options import BaseOptions
+            from mediapipe.tasks.python import vision
+        except Exception as e:  # noqa: BLE001
+            self.reason = (f"mediapipe {getattr(mp, '__version__', '?')} 既无 "
+                           f"solutions 也无 tasks 手部 API: {e}")
+            _log(self.label + self.reason)
+            return
+        model = str(self.cfg.get("hand_model") or "").strip()
+        ok, note = _ensure_hand_model(
+            model, allow_download=bool(self.cfg.get("hand_download", True)))
+        if not ok:
+            self.reason = note
+            _log(self.label + "手部遮挡暂停禁用：" + note)
+            return
+        try:
+            delegate = (BaseOptions.Delegate.GPU
+                        if str(self.cfg.get("hand_delegate", "cpu")).lower() == "gpu"
+                        else BaseOptions.Delegate.CPU)
+            base = BaseOptions(model_asset_path=model, delegate=delegate)
+            opts = vision.HandLandmarkerOptions(
+                base_options=base, running_mode=vision.RunningMode.VIDEO,
+                num_hands=2, min_hand_detection_confidence=conf,
+                min_hand_presence_confidence=conf, min_tracking_confidence=0.5)
+            self.tasks = vision.HandLandmarker.create_from_options(opts)
+        except Exception as e:  # noqa: BLE001
+            self.reason = f"MediaPipe HandLandmarker 初始化失败: {e}"
+            _log(self.label + self.reason)
+            return
+        self.available = True
+        _log(self.label + f"手部检测已启用（MediaPipe Tasks API："
+                          f"{os.path.basename(model)}，{self.cfg.get('hand_delegate', 'cpu')}）")
+
+    def _has_hand(self, crop_bgr):
+        """这块裁剪里有没有手。只需「有没有」，不取关键点。"""
+        cv2, np = self.cv2, self.np
+        rgb = cv2.cvtColor(crop_bgr, cv2.COLOR_BGR2RGB)
+        if self.legacy is not None:
+            res = self.legacy.process(rgb)
+            return bool(getattr(res, "multi_hand_landmarks", None))
+        img = self.mp.Image(image_format=self.mp.ImageFormat.SRGB,
+                            data=np.ascontiguousarray(rgb))
+        # VIDEO 模式的时间戳必须严格递增：用墙钟，至少 +1ms
+        self._ts = max(self._ts + 1, int(time.time() * 1000))
+        res = self.tasks.detect_for_video(img, self._ts)
+        return bool(getattr(res, "hand_landmarks", None))
+
+    def players_with_hand(self, frame, regions, now=None):
+        """regions: {player: (x0,y0,x1,y1)} 该玩家的卡牌区域（画面像素）。
+        在每块区域内单独找手；返回本轮「有手（或仍在保持窗口内）」的玩家集合。"""
+        out = set()
+        if not self.available:
+            return out
+        if now is None:
+            now = time.time()
+        hold = float(self.cfg.get("hand_hold", 0.4))
+        cv2 = self.cv2
+        h, w = frame.shape[:2]
+        for p, rect in (regions or {}).items():
+            x0, y0, x1, y1 = (int(v) for v in rect)
+            x0, y0 = max(0, x0), max(0, y0)
+            x1, y1 = min(w, x1), min(h, y1)
+            if x1 - x0 < 16 or y1 - y0 < 16:
+                continue
+            crop = frame[y0:y1, x0:x1]
+            # 只需要「有没有手」，不需要关键点精度：太宽的裁剪先缩到 640（提速）
+            if crop.shape[1] > 640:
+                sc = 640.0 / crop.shape[1]
+                crop = cv2.resize(crop, (640, max(16, int(crop.shape[0] * sc))),
+                                  interpolation=cv2.INTER_AREA)
+            try:
+                if self._has_hand(crop):
+                    self._active_until[p] = now + hold   # 检到手：续上保持窗口
+            except Exception as e:  # noqa: BLE001
+                _log(f"手部检测失败: {e}")
+            if self._active_until.get(p, 0.0) > now:
+                out.add(p)
+        # 清掉早已过期的记录（避免字典无限增长）
+        for p in [k for k, t in self._active_until.items() if t <= now - 10.0]:
+            self._active_until.pop(p, None)
+        return out
+
+    def close(self):
+        for obj_name in ("legacy", "tasks"):
+            obj = getattr(self, obj_name, None)
+            if obj is not None:
+                try:
+                    obj.close()
+                except Exception:  # noqa: BLE001
+                    pass
+                setattr(self, obj_name, None)
+        self.available = False
+
+
 class CameraWorker(threading.Thread):
     def __init__(self, cam_id, url, players, store, models, cfg, frames,
                  calib=None, raw_frames=None, orientation="horizontal"):
@@ -801,6 +986,10 @@ class CameraWorker(threading.Thread):
         self._proc_n = 0
         self._keep = {}                 # player -> {(zone, idx): {"card":..., "miss": n}}
         self._cells_keep = {}           # player -> {(zone, idx): (card, 时间)} 短暂丢失保持
+        self._back_mem = {}             # player -> {(zone, idx): {rect,patch,time,orientation}} 卡背框记忆
+        self.hands = None               # HandDetector（手在玩家卡牌区域时暂停该玩家）
+        self._hand_players = set()      # 本轮被手遮挡暂停的玩家
+        self._hand_log = set()          # 上一次已提示过的暂停玩家（日志去重）
 
     def stop(self):
         self._stopping.set()
@@ -834,6 +1023,10 @@ class CameraWorker(threading.Thread):
         # 本路独立识别器：独占 YOLO 与跟踪器，和多路并发互不干扰
         if self.models.ok:
             self.detector = self.models.make_detector(self.orientation)
+            # 手部遮挡暂停：只在「玩家卡牌区域」内找手（不整帧识别）
+            if self.cfg["detect"].get("hand_pause", True):
+                self.hands = HandDetector(self.cfg["detect"],
+                                          label=f"[{self.cam_id}] ")
         interval = max(0.05, float(self.cfg["detect"]["interval"]))
         # 采集 / 识别 / 发布拆成三条线程：识别慢时预览仍按采集帧率刷新，
         # 不再被推理拖成 1fps；识别只取最新帧，慢一点也只是结果稍旧。
@@ -842,7 +1035,11 @@ class CameraWorker(threading.Thread):
         if self.detector is not None:
             threading.Thread(target=self._detector_loop, args=(interval,),
                              name=f"cam-{self.cam_id}-det", daemon=True).start()
-        self._publish_loop()
+        try:
+            self._publish_loop()
+        finally:
+            if self.hands is not None:
+                self.hands.close()          # 线程退出时释放 MediaPipe Hands
 
     def _reader(self):
         """持续读帧，只更新最新帧；读帧失败/异常都退避重连，不设次数上限：
@@ -961,6 +1158,9 @@ class CameraWorker(threading.Thread):
                 if idle and not paused:
                     self._keep.clear()
                     self._cells_keep.clear()
+                    self._back_mem.clear()
+                    self._hand_players = set()
+                    self._hand_log = set()
                     self._result = None          # 清掉预览上的旧识别框
                     paused = True
                     if frame is not None and enabled and self.detector.ready and not located:
@@ -1077,15 +1277,59 @@ class CameraWorker(threading.Thread):
             out.append(d)
         return out
 
+    def _player_regions(self, frame):
+        """每个玩家的卡牌区域（画面像素外接框）：手部检测只在这些区域内做
+        （不整帧识别），并且手在该玩家的区域内时只暂停该玩家。已校准用格子
+        多边形外接框（外扩 3%+4px，同 _calib_roi）；未校准回退玩家区域矩形。"""
+        h, w = frame.shape[:2]
+        out = {}
+        for p in self.players:
+            pc = self.calib.get(self.cam_id, p) if self.calib is not None else None
+            if pc is not None:
+                pts = [pt for _z, _i, poly in pc.polygons() for pt in poly]
+                if pts:
+                    xs = [pt[0] for pt in pts]
+                    ys = [pt[1] for pt in pts]
+                    mx = (max(xs) - min(xs)) * 0.03 + 4
+                    my = (max(ys) - min(ys)) * 0.03 + 4
+                    out[p] = (max(0.0, min(xs) - mx), max(0.0, min(ys) - my),
+                              min(float(w), max(xs) + mx),
+                              min(float(h), max(ys) + my))
+                    continue
+            area = gridmap.player_area(self.cfg["mode"],
+                                       self.cfg["single"]["player1_side"], p,
+                                       self.cfg["dual"].get("swap", False))
+            out[p] = (area[0] * w, area[1] * h, area[2] * w, area[3] * h)
+        return out
+
     def _process(self, frame):
         dets = self.detector.detect(frame, self._calib_roi(frame))
         dets = self._marker_filter(dets)
+        # 手在「玩家卡牌区域」内时：这一帧暂停该玩家的卡牌识别（保持上一帧
+        # 战场状态），避免正放手/手势遮挡被误识别。
+        hand_players = set()
+        if self.hands is not None:
+            hand_players = self.hands.players_with_hand(
+                frame, self._player_regions(frame))
+            self._hand_players = hand_players
+            enter = hand_players - self._hand_log
+            leave = self._hand_log - hand_players
+            if enter:
+                _log(f"[{self.cam_id}] 手在 "
+                     f"{'/'.join('P%d' % p for p in sorted(enter))} 卡牌区域内，"
+                     f"暂停本帧识别")
+            if leave:
+                _log(f"[{self.cam_id}] "
+                     f"{'/'.join('P%d' % p for p in sorted(leave))} 手已离开，恢复识别")
+            self._hand_log = set(hand_players)
+        active = [p for p in self.players if p not in hand_players]
         by_player = {p: {} for p in self.players}
         layout = self.cfg["layout"]
         mode = self.cfg["mode"]
         p1_side = self.cfg["single"]["player1_side"]
         swap = self.cfg["dual"].get("swap", False)
         h, w = frame.shape[:2]
+        back_cells = {}          # player -> {(zone, idx): det} 本轮落格成功的卡背框
         for d in dets:
             hit = None
             for p in self.players:
@@ -1128,23 +1372,31 @@ class CameraWorker(threading.Thread):
                 num = index + 1 if index is not None else ""
                 code = _ZONE_CODE.get(zone, zone)
                 d["_dbgcb"] = f"P{p}-{code}{num}:{d.get('conf', 0.0):.3f}"
+            if d.get("from_back") and d["side"] == "back":
+                # 落格成功的卡背：交给卡背框记忆（未落格的不处理）
+                back_cells.setdefault(p, {})[(zone, index)] = d
             by_player[p][(zone, index)] = card
-        self._keep_names(by_player)
-        self._hold_cells(by_player)
-        for p in self.players:
+        # 只有「没被手遮挡」的玩家参与记忆更新与落格；被遮挡的玩家整帧跳过，
+        # store 里的旧状态原样保留（连同其卡名/卡背记忆一起不被动）。
+        self._back_patch_pass(frame, by_player, back_cells, active)
+        self._keep_names(by_player, active)
+        self._hold_cells(by_player, active)
+        for p in active:
             self.store.apply_recognition(p, by_player[p])
-        self.detections = sum(len(v) for v in by_player.values())
-        self._log_reco(by_player)
+        self.detections = sum(len(by_player[p]) for p in active)
+        self._log_reco(by_player, active)
         return dets
 
-    def _keep_names(self, by_player):
+    def _keep_names(self, by_player, players=None):
         """卡名保持：这一轮该格有卡但没认出名字时，沿用该格上次认出的卡名。
 
         只在「正面且无卡名」时沿用；看到卡背视为状态变了，直接忘掉。
         该格这一轮没有卡（没检测到）就清记忆 —— 之后再来未知卡，就按未知卡处理，
         不会把旧名字贴到新卡上。
         """
-        for p in self.players:
+        if players is None:
+            players = self.players
+        for p in players:
             mem = self._keep.setdefault(p, {})
             cells = by_player[p]
             for key in list(mem):
@@ -1166,17 +1418,19 @@ class CameraWorker(threading.Thread):
                 kept.setdefault("extra", {})["source"] = "keep"
                 cells[key] = kept
 
-    def _hold_cells(self, by_player):
+    def _hold_cells(self, by_player, players=None):
         """短暂丢失保持：识别偶尔丢一帧（卡背/弱框在阈值边缘抖动）时，
         「这一轮没识别到」的格子在 display 端立刻清空就是闪烁的根源。
         cell_hold 秒内缺席的格沿用上一轮的卡原地补回；超过才真的清空。
         卡被物理拿走时最长显示 cell_hold 秒的余像，属可接受代价。
         暂停/断线/未定位恢复时记忆会被清（_keeper 的 _cells_keep.clear()）。"""
+        if players is None:
+            players = self.players
         nowt = time.time()
         hold = float(self.cfg["detect"].get("cell_hold", 1.0))
         if hold <= 0:
             return
-        for p in self.players:
+        for p in players:
             cur = by_player[p]
             mem = self._cells_keep.setdefault(p, {})
             for key, cardv in cur.items():
@@ -1188,14 +1442,93 @@ class CameraWorker(threading.Thread):
                 if key not in cur and nowt - ts <= hold:
                     cur[key] = copy.deepcopy(card)  # 补回这一轮缺席的格
 
-    def _log_reco(self, by_player):
+    def _back_patch_pass(self, frame, by_player, back_cells, players=None):
+        """卡背框记忆：某格上一次检出卡背（CB）就记下检测框 + 框内图像。
+
+        下一轮该格**既没检出卡背、也没变成任何正面**（含未认出名/未识别的
+        未知正面）时，才用记忆的框裁当前图像，与记忆图像比相似度
+        （TM_CCOEFF_NORMED，抗亮暗变化）：够像就仍按卡背（卡没动，只是这
+        一帧检测弱/漏了）。不像或超时则忘掉记忆。只在落进玩家格子的卡背
+        上生效（未落格的不记）。
+        """
+        cfg = self.cfg["detect"]
+        if players is None:
+            players = self.players
+        if not cfg.get("back_patch", True):
+            return
+        sim_thr = float(cfg.get("back_patch_sim", 0.75))
+        ttl = float(cfg.get("back_patch_ttl", 5.0))
+        size = int(cfg.get("back_patch_size", 64))
+        nowt = time.time()
+        cv2, np_ = self.models.cv2, self.models.np
+        fh, fw = frame.shape[:2]
+
+        def rect_of(corners):
+            xs = [float(pt[0]) for pt in corners]
+            ys = [float(pt[1]) for pt in corners]
+            ix = (max(xs) - min(xs)) * 0.06
+            iy = (max(ys) - min(ys)) * 0.06
+            return (min(xs) + ix, min(ys) + iy, max(xs) - ix, max(ys) - iy)
+
+        def patch_of(rect):
+            x0, y0, x1, y1 = rect
+            x0, y0 = max(0, int(x0)), max(0, int(y0))
+            x1, y1 = min(fw, int(x1)), min(fh, int(y1))
+            if x1 - x0 < 8 or y1 - y0 < 8:
+                return None
+            g = cv2.cvtColor(frame[y0:y1, x0:x1], cv2.COLOR_BGR2GRAY)
+            return cv2.resize(g, (size, size), interpolation=cv2.INTER_AREA)
+
+        for p in players:
+            cur = by_player[p]
+            mem = self._back_mem.setdefault(p, {})
+            # 1) 本轮检出卡背：重建/刷新记忆（框 + 图像）
+            for key, d in (back_cells.get(p) or {}).items():
+                rect = rect_of(d["corners"])
+                patch = patch_of(rect)
+                if patch is not None:
+                    mem[key] = {"rect": rect, "patch": patch, "time": nowt,
+                                "orientation": d.get("orientation", "vertical")}
+            # 2) 本轮没检出卡背的格：用记忆比对
+            for key in list(mem.keys()):
+                if key in (back_cells.get(p) or {}):
+                    continue                        # 本轮有检出，已在上面刷新
+                card = cur.get(key)
+                if card is not None and card.get("face_up"):
+                    # 已变成正面（含未认出名/未识别的未知正面）→ 不再拿卡背图
+                    # 比对；记忆留着让它自然超时（避免手/反光弱帧反复贴回）
+                    continue
+                m = mem[key]
+                if nowt - m["time"] > ttl:
+                    mem.pop(key, None)              # 太久没见，当作卡已变
+                    continue
+                patch = patch_of(m["rect"])
+                if patch is None:
+                    mem.pop(key, None)
+                    continue
+                sim = float(cv2.matchTemplate(patch, m["patch"],
+                                              cv2.TM_CCOEFF_NORMED)[0][0])
+                if sim < sim_thr:
+                    mem.pop(key, None)              # 不像：卡变了
+                    continue
+                back = empty_card(face_up=False,
+                                  orientation=m.get("orientation", "vertical"))
+                back["extra"] = {"source": "CB*", "sim": round(sim, 3)}
+                cur[key] = back
+                m["patch"] = patch                  # 缓慢自适应光照漂移
+                m["time"] = nowt
+
+    def _log_reco(self, by_player, players=None):
         """打印卡名识别结果（内容变化时才打印，避免每个识别周期刷屏）。"""
+        if players is None:
+            players = self.players
+
         def sort_key(kv):
             zone, index = kv[0]
             return (zone, index if index is not None else -1)
 
         items = []
-        for p in self.players:
+        for p in players:
             for (zone, index), card in sorted(by_player[p].items(), key=sort_key):
                 loc = f"P{p} {zone}{index + 1 if index else ''}"
                 extra = card.get("extra", {})
@@ -1206,6 +1539,8 @@ class CameraWorker(threading.Thread):
                 else:
                     items.append(f"{loc} {'卡背' if not card.get('face_up') else '未识别'}"
                                  f" [{source}]")
+        for p in sorted(self._hand_players):
+            items.append(f"P{p} 手遮挡暂停")     # 该玩家本帧被手挡住，状态保持
         txt = " | ".join(items)
         if txt != self._last_reco:
             self._last_reco = txt
@@ -1262,6 +1597,15 @@ class CameraWorker(threading.Thread):
                 ycb += 28
                 if ycb > 360:
                     break
+        if self._hand_players:
+            # 调试：手在卡牌区域内、本帧该玩家暂停（左下角，ASCII）
+            txt = ("[HAND " + " ".join(f"P{p}" for p in sorted(self._hand_players))
+                   + "]")
+            y = img.shape[0] - 14
+            cv2.putText(img, txt, (11, y + 2), cv2.FONT_HERSHEY_SIMPLEX, 0.7,
+                        (0, 0, 0), 4, cv2.LINE_AA)
+            cv2.putText(img, txt, (9, y), cv2.FONT_HERSHEY_SIMPLEX, 0.7,
+                        (0, 80, 255), 2, cv2.LINE_AA)
         ok, buf = cv2.imencode(".jpg", img, [int(cv2.IMWRITE_JPEG_QUALITY), 70])
         if ok:
             self.frames[self.cam_id] = buf.tobytes()
@@ -1293,6 +1637,8 @@ class CameraWorker(threading.Thread):
             "detections": self.detections, "error": self.error,
             "located": self._self_located(),
             "model": self.detector.error if (self.detector and not self.detector.ready) else "",
+            # 手在卡牌区域内被暂停的玩家（空表示没被遮挡）
+            "hand": sorted(self._hand_players),
         }
 
     def _self_located(self):

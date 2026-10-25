@@ -92,6 +92,19 @@
             <label>丢帧防闪保持(秒)<input type="number" step="0.1" min="0" name="cell_hold" title="这一轮没识别到的格沿用上一轮的卡，超时才真清空；0=关闭"></label>
             <label>定位方块屏蔽(px)<input type="number" step="1" min="0" name="marker_drop_radius" title="校准方块中心半径内直接丢弃检测框（过滤鬼影卡）；0=不屏蔽"></label>
           </div>
+          <div class="row">
+            <label class="chk"><input type="checkbox" name="back_patch"> 卡背框记忆</label>
+            <label>记忆相似度<input type="number" step="0.01" min="0" max="1" name="back_patch_sim" title="漏检时用上次的卡背框裁当前图像比对，够像就仍判卡背（0~1）"></label>
+            <label>记忆保留(秒)<input type="number" step="0.1" min="0" name="back_patch_ttl" title="卡背框记忆最长保留时间，超过当作卡已变"></label>
+          </div>
+          <div class="row">
+            <label class="chk"><input type="checkbox" name="hand_pause"> 手部遮挡暂停</label>
+            <label>手离开后保持(秒)<input type="number" step="0.1" min="0" name="hand_hold" title="最后一次检到手后再多暂停几秒，避免手抬起时的帧间漏检"></label>
+            <label>手部检测置信度<input type="number" step="0.01" min="0" max="1" name="hand_conf" title="最小手部检测置信度"></label>
+          </div>
+          <div class="row">
+            <label style="flex:1">手部模型(.task)<input type="text" name="hand_model" placeholder="hand_landmarker.task（新版 mediapipe 需要，缺失会自动下载）"></label>
+          </div>
         </fieldset>
 
         <fieldset>

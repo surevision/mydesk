@@ -39,7 +39,18 @@
     "track": true,
     "name_cache_ttl": 3.0,
     "marker_drop_radius": 60,
-    "cell_hold": 1.0
+    "cell_hold": 1.0,
+    "back_patch": true,
+    "back_patch_sim": 0.75,
+    "back_patch_ttl": 5.0,
+    "back_patch_size": 64,
+    "hand_pause": true,
+    "hand_hold": 0.4,
+    "hand_conf": 0.5,
+    "hand_complexity": 0,
+    "hand_model": "D:\\Git\\ygodesk\\models\\hand_landmarker.task",
+    "hand_download": true,
+    "hand_delegate": "cpu"
   },
   "layout": {
     "col_count": 5,

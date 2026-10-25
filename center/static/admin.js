@@ -62,6 +62,13 @@ async function loadConfig() {
   set("name_cache_ttl", cfg.detect.name_cache_ttl);
   set("cell_hold", cfg.detect.cell_hold);
   set("marker_drop_radius", cfg.detect.marker_drop_radius);
+  set("back_patch", cfg.detect.back_patch);
+  set("back_patch_sim", cfg.detect.back_patch_sim);
+  set("back_patch_ttl", cfg.detect.back_patch_ttl);
+  set("hand_pause", cfg.detect.hand_pause);
+  set("hand_hold", cfg.detect.hand_hold);
+  set("hand_conf", cfg.detect.hand_conf);
+  set("hand_model", cfg.detect.hand_model);
   set("m_yolo_front", cfg.models.yolo_front);
   set("m_yolo_back", cfg.models.yolo_back);
   set("m_name_onnx", cfg.models.name_onnx);
@@ -107,6 +114,13 @@ function collect() {
   cfg.detect.name_cache_ttl = parseFloat(f.name_cache_ttl.value);
   cfg.detect.cell_hold = parseFloat(f.cell_hold.value);
   cfg.detect.marker_drop_radius = parseInt(f.marker_drop_radius.value, 10);
+  cfg.detect.back_patch = f.back_patch.checked;
+  cfg.detect.back_patch_sim = parseFloat(f.back_patch_sim.value);
+  cfg.detect.back_patch_ttl = parseFloat(f.back_patch_ttl.value);
+  cfg.detect.hand_pause = f.hand_pause.checked;
+  cfg.detect.hand_hold = parseFloat(f.hand_hold.value);
+  cfg.detect.hand_conf = parseFloat(f.hand_conf.value);
+  cfg.detect.hand_model = f.hand_model.value.trim();
   cfg.models = cfg.models || {};
   cfg.models.yolo_front = f.m_yolo_front.value.trim();
   cfg.models.yolo_back = f.m_yolo_back.value.trim();
@@ -167,7 +181,7 @@ async function poll() {
   try {
     const st = await (await fetch("/api/status")).json();
     const cams = (st.cameras || [])
-      .map((c) => `${c.id}:${c.connected ? "在线" : "离线"} ${c.fps}fps 识别${c.detections}${c.located === false ? " 未定位" : ""}${c.error ? " " + c.error : ""}`)
+      .map((c) => `${c.id}:${c.connected ? "在线" : "离线"} ${c.fps}fps 识别${c.detections}${c.located === false ? " 未定位" : ""}${(c.hand && c.hand.length) ? " 手遮挡P" + c.hand.join("/") : ""}${c.error ? " " + c.error : ""}`)
       .join(" | ");
     statusLine.textContent =
       `WS客户端 ${st.ws_clients} | 模型 ${st.models_ok ? "就绪" : "未就绪"}（${st.models_reason}）`

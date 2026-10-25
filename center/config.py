@@ -116,6 +116,25 @@ DEFAULT_CONFIG = {
         # 单格短暂丢失保持秒数：识别偶尔丢一帧时格子里刚认出的卡不被清空
         # （display 端不闪）；卡被拿走时最长显示 cell_hold 秒余像
         "cell_hold": 1.0,
+        # 卡背框记忆：某格上一次检出卡背（CB）就记住检测框+框内图像；下一轮
+        # 该格既没检出卡背、也没变成「认出卡名的正面」时，用记忆的框裁当前
+        # 图像与记忆图像比相似度，够像就仍按卡背（框没动、只是弱帧丢了检出）。
+        "back_patch": True,          # 开关
+        "back_patch_sim": 0.75,      # 相似度阈值（TM_CCOEFF_NORMED，0~1）
+        "back_patch_ttl": 5.0,       # 记忆最长保留秒数（超过当作卡已变）
+        "back_patch_size": 64,       # 比对用灰度小图边长（像素）
+        # 手部遮挡暂停：MediaPipe Hands 只在「该玩家的卡牌区域」内找手（不整帧），
+        # 手在区域内时暂停这一帧该玩家的卡牌识别（保持上一帧战场状态），避免正
+        # 放手/手势遮挡被误识别。需要 mediapipe（未安装则自动禁用，仅打日志）。
+        "hand_pause": True,          # 开关
+        "hand_hold": 0.4,            # 最后一次检到手后再多暂停的秒数（防抖）
+        "hand_conf": 0.5,            # 最小手部检测置信度
+        "hand_complexity": 0,        # 旧版 solutions API 的模型复杂度 0/1（0=lite）
+        # 新版 mediapipe（>=1.0，仅有 tasks API）需要 hand_landmarker.task 模型：
+        # 缺失且 hand_download=True 时启动会自动从官方地址下载一次（约 7MB）
+        "hand_model": os.path.join(MODELS_DIR, "hand_landmarker.task"),
+        "hand_download": True,       # 模型缺失时自动下载
+        "hand_delegate": "cpu",      # 新版 Tasks API 推理后端：cpu / gpu
     },
 
     # 每玩家区域的格子布局
