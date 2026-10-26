@@ -164,5 +164,6 @@
       "h": 0.25
     }
   },
-  "recognition_enabled": true
+  "recognition_enabled": true,
+  "detect_unknown": true
 }

@@ -2,7 +2,8 @@
 """
 recognize.py
 摄像头识别：读取视频流 → YOLO(OBB) 检测卡牌 → 透视矫正/朝向 → 卡名识别
-（认出卡名=已知正面，没认出=未知正面）→ 卡背模型框独立判背面卡牌（同格覆盖）
+（认出卡名=已知正面，没认出=未知正面；未知正面可用配置 detect_unknown 关闭写入）
+→ 卡背模型框独立判背面卡牌（同格覆盖）
 → 中心坐标映射到 (玩家, 格子) → 写入 BattlefieldStore。
 
 多路并发：Models 只保存无状态共享资源（cv2/numpy、卡名 ONNX 会话、卡名库），
@@ -1381,6 +1382,16 @@ class CameraWorker(threading.Thread):
         self._back_patch_pass(frame, by_player, back_cells, active)
         self._keep_names(by_player, active)
         self._hold_cells(by_player, active)
+        # 「检测未知卡牌」关闭：认不出卡名的正面卡牌不再写回战场（预览标注照旧）。
+        # 放在卡名保持/短暂丢失保持之后：认出过卡名的格子沿用记忆（不算未知卡），
+        # 卡背卡牌（face_up=False）也不受影响。
+        if not self.cfg.get("detect_unknown", True):
+            for p in active:
+                cells = by_player[p]
+                for key in [k for k, c in cells.items()
+                            if c.get("face_up")
+                            and _as_int(c.get("id"), -1) < 0]:
+                    cells.pop(key, None)
         for p in active:
             self.store.apply_recognition(p, by_player[p])
         self.detections = sum(len(by_player[p]) for p in active)

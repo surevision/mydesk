@@ -3,7 +3,8 @@
 state.py
 center 保存的「当前战场」权威状态。
 
-- controller 发来的完整快照：整体替换，并记录哪些格子是「人工」设置的。
+- controller 发来的完整快照：整体替换；改成具体卡牌的格子记为「人工」，
+  清空（null，controller 的「清除此格」）则交还识别。
 - 摄像头识别结果：只更新非人工格子（人工设置优先，便于容错）。
 - 任何变化通过 on_change(kind, data) 通知上层（用于广播给 display / controller）。
 """
@@ -110,7 +111,10 @@ class BattlefieldStore:
                     cur = _get_cell(mine["players"][pkey], z, i)
                     if not _eq(new, cur):
                         _set_cell(mine["players"][pkey], z, i, copy.deepcopy(new))
-                        self._source[(pkey, z, i)] = "manual"
+                        # 设置具体卡牌 = 人工设置（后续不被识别覆盖）；
+                        # 清空格子（null，controller 的「清除此格」）= 交还识别，
+                        # 不标记 manual，让识别能重新填充该格
+                        self._source[(pkey, z, i)] = "manual" if new is not None else ""
                         changed = True
             if bf.get("phase") is not None and bf.get("phase") != mine["phase"]:
                 mine["phase"] = bf["phase"]

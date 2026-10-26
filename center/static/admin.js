@@ -42,6 +42,7 @@ async function loadConfig() {
   };
   set("mode", cfg.mode);
   set("recognition_enabled", cfg.recognition_enabled);
+  set("detect_unknown", cfg.detect_unknown);
   set("s_url", cfg.single.url);
   set("s_side", cfg.single.player1_side);
   set("d_swap", cfg.dual.swap);
@@ -85,6 +86,7 @@ function collect() {
   const cfg = JSON.parse(JSON.stringify(window.__cfg || {}));
   cfg.mode = f.mode.value;
   cfg.recognition_enabled = f.recognition_enabled.checked;
+  cfg.detect_unknown = f.detect_unknown.checked;
   cfg.single = cfg.single || {};
   cfg.single.url = f.s_url.value.trim();
   cfg.single.player1_side = f.s_side.value;
