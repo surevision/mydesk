@@ -346,6 +346,8 @@ public partial class Connection : Node
     public void on_attack_anim(int from_player, string from_cell_type, int from_cell_index,
         int to_player, string to_cell_type, int to_cell_index, bool is_direct)
     {
+        BattleManager.getInstance().showAttack(from_player, from_cell_type, from_cell_index,
+            to_player, to_cell_type, to_cell_index, is_direct);
     }
 
     /// <summary>播放阶段切换动画。</summary>

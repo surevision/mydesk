@@ -14,6 +14,7 @@
 [ext_resource type="Texture2D" uid="uid://dyix72e8ant06" path="res://static/common/sword.png" id="12_xj34t"]
 [ext_resource type="Texture2D" uid="uid://ct13614wsfudl" path="res://static/common/shield.png" id="13_lv0g8"]
 [ext_resource type="Texture2D" uid="uid://cw1t4x8xp68s4" path="res://static/ground/cardbg1.png" id="14_cbubv"]
+[ext_resource type="Texture2D" uid="uid://bnvcjal38odvd" path="res://static/common/attack.png" id="14_deqsr"]
 [ext_resource type="Texture2D" uid="uid://dsa0xkg87yo70" path="res://ui_themes/cyberpunk/images/frame_square_round.png" id="15_i57md"]
 [ext_resource type="Script" uid="uid://c0h3i64860654" path="res://addons/dice_3d/dice_cinematic_roller_3d.gd" id="16_fp27k"]
 [ext_resource type="Script" uid="uid://b28v0gs5j0q7y" path="res://addons/dice_3d/coin_toss_3d.gd" id="17_7iwos"]
@@ -932,6 +933,18 @@ fov = 50.0
 [node name="middle" type="Node3D" parent="showfield" unique_id=641317255]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -23.47902)
 
+[node name="player1AtkSwordTemplate" type="Sprite3D" parent="showfield/middle" unique_id=378513395]
+transform = Transform3D(-4.371139e-08, 1, 0, -1, -4.371139e-08, 0, 0, 0, 1, -3.6100001, 0, 1)
+visible = false
+pixel_size = 0.02
+texture = ExtResource("14_deqsr")
+
+[node name="player2AtkSwordTemplate" type="Sprite3D" parent="showfield/middle" unique_id=1404976812]
+transform = Transform3D(-4.371139e-08, -1, 0, 1, -4.371139e-08, 0, 0, 0, 1, 3.6104412, 0, 1)
+visible = false
+pixel_size = 0.02
+texture = ExtResource("14_deqsr")
+
 [node name="cards" type="Node3D" parent="showfield/middle" unique_id=1816538268]
 
 [node name="player1" type="Node3D" parent="showfield/middle/cards" unique_id=1808437168]
@@ -1053,6 +1066,9 @@ pixel_size = 0.005
 [node name="card5" type="Sprite3D" parent="showfield/middle/cards/player1/back" unique_id=44634409]
 transform = Transform3D(-4.371139e-08, 0.9999999, 0, -1, -4.3711385e-08, 0, 0, 0, 0.9999999, 0, -7.9, 0)
 pixel_size = 0.005
+
+[node name="directNode" type="Node3D" parent="showfield/middle/cards/player1" unique_id=507753646]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -7, 0, 0)
 
 [node name="player2" type="Node3D" parent="showfield/middle/cards" unique_id=1659188369]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.9704413, 0, -0.23999977)
@@ -1179,6 +1195,9 @@ pixel_size = 0.005
 [node name="card5" type="Sprite3D" parent="showfield/middle/cards/player2/back" unique_id=1627076248]
 transform = Transform3D(-4.371139e-08, -0.9999999, 0, 1, -4.3711385e-08, 0, 0, 0, 0.9999999, 0, -7.9, 0)
 pixel_size = 0.005
+
+[node name="directNode" type="Node3D" parent="showfield/middle/cards/player2" unique_id=2101000104]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 7, 0, 0)
 
 [node name="ex" type="Node3D" parent="showfield/middle/cards" unique_id=44043659]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -0.24)

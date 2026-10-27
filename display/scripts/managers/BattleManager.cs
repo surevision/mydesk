@@ -79,6 +79,18 @@ public partial class BattleManager : Node
         mainUI.showCoin(player, val);
     }
 
+    public void showAttack(int from_player, string from_cell_type, int from_cell_index,
+        int to_player, string to_cell_type, int to_cell_index, bool is_direct)
+    {
+        if (mainUI == null)
+        {
+            GD.Print("UI未就绪");
+            return;
+        }
+        this.mainUI.showAttack(from_player, ZoneTypeExtensions.FromKey(from_cell_type), from_cell_index,
+            to_player, ZoneTypeExtensions.FromKey(to_cell_type), to_cell_index, is_direct);
+    }
+
     public void backToTitle()
     {
         

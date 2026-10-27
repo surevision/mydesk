@@ -6,6 +6,8 @@ public partial class MainUI : Node3D
 {
     [Export]
     public PackedScene titleBig;
+
+    // LP 动画
     private Tween p1lpTween;
     private Tween p2lpTween;
     private Label p1lpLabel;
@@ -13,6 +15,18 @@ public partial class MainUI : Node3D
 
     private int p1Lp;
     private int p2Lp;
+
+    // 攻击动画
+    private Tween p1AtkTween;
+    private Tween p2AtkTween;
+    
+    private Sprite3D p1AtkSpriteTemplate;
+    private Sprite3D p2AtkSpriteTemplate;
+
+    private Sprite3D p1AtkSpriteMoving;
+    private Sprite3D p2AtkSpriteMoving;
+
+
 
     Battlefield currField = new Battlefield();
     public override void _Ready()
@@ -700,9 +714,206 @@ public partial class MainUI : Node3D
         
     }
 
-    public void showAttack()
+    public void playAtkSequence(int fromPlayer, ZoneType fromCellType, int fromCellIndex, int toPlayer, ZoneType toCellType, int toCellIndex, bool isDirect,
+        Sprite3D movingSprite, Tween tween, Vector3 destination, float fadeDuration = 0.5f, float turnDuration = 0.4f, float moveDuration = 0.3f)
     {
+        if (movingSprite == null)
+        {
+            GD.PushError("movingSprite 未赋值");
+            return;
+        }
+
+        if (fromPlayer == 1)
+        {
+            movingSprite.RotationDegrees = new Vector3(movingSprite.RotationDegrees.X, movingSprite.RotationDegrees.Y, -90);
+        }
+        if (fromPlayer == 2)
+        {
+            movingSprite.RotationDegrees = new Vector3(movingSprite.RotationDegrees.X, movingSprite.RotationDegrees.Y, 90);
+        }
+        // 先确保初始透明度为 0
+        var mod = movingSprite.Modulate;
+        mod.A = 0f;
+        movingSprite.Modulate = mod;
+
+        // 记录起始状态
+        Vector3 startPos = movingSprite.GlobalPosition;
+        float startRotZ = movingSprite.Rotation.Z;
+
+        // 计算目标角度：让 sprite 的朝向指向 destination
+        // 这里按“Z 轴旋转 + 精灵默认朝 +X”来算；
+        Vector3 dir = startPos - destination;
+        float targetRotZ = Mathf.Atan2(dir.Y, dir.X);
+
+        // 处理角度环绕，避免绕远路
+        float deltaAngle = Mathf.Wrap(targetRotZ, -Mathf.Pi, Mathf.Pi);
+        float finalRotZ = (startRotZ + deltaAngle + Mathf.Pi) % Mathf.Pi;
+        if (fromPlayer == 1)
+        {
+            finalRotZ = (startRotZ + deltaAngle - Mathf.Pi) % Mathf.Pi;   
+        }
+
+        if (fromCellType == ZoneType.Ex && toCellType == ZoneType.Ex)
+        {
+            if (fromPlayer == 1)
+            {
+                if (toCellIndex == 1)
+                {
+                    
+                    movingSprite.RotationDegrees = new Vector3(movingSprite.RotationDegrees.X, movingSprite.RotationDegrees.Y, 270);
+                    startRotZ = movingSprite.Rotation.Z;
+                    finalRotZ = Mathf.Pi;   
+                }
+                else
+                {
+                    finalRotZ = 0;
+                }
+            }
+            if (fromPlayer == 2)
+            {
+                if (toCellIndex == 1)
+                {
+                    finalRotZ = 0;
+                }
+                else
+                {
+                    finalRotZ = Mathf.Pi;   
+                }
+            }
+            GD.Print("startRotZ: ", startRotZ, " finalRotZ: ", finalRotZ);
+        }
         
+
+        // 1. 透明度 0 → 1
+        tween.TweenProperty(movingSprite, "modulate:a", 1.0f, fadeDuration);
+
+        // 2. 沿 Z 轴转向指定角度（x、y 不变）
+        tween.TweenMethod(
+            Callable.From<float>(t =>
+            {
+                Vector3 rot = movingSprite.Rotation;
+                rot.Z = Mathf.Lerp(startRotZ, finalRotZ, t);
+                // 显式保持 X、Y 不变
+                rot.X = movingSprite.Rotation.X; // 实际就是原值
+                rot.Y = movingSprite.Rotation.Y;
+                movingSprite.Rotation = rot;
+            }),
+            0.0f, 1.0f, turnDuration
+        );
+
+        // 3. 顺着该方向斜向移动到指定 globalPosition
+        tween.TweenMethod(
+            Callable.From<float>(t =>
+            {
+                movingSprite.GlobalPosition = startPos.Lerp(destination, t);
+            }),
+            0.0f, 1.0f, moveDuration
+        );
+        // 播放移动音频
+        tween.Parallel().TweenCallback(Callable.From(() => {
+            AudioManager.getInstance().playSE("attack");
+        }));
+
+        // 4. 等待0.3s
+        tween.TweenInterval(0.3f);
+
+        // 可选：动画结束后回调
+        tween.TweenCallback(Callable.From(() =>
+        {
+            GD.Print("动画完成，当前位置: " + movingSprite.GlobalPosition);
+            movingSprite.Visible = false;
+            movingSprite.Modulate = new Color(1, 1, 1, 0);
+            if (fromPlayer == 1)
+            {
+                movingSprite.RotationDegrees = new Vector3(movingSprite.RotationDegrees.X, movingSprite.RotationDegrees.Y, -90);
+            }
+            if (fromPlayer == 2)
+            {
+                movingSprite.RotationDegrees = new Vector3(movingSprite.RotationDegrees.X, movingSprite.RotationDegrees.Y, 90);
+            }
+        }));
+    }
+
+    public void showAttack(int fromPlayer, ZoneType fromCellType, int fromCellIndex, int toPlayer, ZoneType toCellType, int toCellIndex, bool isDirect)
+    {
+        GD.Print(fromPlayer, " ", fromCellType, " ", fromCellIndex, " ", toPlayer, " ", toCellType, " ", toCellIndex, " ", isDirect, " ");
+
+        fromCellIndex += 1;
+        toCellIndex += 1;
+        
+        string newNodeName = string.Format("{0}_{1}_{2}", fromPlayer, fromCellType, fromCellIndex);
+        string atkNodeName = string.Format("showfield/middle/cards/player{0}/front/card{1}", fromPlayer, fromCellIndex);
+        string atkNodeNameTo = string.Format("showfield/middle/cards/player{0}/front/card{1}", toPlayer, toCellIndex);
+
+        if (fromCellType == ZoneType.Ex)
+        {
+            if (fromPlayer == 1)
+            {
+                atkNodeName = string.Format("showfield/middle/cards/ex/card{0}", fromCellIndex == 1 ? 2 : 1);
+            }
+            else
+            {
+                atkNodeName = string.Format("showfield/middle/cards/ex/card{0}", fromCellIndex);
+            } 
+        }
+        if (toCellType == ZoneType.Ex)
+        {
+            if (toPlayer == 1)
+            {
+                atkNodeNameTo = string.Format("showfield/middle/cards/ex/card{0}", toCellIndex == 1 ? 2 : 1);
+            } 
+            else
+            {
+                atkNodeNameTo = string.Format("showfield/middle/cards/ex/card{0}", toCellIndex);
+            }
+        }
+        Sprite3D node = GetNodeOrNull<Sprite3D>(newNodeName);;
+
+        // 创建节点
+        if (node == null)
+        {
+            GD.Print("创建节点: " + atkNodeName);
+            Sprite3D template = null;
+            if (fromPlayer == 1)
+            {
+                template = this.GetNode<Sprite3D>("showfield/middle/player1AtkSwordTemplate");
+                this.p1AtkSpriteTemplate = template;
+            }
+            else
+            {
+                template = this.GetNode<Sprite3D>("showfield/middle/player2AtkSwordTemplate");
+                this.p2AtkSpriteTemplate = template;
+            }
+            node = (Sprite3D)template.Duplicate();
+            node.Name = newNodeName;
+            template.GetParent<Node3D>().AddChild(node);
+            GD.Print("add child");
+            node.Modulate = new Color(1, 1, 1, 0);
+        }
+        if (fromPlayer == 1)
+        {
+            this.p1AtkSpriteMoving = node;   
+        } 
+        else
+        {
+            this.p2AtkSpriteMoving = node;
+        }
+        Sprite3D fromSprte = this.GetNode<Sprite3D>(atkNodeName);
+        node.Visible = true;
+        node.GlobalPosition = new Vector3(fromSprte.GlobalPosition.X, fromSprte.GlobalPosition.Y, node.GlobalPosition.Z);
+        Node3D targetNode = null;
+        if (!isDirect)
+        {
+            targetNode = this.GetNode<Sprite3D>(atkNodeNameTo);
+        }
+        else
+        {
+            targetNode = this.GetNode<Node3D>(string.Format("showfield/middle/cards/player{0}/directNode", toPlayer));
+        }
+        GD.Print(atkNodeName, "\n", atkNodeNameTo);
+        Vector3 destination = new Vector3(targetNode.GlobalPosition.X, targetNode.GlobalPosition.Y, node.GlobalPosition.Z);
+        Tween tween = node.CreateTween();
+        this.playAtkSequence(fromPlayer, fromCellType, fromCellIndex, toPlayer, toCellType, toCellIndex, isDirect, node, tween, destination);
     }
 
     public void backToTitle()
