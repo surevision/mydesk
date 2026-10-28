@@ -412,6 +412,7 @@ public partial class Connection : Node
     /// <param name="size_mode">战场规模："big"、"mid"、"small"。</param>
     public void on_switch_sizemode(string size_mode)
     {
+        BattleManager.getInstance().switchSizeMode(size_mode);
     }
 
     /// <summary>静音 / 取消静音 display 的全部音频。</summary>
