@@ -6,7 +6,7 @@
  */
 import {
   PHASES, CELL_TYPES, SETTABLE_CELL_TYPES,
-  SUMMON_TYPES, ATTRIBUTES, RACES, MARKER_TYPES, ORIENTATIONS, COUNTER_TYPES, labelOf,
+  SUMMON_TYPES, ATTRIBUTES, RACES, MARKER_TYPES, ORIENTATIONS, COUNTER_TYPES, SIZE_MODES, labelOf,
 } from "./protocol.js";
 
 let modalRoot = null;
@@ -406,6 +406,10 @@ export function openConfigPanel(current, onSave, actions = {}) {
       onclick: () => actions.onImport && actions.onImport(2),
     }),
     el("button", {
+      class: "cy-btn cy-btn--sm", text: "战场规模", type: "button",
+      onclick: () => actions.onSizeMode && actions.onSizeMode(),
+    }),
+    el("button", {
       class: "cy-btn cy-btn--sm", text: "交换位置", type: "button",
       onclick: () => actions.onSwap && actions.onSwap(),
     }),
@@ -600,6 +604,13 @@ export function openPhasePanel(current, onApply) {
     el("button", { class: "cy-btn cy-btn--sm" + (p.key === current ? " cy-btn--exec" : ""), text: p.label, onclick: () => { onApply(p.key); closeModal(); } })
   ));
   openModal({ title: "切换阶段", badge: "// PHASE", body: grid });
+}
+
+export function openSizeModePanel(current, onApply) {
+  const grid = el("div", { class: "quick-grid" }, SIZE_MODES.map((s) =>
+    el("button", { class: "cy-btn cy-btn--sm" + (s.key === current ? " cy-btn--exec" : ""), text: s.label, onclick: () => { onApply(s.key); closeModal(); } })
+  ));
+  openModal({ title: "切换战场规模", badge: "// SIZEMODE", body: grid });
 }
 
 export function openSummonPanel(onApply) {

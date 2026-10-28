@@ -43,6 +43,13 @@ python voice.py
 | `VGR` | 决斗结束 | `{"type": "on_game_reset"}` |
 | `VD` | 掷骰子 | `{"type": "on_dice", "player": 0, "value": 1-6}` |
 | `VC` | 掷硬币 | `{"type": "on_coin", "player": 0, "value": 0/1}` |
+| `VSA` | 升级召唤 | `{"type": "on_summon_anim", "summon_type": "advance"}` |
+| `VSF` | 融合召唤 | `{"type": "on_summon_anim", "summon_type": "fusion"}` |
+| `VSS` | 同步召唤 | `{"type": "on_summon_anim", "summon_type": "synchro"}` |
+| `VSX` | 超量召唤 | `{"type": "on_summon_anim", "summon_type": "xyz"}` |
+| `VSP` | 灵摆召唤 | `{"type": "on_summon_anim", "summon_type": "pendulum"}` |
+| `VSL` | 连接召唤 | `{"type": "on_summon_anim", "summon_type": "link"}` |
+| `VSR` | 仪式召唤 | `{"type": "on_summon_anim", "summon_type": "ritual"}` |
 
 - `player: 0` 表示双方（与 controller 默认「全部」一致），数值在模块内随机。
 - 每条消息附带 `"source": "voice"`，center 收到后会打印一条 `[center] 收到语音指令: {...}` 日志；center 不会把该字段转发给其它端。

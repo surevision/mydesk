@@ -21,6 +21,7 @@
  *   on_guide               { show }                                      显示/隐藏 display 上的定位方块
  *   on_mute                { mute }                                      静音/取消静音 display 的全部音频
  *   on_light               { on }                                        开启/关闭照明（on=true 开启）
+ *   on_switch_sizemode     { size_mode }                                 切换战场规模（big/mid/small，仅转发，display 端实现留空）
  *   on_game_reset          { battlefield }                             决斗结束（清空战场、置为未开始并广播）
  *   on_game_start          {}                                           开始决斗（置为已开始并广播）
  *
@@ -116,6 +117,13 @@ export const MARKER_TYPES = [
   { key: "invalid", label: "无效", img: "assets/markers/invalid.svg" },
   { key: "continuous", label: "永续", img: "assets/markers/continuous.svg" },
   { key: "equip", label: "装备", img: "assets/markers/equip.svg" },
+];
+
+// 战场规模（on_switch_sizemode.size_mode）：与 display 的 main_big/main_mid/main_small 对应
+export const SIZE_MODES = [
+  { key: "big", label: "大" },
+  { key: "mid", label: "中" },
+  { key: "small", label: "小" },
 ];
 
 // 朝向
@@ -223,6 +231,7 @@ export const MSG = {
   GUIDE: "on_guide",
   MUTE: "on_mute",
   LIGHT: "on_light",
+  SWITCH_SIZEMODE: "on_switch_sizemode",
   RESET: "on_game_reset",
   START: "on_game_start",
 };

@@ -67,6 +67,7 @@ conda run -n ygodesk python center.py
 - 收到 `on_mute`：记录全局静音状态并广播 `{ type: "on_mute", mute }`，display 控制 Master 总线静音。
 - 收到 `on_game_start`：把战场属性 `started` 置为 `true`（恢复识别）并广播给所有 controller 和 display（display 端接口预留）。**不论当前是否已开始都照常广播**（重复指令由显示端自行判断处理）。
 - 收到 `on_game_reset`：把战场复位为初始状态（`started=false`，同时暂停识别），随后广播 `on_battlefield_change`（重置后的空战场），并向其它端转发带 `battlefield` 字段的 `on_game_reset`；display 端用该字段返回标题/刷新显示。**不论当前是否已开始都照常广播**（重复指令由显示端自行判断处理）。
+- 收到 `on_switch_sizemode`：原样转发给其它端（主要是 display，display 端实现留空）。
 - 其余 `on_*`（召唤/破坏/攻击/关联/音效/导入/骰子等）：原样转发给其它端（主要是 display）。
 - 新客户端连接时，立即下发一次当前战场快照和静音状态。
 - voice 模块发来的指令带 `source: "voice"`：center 收到后打印 `[center] 收到语音指令: {...}`，该字段不会转发给其它端。

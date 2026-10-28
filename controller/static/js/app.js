@@ -3,13 +3,13 @@
  * ---------------------------------------------------------------------------
  * 控制端页面主逻辑：初始化、渲染、与 center 通信、按钮/弹窗事件绑定。
  */
-import { MSG } from "./protocol.js";
+import { MSG, SIZE_MODES, labelOf } from "./protocol.js";
 import {
   makeBattlefield, normalizeBattlefield, normalizeCard,
   getCell, setCell, cloneBattlefield, zoneSize, ZONE_LABEL,
 } from "./state.js";
 import { buildBoard, renderBoard, setSelection, setSwapped } from "./render.js";
-import { initModals, openModal, closeModal, el, openConfigPanel, openLpPanel, openPhasePanel, openSummonPanel, openAttackPanel, openRelatePanel, openBgmPanel, openSePanel, openDicePanel, openCoinPanel, openImportPanel, openCardPanel, openCardActionPanel, openRollResultPanel, openResetPanel, rollTargetLabel } from "./panels.js";
+import { initModals, openModal, closeModal, el, openConfigPanel, openLpPanel, openPhasePanel, openSummonPanel, openAttackPanel, openRelatePanel, openBgmPanel, openSePanel, openDicePanel, openCoinPanel, openImportPanel, openCardPanel, openCardActionPanel, openRollResultPanel, openResetPanel, openSizeModePanel, rollTargetLabel } from "./panels.js";
 import { getConfig, saveConfig, uploadYdk } from "./api.js";
 import { CenterClient } from "./center.js";
 
@@ -27,6 +27,9 @@ let swapped = false;
 
 // display 当前是否静音（由 center 广播同步）
 let muted = false;
+
+// 当前战场规模（仅本地记录，供「规模」弹窗高亮；下发 on_switch_sizemode）
+let sizeMode = "big";
 
 // 已导入卡组：{ "1": [id...], "2": [id...] }（供卡号「选择」弹窗使用）
 const decks = { "1": [], "2": [] };
@@ -356,6 +359,7 @@ function wireButtons() {
 function openConfig() {
   openConfigPanel({ ...config, muted }, saveAndReconnect, {
     onImport: (p) => openImportPanel(p, (file) => importYdk(p, file)),
+    onSizeMode: () => openSizeModePanel(sizeMode, setSizeMode),
     onSwap: toggleSwap,
     onGuide: setGuide,
     onMute: setMuted,
@@ -402,6 +406,13 @@ function toggleSwap() {
   setSwapped(swapped);
   renderBoard(battle);
   toast(swapped ? "已交换玩家显示位置（仅显示）" : "已恢复默认显示位置");
+}
+
+// 切换战场规模：下发 on_switch_sizemode（display 端实现留空）
+function setSizeMode(mode) {
+  sizeMode = mode;
+  sendMsg(MSG.SWITCH_SIZEMODE, { size_mode: mode });
+  toast(`已切换战场规模：${labelOf(SIZE_MODES, mode)}`, "success");
 }
 
 function setGuide(show) {

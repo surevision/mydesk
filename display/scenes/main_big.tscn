@@ -439,9 +439,10 @@ offset_bottom = 40.0
 
 [node name="lp" type="Panel" parent="ui/player1" unique_id=1290365672]
 layout_mode = 1
-offset_left = 844.0
-offset_right = 1088.0
-offset_bottom = 128.0
+offset_left = 860.0
+offset_top = 44.0
+offset_right = 1060.0
+offset_bottom = 172.0
 rotation = 1.5707964
 theme_override_styles/panel = SubResource("StyleBoxTexture_85g3d")
 
@@ -449,21 +450,18 @@ theme_override_styles/panel = SubResource("StyleBoxTexture_85g3d")
 custom_minimum_size = Vector2(192, 115)
 custom_maximum_size = Vector2(192, 115)
 layout_mode = 0
-offset_left = 26.0
-offset_right = 218.0
+offset_right = 192.0
 offset_bottom = 115.0
 theme_override_constants/outline_size = 0
-theme_override_font_sizes/font_size = 84
+theme_override_font_sizes/font_size = 64
 text = "8000"
 horizontal_alignment = 1
 vertical_alignment = 1
 autowrap_mode = 3
 clip_text = true
 script = ExtResource("8_brc7b")
-_max_size = 86
 _outline_ratio = 0.0
-_current_font_size = 84
-_size_just_modified_by_autosizer = true
+_current_font_size = 64
 _editor_defaults_set = true
 metadata/_custom_type_script = "uid://bttgnk3bb2a8i"
 
@@ -829,31 +827,28 @@ layout_mode = 1
 anchors_preset = 2
 anchor_top = 1.0
 anchor_bottom = 1.0
-offset_left = -844.0
-offset_top = -2.0
-offset_right = -600.0
-offset_bottom = 126.0
+offset_left = -860.0
+offset_top = -46.0
+offset_right = -660.0
+offset_bottom = 82.0
 grow_vertical = 0
 rotation = -1.5707964
 theme_override_styles/panel = SubResource("StyleBoxTexture_choun")
 
 [node name="val" type="Label" parent="ui/player2/lp" unique_id=1566122202]
 layout_mode = 1
-offset_left = 26.0
 offset_top = 6.5
-offset_right = 218.0
+offset_right = 192.0
 offset_bottom = 121.5
-theme_override_constants/outline_size = 17
-theme_override_font_sizes/font_size = 84
+theme_override_constants/outline_size = 13
+theme_override_font_sizes/font_size = 64
 text = "8000"
 horizontal_alignment = 1
 vertical_alignment = 1
 autowrap_mode = 3
 clip_text = true
 script = ExtResource("8_brc7b")
-_max_size = 86
-_current_font_size = 84
-_size_just_modified_by_autosizer = true
+_current_font_size = 64
 _editor_defaults_set = true
 metadata/_custom_type_script = "uid://bttgnk3bb2a8i"
 
@@ -929,7 +924,7 @@ grow_vertical = 2
 [node name="Camera3D" type="Camera3D" parent="showfield" unique_id=1639057473]
 environment = SubResource("Environment_jyhfs")
 current = true
-fov = 50.0
+fov = 56.0
 
 [node name="middle" type="Node3D" parent="showfield" unique_id=641317255]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -23.47902)

@@ -6,6 +6,67 @@
 [ext_resource type="Script" uid="uid://dynulhnyq5hpq" path="res://addons/kenyoni/qr_code/qr_code_rect.gd" id="5_4rr2b"]
 [ext_resource type="Texture2D" uid="uid://dgcqxsk1jewco" path="res://ui_themes/cyberpunk/images/lp2.png" id="6_oftjj"]
 [ext_resource type="Script" uid="uid://bttgnk3bb2a8i" path="res://addons/font_auto_size_labels/auto_size_label.gd" id="7_xu2ek"]
+[ext_resource type="Script" uid="uid://ct70fpbpcxntr" path="res://scripts/nodes/ExDeckGlowParticle.cs" id="9_ygloa"]
+
+[sub_resource type="Gradient" id="Gradient_glowdot_p2"]
+offsets = PackedFloat32Array(0, 0.35, 1)
+colors = PackedColorArray(1, 1, 1, 1, 1, 0.23529412, 0.65882355, 1, 1, 0.23529412, 0.65882355, 0)
+
+[sub_resource type="GradientTexture2D" id="GradientTexture2D_81wt4"]
+gradient = SubResource("Gradient_glowdot_p2")
+width = 32
+height = 32
+fill = 1
+fill_from = Vector2(0.5, 0.5)
+fill_to = Vector2(1, 0.5)
+
+[sub_resource type="Gradient" id="Gradient_kcc3o"]
+colors = PackedColorArray(1, 1, 1, 1, 1, 0.23529412, 0.65882355, 0)
+
+[sub_resource type="Gradient" id="Gradient_jbj1t"]
+offsets = PackedFloat32Array(0, 0.35, 1)
+colors = PackedColorArray(1, 1, 1, 1, 0.16470589, 0.83137256, 1, 1, 0.16470589, 0.83137256, 1, 0)
+
+[sub_resource type="GradientTexture2D" id="GradientTexture2D_6rcc6"]
+gradient = SubResource("Gradient_jbj1t")
+width = 32
+height = 32
+fill = 1
+fill_from = Vector2(0.5, 0.5)
+fill_to = Vector2(1, 0.5)
+
+[sub_resource type="Gradient" id="Gradient_ah8jo"]
+colors = PackedColorArray(1, 1, 1, 1, 0.16470589, 0.83137256, 1, 0)
+
+[sub_resource type="Gradient" id="Gradient_xsx4b"]
+offsets = PackedFloat32Array(0, 0.35, 1)
+colors = PackedColorArray(1, 1, 1, 1, 1, 0.23529412, 0.65882355, 1, 1, 0.23529412, 0.65882355, 0)
+
+[sub_resource type="GradientTexture2D" id="GradientTexture2D_ygloa"]
+gradient = SubResource("Gradient_xsx4b")
+width = 32
+height = 32
+fill = 1
+fill_from = Vector2(0.5, 0.5)
+fill_to = Vector2(1, 0.5)
+
+[sub_resource type="Gradient" id="Gradient_6civk"]
+colors = PackedColorArray(1, 1, 1, 1, 1, 0.23529412, 0.65882355, 0)
+
+[sub_resource type="Gradient" id="Gradient_d7s05"]
+offsets = PackedFloat32Array(0, 0.35, 1)
+colors = PackedColorArray(1, 1, 1, 1, 0.16470589, 0.83137256, 1, 1, 0.16470589, 0.83137256, 1, 0)
+
+[sub_resource type="GradientTexture2D" id="GradientTexture2D_7af2g"]
+gradient = SubResource("Gradient_d7s05")
+width = 32
+height = 32
+fill = 1
+fill_from = Vector2(0.5, 0.5)
+fill_to = Vector2(1, 0.5)
+
+[sub_resource type="Gradient" id="Gradient_81wt4"]
+colors = PackedColorArray(1, 1, 1, 1, 0.16470589, 0.83137256, 1, 0)
 
 [sub_resource type="StyleBoxTexture" id="StyleBoxTexture_b3w7a"]
 texture = ExtResource("6_oftjj")
@@ -34,8 +95,17 @@ sky = SubResource("Sky_tbgi4")
 [node name="main" type="Node3D" unique_id=356765844]
 script = ExtResource("1_b3w7a")
 
-[node name="ui_big" type="Control" parent="." unique_id=129540259]
+[node name="ui" type="Control" parent="." unique_id=211331703]
 layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="ui_big" type="Control" parent="ui" unique_id=129540259]
+visible = false
+layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
@@ -43,7 +113,7 @@ grow_horizontal = 2
 grow_vertical = 2
 theme = ExtResource("2_6xbdy")
 
-[node name="player1" type="Control" parent="ui_big" unique_id=1882498565]
+[node name="player1" type="Control" parent="ui/ui_big" unique_id=1882498565]
 layout_mode = 1
 anchors_preset = 9
 anchor_bottom = 1.0
@@ -51,7 +121,7 @@ offset_left = 146.0
 offset_right = 146.0
 grow_vertical = 2
 
-[node name="backcolor" type="ColorRect" parent="ui_big/player1" unique_id=113733304]
+[node name="backcolor" type="ColorRect" parent="ui/ui_big/player1" unique_id=113733304]
 layout_mode = 1
 anchors_preset = 11
 anchor_left = 1.0
@@ -63,7 +133,7 @@ grow_horizontal = 0
 grow_vertical = 2
 color = Color(0, 0, 0, 1)
 
-[node name="back" type="Control" parent="ui_big/player1" unique_id=2127848303]
+[node name="back" type="Control" parent="ui/ui_big/player1" unique_id=2127848303]
 layout_mode = 1
 anchors_preset = 4
 anchor_top = 0.5
@@ -72,7 +142,7 @@ offset_top = -258.0
 offset_bottom = 258.0
 grow_vertical = 2
 
-[node name="deck" type="TextureRect" parent="ui_big/player1/back" unique_id=1875706391]
+[node name="deck" type="TextureRect" parent="ui/ui_big/player1/back" unique_id=1875706391]
 custom_minimum_size = Vector2(102, 102)
 custom_maximum_size = Vector2(102, 102)
 layout_mode = 1
@@ -84,14 +154,14 @@ offset_right = 102.0
 offset_bottom = 96.0
 grow_vertical = 0
 
-[node name="PosRect" type="ColorRect" parent="ui_big/player1/back/deck" unique_id=2033452995]
+[node name="PosRect" type="ColorRect" parent="ui/ui_big/player1/back/deck" unique_id=2033452995]
 layout_mode = 0
 offset_left = -53.0
 offset_top = 82.0
 offset_right = 7.0
 offset_bottom = 142.0
 
-[node name="ColorRect" type="ColorRect" parent="ui_big/player1/back/deck/PosRect" unique_id=782688275]
+[node name="ColorRect" type="ColorRect" parent="ui/ui_big/player1/back/deck/PosRect" unique_id=782688275]
 layout_mode = 1
 anchors_preset = 8
 anchor_left = 0.5
@@ -106,7 +176,7 @@ grow_horizontal = 2
 grow_vertical = 2
 color = Color(0, 0, 0, 1)
 
-[node name="ColorRect" type="ColorRect" parent="ui_big/player1/back/deck/PosRect/ColorRect" unique_id=2001758689]
+[node name="ColorRect" type="ColorRect" parent="ui/ui_big/player1/back/deck/PosRect/ColorRect" unique_id=2001758689]
 layout_mode = 1
 anchors_preset = 8
 anchor_left = 0.5
@@ -120,21 +190,21 @@ offset_bottom = 10.0
 grow_horizontal = 2
 grow_vertical = 2
 
-[node name="exdeck" type="TextureRect" parent="ui_big/player1/back" unique_id=837757041]
+[node name="exdeck" type="TextureRect" parent="ui/ui_big/player1/back" unique_id=837757041]
 custom_minimum_size = Vector2(102, 102)
 custom_maximum_size = Vector2(102, 102)
 layout_mode = 1
 offset_top = -102.0
 offset_right = 102.0
 
-[node name="PosRect" type="ColorRect" parent="ui_big/player1/back/exdeck" unique_id=209105642]
+[node name="PosRect" type="ColorRect" parent="ui/ui_big/player1/back/exdeck" unique_id=209105642]
 layout_mode = 0
 offset_left = -52.0
 offset_top = -40.0
 offset_right = 8.0
 offset_bottom = 20.0
 
-[node name="ColorRect" type="ColorRect" parent="ui_big/player1/back/exdeck/PosRect" unique_id=277569972]
+[node name="ColorRect" type="ColorRect" parent="ui/ui_big/player1/back/exdeck/PosRect" unique_id=277569972]
 layout_mode = 1
 anchors_preset = 8
 anchor_left = 0.5
@@ -149,7 +219,7 @@ grow_horizontal = 2
 grow_vertical = 2
 color = Color(0, 0, 0, 1)
 
-[node name="ColorRect" type="ColorRect" parent="ui_big/player1/back/exdeck/PosRect/ColorRect" unique_id=1500700518]
+[node name="ColorRect" type="ColorRect" parent="ui/ui_big/player1/back/exdeck/PosRect/ColorRect" unique_id=1500700518]
 layout_mode = 1
 anchors_preset = 8
 anchor_left = 0.5
@@ -163,14 +233,14 @@ offset_bottom = 10.0
 grow_horizontal = 2
 grow_vertical = 2
 
-[node name="back1" type="TextureRect" parent="ui_big/player1/back" unique_id=713328039]
+[node name="back1" type="TextureRect" parent="ui/ui_big/player1/back" unique_id=713328039]
 custom_minimum_size = Vector2(102, 102)
 custom_maximum_size = Vector2(102, 102)
 layout_mode = 0
 offset_right = 102.0
 offset_bottom = 102.0
 
-[node name="back2" type="TextureRect" parent="ui_big/player1/back" unique_id=779183857]
+[node name="back2" type="TextureRect" parent="ui/ui_big/player1/back" unique_id=779183857]
 custom_minimum_size = Vector2(102, 102)
 custom_maximum_size = Vector2(102, 102)
 layout_mode = 0
@@ -178,7 +248,7 @@ offset_top = 102.0
 offset_right = 102.0
 offset_bottom = 204.0
 
-[node name="back3" type="TextureRect" parent="ui_big/player1/back" unique_id=838774856]
+[node name="back3" type="TextureRect" parent="ui/ui_big/player1/back" unique_id=838774856]
 custom_minimum_size = Vector2(102, 102)
 custom_maximum_size = Vector2(102, 102)
 layout_mode = 0
@@ -186,7 +256,7 @@ offset_top = 204.0
 offset_right = 102.0
 offset_bottom = 306.0
 
-[node name="back4" type="TextureRect" parent="ui_big/player1/back" unique_id=1860167643]
+[node name="back4" type="TextureRect" parent="ui/ui_big/player1/back" unique_id=1860167643]
 custom_minimum_size = Vector2(102, 102)
 custom_maximum_size = Vector2(102, 102)
 layout_mode = 0
@@ -194,7 +264,7 @@ offset_top = 306.0
 offset_right = 102.0
 offset_bottom = 408.0
 
-[node name="back5" type="TextureRect" parent="ui_big/player1/back" unique_id=1543369125]
+[node name="back5" type="TextureRect" parent="ui/ui_big/player1/back" unique_id=1543369125]
 custom_minimum_size = Vector2(102, 102)
 custom_maximum_size = Vector2(102, 102)
 layout_mode = 0
@@ -202,7 +272,7 @@ offset_top = 408.0
 offset_right = 102.0
 offset_bottom = 510.0
 
-[node name="front" type="Control" parent="ui_big/player1" unique_id=940633795]
+[node name="front" type="Control" parent="ui/ui_big/player1" unique_id=940633795]
 layout_mode = 1
 anchors_preset = 4
 anchor_top = 0.5
@@ -213,21 +283,21 @@ offset_right = 102.0
 offset_bottom = 258.0
 grow_vertical = 2
 
-[node name="field" type="TextureRect" parent="ui_big/player1/front" unique_id=1698938218]
+[node name="field" type="TextureRect" parent="ui/ui_big/player1/front" unique_id=1698938218]
 custom_minimum_size = Vector2(102, 102)
 custom_maximum_size = Vector2(102, 102)
 layout_mode = 1
 offset_top = -102.0
 offset_right = 102.0
 
-[node name="PosRect" type="ColorRect" parent="ui_big/player1/front/field" unique_id=290776899]
+[node name="PosRect" type="ColorRect" parent="ui/ui_big/player1/front/field" unique_id=290776899]
 layout_mode = 0
 offset_left = 156.0
 offset_top = -41.0
 offset_right = 216.0
 offset_bottom = 19.0
 
-[node name="ColorRect" type="ColorRect" parent="ui_big/player1/front/field/PosRect" unique_id=39353068]
+[node name="ColorRect" type="ColorRect" parent="ui/ui_big/player1/front/field/PosRect" unique_id=39353068]
 layout_mode = 1
 anchors_preset = 8
 anchor_left = 0.5
@@ -242,7 +312,7 @@ grow_horizontal = 2
 grow_vertical = 2
 color = Color(0, 0, 0, 1)
 
-[node name="ColorRect" type="ColorRect" parent="ui_big/player1/front/field/PosRect/ColorRect" unique_id=2076851013]
+[node name="ColorRect" type="ColorRect" parent="ui/ui_big/player1/front/field/PosRect/ColorRect" unique_id=2076851013]
 layout_mode = 1
 anchors_preset = 8
 anchor_left = 0.5
@@ -256,7 +326,7 @@ offset_bottom = 10.0
 grow_horizontal = 2
 grow_vertical = 2
 
-[node name="grave" type="TextureRect" parent="ui_big/player1/front" unique_id=24927926]
+[node name="grave" type="TextureRect" parent="ui/ui_big/player1/front" unique_id=24927926]
 custom_minimum_size = Vector2(102, 102)
 custom_maximum_size = Vector2(102, 102)
 layout_mode = 1
@@ -268,14 +338,14 @@ offset_right = 102.0
 offset_bottom = 96.0
 grow_vertical = 0
 
-[node name="PosRect" type="ColorRect" parent="ui_big/player1/front/grave" unique_id=1409350892]
+[node name="PosRect" type="ColorRect" parent="ui/ui_big/player1/front/grave" unique_id=1409350892]
 layout_mode = 0
 offset_left = 157.0
 offset_top = 80.0
 offset_right = 217.0
 offset_bottom = 140.0
 
-[node name="ColorRect" type="ColorRect" parent="ui_big/player1/front/grave/PosRect" unique_id=615393070]
+[node name="ColorRect" type="ColorRect" parent="ui/ui_big/player1/front/grave/PosRect" unique_id=615393070]
 layout_mode = 1
 anchors_preset = 8
 anchor_left = 0.5
@@ -290,7 +360,7 @@ grow_horizontal = 2
 grow_vertical = 2
 color = Color(0, 0, 0, 1)
 
-[node name="ColorRect" type="ColorRect" parent="ui_big/player1/front/grave/PosRect/ColorRect" unique_id=157490332]
+[node name="ColorRect" type="ColorRect" parent="ui/ui_big/player1/front/grave/PosRect/ColorRect" unique_id=157490332]
 layout_mode = 1
 anchors_preset = 8
 anchor_left = 0.5
@@ -304,14 +374,14 @@ offset_bottom = 10.0
 grow_horizontal = 2
 grow_vertical = 2
 
-[node name="front1" type="TextureRect" parent="ui_big/player1/front" unique_id=2067645883]
+[node name="front1" type="TextureRect" parent="ui/ui_big/player1/front" unique_id=2067645883]
 custom_minimum_size = Vector2(102, 102)
 custom_maximum_size = Vector2(102, 102)
 layout_mode = 0
 offset_right = 102.0
 offset_bottom = 102.0
 
-[node name="front2" type="TextureRect" parent="ui_big/player1/front" unique_id=163530103]
+[node name="front2" type="TextureRect" parent="ui/ui_big/player1/front" unique_id=163530103]
 custom_minimum_size = Vector2(102, 102)
 custom_maximum_size = Vector2(102, 102)
 layout_mode = 0
@@ -319,7 +389,7 @@ offset_top = 102.0
 offset_right = 102.0
 offset_bottom = 204.0
 
-[node name="front3" type="TextureRect" parent="ui_big/player1/front" unique_id=1221657649]
+[node name="front3" type="TextureRect" parent="ui/ui_big/player1/front" unique_id=1221657649]
 custom_minimum_size = Vector2(102, 102)
 custom_maximum_size = Vector2(102, 102)
 layout_mode = 0
@@ -327,7 +397,7 @@ offset_top = 204.0
 offset_right = 102.0
 offset_bottom = 306.0
 
-[node name="front4" type="TextureRect" parent="ui_big/player1/front" unique_id=800069327]
+[node name="front4" type="TextureRect" parent="ui/ui_big/player1/front" unique_id=800069327]
 custom_minimum_size = Vector2(102, 102)
 custom_maximum_size = Vector2(102, 102)
 layout_mode = 0
@@ -335,7 +405,7 @@ offset_top = 306.0
 offset_right = 102.0
 offset_bottom = 408.0
 
-[node name="front5" type="TextureRect" parent="ui_big/player1/front" unique_id=561329829]
+[node name="front5" type="TextureRect" parent="ui/ui_big/player1/front" unique_id=561329829]
 custom_minimum_size = Vector2(102, 102)
 custom_maximum_size = Vector2(102, 102)
 layout_mode = 0
@@ -343,7 +413,7 @@ offset_top = 408.0
 offset_right = 102.0
 offset_bottom = 510.0
 
-[node name="ex" type="Control" parent="ui_big/player1" unique_id=464733938]
+[node name="ex" type="Control" parent="ui/ui_big/player1" unique_id=464733938]
 layout_mode = 1
 anchors_preset = 4
 anchor_top = 0.5
@@ -354,7 +424,7 @@ offset_right = 102.0
 offset_bottom = 258.0
 grow_vertical = 2
 
-[node name="ex1" type="TextureRect" parent="ui_big/player1/ex" unique_id=1633435326]
+[node name="ex1" type="TextureRect" parent="ui/ui_big/player1/ex" unique_id=1633435326]
 custom_minimum_size = Vector2(102, 102)
 custom_maximum_size = Vector2(102, 102)
 layout_mode = 0
@@ -363,7 +433,7 @@ offset_top = 102.0
 offset_right = 204.0
 offset_bottom = 204.0
 
-[node name="ex2" type="TextureRect" parent="ui_big/player1/ex" unique_id=2125974394]
+[node name="ex2" type="TextureRect" parent="ui/ui_big/player1/ex" unique_id=2125974394]
 custom_minimum_size = Vector2(102, 102)
 custom_maximum_size = Vector2(102, 102)
 layout_mode = 0
@@ -372,54 +442,1888 @@ offset_top = 306.0
 offset_right = 204.0
 offset_bottom = 408.0
 
-[node name="TextureRect" type="TextureRect" parent="ui_big/player1" unique_id=230863672]
+[node name="TextureRect" type="TextureRect" parent="ui/ui_big/player1" unique_id=230863672]
 layout_mode = 0
 offset_right = 40.0
 offset_bottom = 40.0
 
-[node name="lp" type="Panel" parent="ui_big/player1" unique_id=335268233]
-layout_mode = 0
-offset_left = 802.0
-offset_top = 432.0
-offset_right = 1186.0
-offset_bottom = 688.00006
-rotation = 1.5707964
-theme_override_styles/panel = SubResource("StyleBoxTexture_b3w7a")
+[node name="player2" type="Control" parent="ui/ui_big" unique_id=1481827237]
+layout_mode = 1
+anchors_preset = 11
+anchor_left = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -146.0
+offset_right = -146.0
+grow_horizontal = 0
+grow_vertical = 2
 
-[node name="val" type="Label" parent="ui_big/player1/lp" unique_id=1350940801]
+[node name="backcolor" type="ColorRect" parent="ui/ui_big/player2" unique_id=438896630]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -326.0
+offset_right = 186.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0, 0, 0, 1)
+
+[node name="back" type="Control" parent="ui/ui_big/player2" unique_id=1978905516]
+layout_mode = 1
+anchors_preset = 6
+anchor_left = 1.0
+anchor_top = 0.5
+anchor_right = 1.0
+anchor_bottom = 0.5
+offset_top = -258.0
+offset_bottom = 258.0
+grow_horizontal = 0
+grow_vertical = 2
+
+[node name="exdeck" type="TextureRect" parent="ui/ui_big/player2/back" unique_id=1255114458]
+custom_minimum_size = Vector2(102, 102)
+custom_maximum_size = Vector2(102, 102)
+layout_mode = 1
+offset_left = -102.0
+offset_top = -102.0
+
+[node name="PosRect" type="ColorRect" parent="ui/ui_big/player2/back/exdeck" unique_id=375573167]
+layout_mode = 0
+offset_left = 95.0
+offset_top = -39.0
+offset_right = 155.0
+offset_bottom = 21.0
+
+[node name="ColorRect" type="ColorRect" parent="ui/ui_big/player2/back/exdeck/PosRect" unique_id=2032786812]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -20.0
+offset_top = -20.0
+offset_right = 20.0
+offset_bottom = 20.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0, 0, 0, 1)
+
+[node name="ColorRect" type="ColorRect" parent="ui/ui_big/player2/back/exdeck/PosRect/ColorRect" unique_id=275530231]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -10.0
+offset_top = -10.0
+offset_right = 10.0
+offset_bottom = 10.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="deck" type="TextureRect" parent="ui/ui_big/player2/back" unique_id=857363402]
+custom_minimum_size = Vector2(102, 102)
+custom_maximum_size = Vector2(102, 102)
+layout_mode = 1
+anchors_preset = 2
+anchor_top = 1.0
+anchor_bottom = 1.0
+offset_left = -102.0
+offset_top = -6.0
+offset_bottom = 96.0
+grow_vertical = 0
+
+[node name="PosRect" type="ColorRect" parent="ui/ui_big/player2/back/deck" unique_id=433185757]
+layout_mode = 0
+offset_left = 92.0
+offset_top = 80.0
+offset_right = 152.0
+offset_bottom = 140.0
+
+[node name="ColorRect" type="ColorRect" parent="ui/ui_big/player2/back/deck/PosRect" unique_id=537036823]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -20.0
+offset_top = -20.0
+offset_right = 20.0
+offset_bottom = 20.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0, 0, 0, 1)
+
+[node name="ColorRect" type="ColorRect" parent="ui/ui_big/player2/back/deck/PosRect/ColorRect" unique_id=1736158442]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -10.0
+offset_top = -10.0
+offset_right = 10.0
+offset_bottom = 10.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="back1" type="TextureRect" parent="ui/ui_big/player2/back" unique_id=1630506923]
+custom_minimum_size = Vector2(102, 102)
+custom_maximum_size = Vector2(102, 102)
+layout_mode = 0
+offset_left = -102.0
+offset_bottom = 102.0
+
+[node name="back2" type="TextureRect" parent="ui/ui_big/player2/back" unique_id=278801070]
+custom_minimum_size = Vector2(102, 102)
+custom_maximum_size = Vector2(102, 102)
+layout_mode = 0
+offset_left = -102.0
+offset_top = 102.0
+offset_bottom = 204.0
+
+[node name="back3" type="TextureRect" parent="ui/ui_big/player2/back" unique_id=1466517571]
+custom_minimum_size = Vector2(102, 102)
+custom_maximum_size = Vector2(102, 102)
+layout_mode = 0
+offset_left = -102.0
+offset_top = 204.0
+offset_bottom = 306.0
+
+[node name="back4" type="TextureRect" parent="ui/ui_big/player2/back" unique_id=345009114]
+custom_minimum_size = Vector2(102, 102)
+custom_maximum_size = Vector2(102, 102)
+layout_mode = 0
+offset_left = -102.0
+offset_top = 306.0
+offset_bottom = 408.0
+
+[node name="back5" type="TextureRect" parent="ui/ui_big/player2/back" unique_id=1103853499]
+custom_minimum_size = Vector2(102, 102)
+custom_maximum_size = Vector2(102, 102)
+layout_mode = 0
+offset_left = -102.0
+offset_top = 408.0
+offset_bottom = 510.0
+
+[node name="front" type="Control" parent="ui/ui_big/player2" unique_id=686232888]
+layout_mode = 1
+anchors_preset = 6
+anchor_left = 1.0
+anchor_top = 0.5
+anchor_right = 1.0
+anchor_bottom = 0.5
+offset_left = -102.0
+offset_top = -258.0
+offset_right = -102.0
+offset_bottom = 258.0
+grow_horizontal = 0
+grow_vertical = 2
+
+[node name="field" type="TextureRect" parent="ui/ui_big/player2/front" unique_id=1468582923]
+custom_minimum_size = Vector2(102, 102)
+custom_maximum_size = Vector2(102, 102)
+layout_mode = 1
+offset_left = -102.0
+offset_top = -102.0
+
+[node name="PosRect" type="ColorRect" parent="ui/ui_big/player2/front/field" unique_id=1446341713]
+layout_mode = 0
+offset_left = -116.0
+offset_top = -39.0
+offset_right = -56.0
+offset_bottom = 21.0
+
+[node name="ColorRect" type="ColorRect" parent="ui/ui_big/player2/front/field/PosRect" unique_id=991779507]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -20.0
+offset_top = -20.0
+offset_right = 20.0
+offset_bottom = 20.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0, 0, 0, 1)
+
+[node name="ColorRect" type="ColorRect" parent="ui/ui_big/player2/front/field/PosRect/ColorRect" unique_id=1087919031]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -10.0
+offset_top = -10.0
+offset_right = 10.0
+offset_bottom = 10.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="grave" type="TextureRect" parent="ui/ui_big/player2/front" unique_id=301878386]
+custom_minimum_size = Vector2(102, 102)
+custom_maximum_size = Vector2(102, 102)
+layout_mode = 1
+anchors_preset = 2
+anchor_top = 1.0
+anchor_bottom = 1.0
+offset_left = -98.0
+offset_top = -6.0
+offset_right = 4.0
+offset_bottom = 96.0
+grow_vertical = 0
+
+[node name="PosRect" type="ColorRect" parent="ui/ui_big/player2/front/grave" unique_id=444371542]
+layout_mode = 0
+offset_left = -116.0
+offset_top = 96.0
+offset_right = -56.0
+offset_bottom = 156.0
+
+[node name="ColorRect" type="ColorRect" parent="ui/ui_big/player2/front/grave/PosRect" unique_id=687545997]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -20.0
+offset_top = -20.0
+offset_right = 20.0
+offset_bottom = 20.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0, 0, 0, 1)
+
+[node name="ColorRect" type="ColorRect" parent="ui/ui_big/player2/front/grave/PosRect/ColorRect" unique_id=212400485]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -10.0
+offset_top = -10.0
+offset_right = 10.0
+offset_bottom = 10.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="front1" type="TextureRect" parent="ui/ui_big/player2/front" unique_id=1086708143]
+custom_minimum_size = Vector2(102, 102)
+custom_maximum_size = Vector2(102, 102)
+layout_mode = 0
+offset_left = -102.0
+offset_bottom = 102.0
+
+[node name="front2" type="TextureRect" parent="ui/ui_big/player2/front" unique_id=1266374490]
+custom_minimum_size = Vector2(102, 102)
+custom_maximum_size = Vector2(102, 102)
+layout_mode = 0
+offset_left = -102.0
+offset_top = 102.0
+offset_bottom = 204.0
+
+[node name="front3" type="TextureRect" parent="ui/ui_big/player2/front" unique_id=1357976459]
+custom_minimum_size = Vector2(102, 102)
+custom_maximum_size = Vector2(102, 102)
+layout_mode = 0
+offset_left = -102.0
+offset_top = 204.0
+offset_bottom = 306.0
+
+[node name="front4" type="TextureRect" parent="ui/ui_big/player2/front" unique_id=1581747024]
+custom_minimum_size = Vector2(102, 102)
+custom_maximum_size = Vector2(102, 102)
+layout_mode = 0
+offset_left = -102.0
+offset_top = 306.0
+offset_bottom = 408.0
+
+[node name="front5" type="TextureRect" parent="ui/ui_big/player2/front" unique_id=1985120424]
+custom_minimum_size = Vector2(102, 102)
+custom_maximum_size = Vector2(102, 102)
+layout_mode = 0
+offset_left = -102.0
+offset_top = 408.0
+offset_bottom = 510.0
+
+[node name="ex" type="Control" parent="ui/ui_big/player2" unique_id=1414532792]
+layout_mode = 1
+anchors_preset = 6
+anchor_left = 1.0
+anchor_top = 0.5
+anchor_right = 1.0
+anchor_bottom = 0.5
+offset_left = -204.0
+offset_top = -258.0
+offset_right = -204.0
+offset_bottom = 258.0
+grow_horizontal = 0
+grow_vertical = 2
+
+[node name="ex1" type="TextureRect" parent="ui/ui_big/player2/ex" unique_id=1963050705]
+custom_minimum_size = Vector2(102, 102)
+custom_maximum_size = Vector2(102, 102)
+layout_mode = 0
+offset_left = -102.0
+offset_top = 306.0
+offset_bottom = 408.0
+flip_h = true
+
+[node name="ex2" type="TextureRect" parent="ui/ui_big/player2/ex" unique_id=1108459227]
+custom_minimum_size = Vector2(102, 102)
+custom_maximum_size = Vector2(102, 102)
+layout_mode = 0
+offset_left = -102.0
+offset_top = 102.0
+offset_bottom = 204.0
+flip_h = true
+
+[node name="Camera2D" type="Camera2D" parent="ui/ui_big" unique_id=2040473244]
+anchor_mode = 0
+
+[node name="ui_mid" type="Control" parent="ui" unique_id=778188377]
+visible = false
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-theme_override_constants/outline_size = 0
-theme_override_font_sizes/font_size = 86
-text = "Duel"
-horizontal_alignment = 1
-vertical_alignment = 1
-autowrap_mode = 3
-clip_text = true
-script = ExtResource("7_xu2ek")
-_max_size = 86
-_outline_ratio = 0.0
-_current_font_size = 86
-_editor_defaults_set = true
-metadata/_custom_type_script = "uid://bttgnk3bb2a8i"
+theme = ExtResource("2_6xbdy")
 
-[node name="QrContriner" type="VBoxContainer" parent="ui_big/player1" unique_id=1758370118]
+[node name="player1" type="Control" parent="ui/ui_mid" unique_id=1229110046]
+layout_mode = 1
+anchors_preset = 9
+anchor_bottom = 1.0
+offset_left = 146.0
+offset_top = -320.0
+offset_right = 146.0
+offset_bottom = -320.0
+grow_vertical = 2
+scale = Vector2(1.6, 1.6)
+
+[node name="backcolor" type="ColorRect" parent="ui/ui_mid/player1" unique_id=1754821061]
 layout_mode = 1
 anchors_preset = 11
 anchor_left = 1.0
 anchor_right = 1.0
 anchor_bottom = 1.0
-offset_left = 128.0
-offset_right = 128.0
+offset_left = -186.0
+offset_right = 326.0
+grow_horizontal = 0
+grow_vertical = 2
+color = Color(0, 0, 0, 1)
+
+[node name="back" type="Control" parent="ui/ui_mid/player1" unique_id=1877772830]
+layout_mode = 1
+anchors_preset = 4
+anchor_top = 0.5
+anchor_bottom = 0.5
+offset_top = -258.0
+offset_bottom = 258.0
+grow_vertical = 2
+
+[node name="deck" type="TextureRect" parent="ui/ui_mid/player1/back" unique_id=1351145461]
+custom_minimum_size = Vector2(102, 102)
+custom_maximum_size = Vector2(102, 102)
+layout_mode = 1
+anchors_preset = 2
+anchor_top = 1.0
+anchor_bottom = 1.0
+offset_top = -6.0
+offset_right = 102.0
+offset_bottom = 96.0
+grow_vertical = 0
+
+[node name="PosRect" type="ColorRect" parent="ui/ui_mid/player1/back/deck" unique_id=2130761879]
+layout_mode = 0
+offset_left = -53.0
+offset_top = 21.124992
+offset_right = 7.0
+offset_bottom = 81.12499
+
+[node name="ColorRect" type="ColorRect" parent="ui/ui_mid/player1/back/deck/PosRect" unique_id=1346568913]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -20.0
+offset_top = -20.0
+offset_right = 20.0
+offset_bottom = 20.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0, 0, 0, 1)
+
+[node name="ColorRect" type="ColorRect" parent="ui/ui_mid/player1/back/deck/PosRect/ColorRect" unique_id=1217192200]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -10.0
+offset_top = -10.0
+offset_right = 10.0
+offset_bottom = 10.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="exdeck" type="TextureRect" parent="ui/ui_mid/player1/back" unique_id=1572867636]
+custom_minimum_size = Vector2(102, 102)
+custom_maximum_size = Vector2(102, 102)
+layout_mode = 1
+offset_top = -102.0
+offset_right = 102.0
+
+[node name="PosRect" type="ColorRect" parent="ui/ui_mid/player1/back/exdeck" unique_id=1706569014]
+layout_mode = 0
+offset_left = -53.124996
+offset_top = 20.624985
+offset_right = 6.875004
+offset_bottom = 80.624985
+
+[node name="ColorRect" type="ColorRect" parent="ui/ui_mid/player1/back/exdeck/PosRect" unique_id=1328114063]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -20.0
+offset_top = -20.0
+offset_right = 20.0
+offset_bottom = 20.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0, 0, 0, 1)
+
+[node name="ColorRect" type="ColorRect" parent="ui/ui_mid/player1/back/exdeck/PosRect/ColorRect" unique_id=1915598698]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -10.0
+offset_top = -10.0
+offset_right = 10.0
+offset_bottom = 10.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="back1" type="TextureRect" parent="ui/ui_mid/player1/back" unique_id=1437111025]
+custom_minimum_size = Vector2(102, 102)
+custom_maximum_size = Vector2(102, 102)
+layout_mode = 0
+offset_right = 102.0
+offset_bottom = 102.0
+
+[node name="back2" type="TextureRect" parent="ui/ui_mid/player1/back" unique_id=1058019768]
+custom_minimum_size = Vector2(102, 102)
+custom_maximum_size = Vector2(102, 102)
+layout_mode = 0
+offset_top = 102.0
+offset_right = 102.0
+offset_bottom = 204.0
+
+[node name="back3" type="TextureRect" parent="ui/ui_mid/player1/back" unique_id=1435097787]
+custom_minimum_size = Vector2(102, 102)
+custom_maximum_size = Vector2(102, 102)
+layout_mode = 0
+offset_top = 204.0
+offset_right = 102.0
+offset_bottom = 306.0
+
+[node name="back4" type="TextureRect" parent="ui/ui_mid/player1/back" unique_id=472072432]
+custom_minimum_size = Vector2(102, 102)
+custom_maximum_size = Vector2(102, 102)
+layout_mode = 0
+offset_top = 306.0
+offset_right = 102.0
+offset_bottom = 408.0
+
+[node name="back5" type="TextureRect" parent="ui/ui_mid/player1/back" unique_id=527283696]
+custom_minimum_size = Vector2(102, 102)
+custom_maximum_size = Vector2(102, 102)
+layout_mode = 0
+offset_top = 408.0
+offset_right = 102.0
+offset_bottom = 510.0
+
+[node name="front" type="Control" parent="ui/ui_mid/player1" unique_id=1990706853]
+layout_mode = 1
+anchors_preset = 4
+anchor_top = 0.5
+anchor_bottom = 0.5
+offset_left = 102.0
+offset_top = -258.0
+offset_right = 102.0
+offset_bottom = 258.0
+grow_vertical = 2
+
+[node name="field" type="TextureRect" parent="ui/ui_mid/player1/front" unique_id=1855352535]
+custom_minimum_size = Vector2(102, 102)
+custom_maximum_size = Vector2(102, 102)
+layout_mode = 1
+offset_top = -102.0
+offset_right = 102.0
+
+[node name="PosRect" type="ColorRect" parent="ui/ui_mid/player1/front/field" unique_id=1007547839]
+layout_mode = 0
+offset_left = 156.0
+offset_top = 21.87499
+offset_right = 216.0
+offset_bottom = 81.87499
+
+[node name="ColorRect" type="ColorRect" parent="ui/ui_mid/player1/front/field/PosRect" unique_id=1428798198]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -20.0
+offset_top = -20.0
+offset_right = 20.0
+offset_bottom = 20.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0, 0, 0, 1)
+
+[node name="ColorRect" type="ColorRect" parent="ui/ui_mid/player1/front/field/PosRect/ColorRect" unique_id=1580709105]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -10.0
+offset_top = -10.0
+offset_right = 10.0
+offset_bottom = 10.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="grave" type="TextureRect" parent="ui/ui_mid/player1/front" unique_id=1500184240]
+custom_minimum_size = Vector2(102, 102)
+custom_maximum_size = Vector2(102, 102)
+layout_mode = 1
+anchors_preset = 2
+anchor_top = 1.0
+anchor_bottom = 1.0
+offset_top = -6.0
+offset_right = 102.0
+offset_bottom = 96.0
+grow_vertical = 0
+
+[node name="PosRect" type="ColorRect" parent="ui/ui_mid/player1/front/grave" unique_id=492253618]
+layout_mode = 0
+offset_left = 156.74998
+offset_top = 21.125
+offset_right = 216.74998
+offset_bottom = 81.125
+
+[node name="ColorRect" type="ColorRect" parent="ui/ui_mid/player1/front/grave/PosRect" unique_id=917240653]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -20.0
+offset_top = -20.0
+offset_right = 20.0
+offset_bottom = 20.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0, 0, 0, 1)
+
+[node name="ColorRect" type="ColorRect" parent="ui/ui_mid/player1/front/grave/PosRect/ColorRect" unique_id=1802813827]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -10.0
+offset_top = -10.0
+offset_right = 10.0
+offset_bottom = 10.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="front1" type="TextureRect" parent="ui/ui_mid/player1/front" unique_id=1773615193]
+custom_minimum_size = Vector2(102, 102)
+custom_maximum_size = Vector2(102, 102)
+layout_mode = 0
+offset_right = 102.0
+offset_bottom = 102.0
+
+[node name="front2" type="TextureRect" parent="ui/ui_mid/player1/front" unique_id=1406076419]
+custom_minimum_size = Vector2(102, 102)
+custom_maximum_size = Vector2(102, 102)
+layout_mode = 0
+offset_top = 102.0
+offset_right = 102.0
+offset_bottom = 204.0
+
+[node name="front3" type="TextureRect" parent="ui/ui_mid/player1/front" unique_id=369092549]
+custom_minimum_size = Vector2(102, 102)
+custom_maximum_size = Vector2(102, 102)
+layout_mode = 0
+offset_top = 204.0
+offset_right = 102.0
+offset_bottom = 306.0
+
+[node name="front4" type="TextureRect" parent="ui/ui_mid/player1/front" unique_id=64447633]
+custom_minimum_size = Vector2(102, 102)
+custom_maximum_size = Vector2(102, 102)
+layout_mode = 0
+offset_top = 306.0
+offset_right = 102.0
+offset_bottom = 408.0
+
+[node name="front5" type="TextureRect" parent="ui/ui_mid/player1/front" unique_id=39502150]
+custom_minimum_size = Vector2(102, 102)
+custom_maximum_size = Vector2(102, 102)
+layout_mode = 0
+offset_top = 408.0
+offset_right = 102.0
+offset_bottom = 510.0
+
+[node name="ex" type="Control" parent="ui/ui_mid/player1" unique_id=92550028]
+layout_mode = 1
+anchors_preset = 4
+anchor_top = 0.5
+anchor_bottom = 0.5
+offset_left = 102.0
+offset_top = -258.0
+offset_right = 102.0
+offset_bottom = 258.0
+grow_vertical = 2
+
+[node name="ex1" type="TextureRect" parent="ui/ui_mid/player1/ex" unique_id=309959898]
+custom_minimum_size = Vector2(102, 102)
+custom_maximum_size = Vector2(102, 102)
+layout_mode = 0
+offset_left = 102.0
+offset_top = 102.0
+offset_right = 204.0
+offset_bottom = 204.0
+
+[node name="ex2" type="TextureRect" parent="ui/ui_mid/player1/ex" unique_id=807114482]
+custom_minimum_size = Vector2(102, 102)
+custom_maximum_size = Vector2(102, 102)
+layout_mode = 0
+offset_left = 102.0
+offset_top = 306.0
+offset_right = 204.0
+offset_bottom = 408.0
+
+[node name="TextureRect" type="TextureRect" parent="ui/ui_mid/player1" unique_id=292109607]
+layout_mode = 0
+offset_right = 40.0
+offset_bottom = 40.0
+
+[node name="player2" type="Control" parent="ui/ui_mid" unique_id=1031802151]
+layout_mode = 1
+anchors_preset = 11
+anchor_left = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -146.0
+offset_top = -320.0
+offset_right = -146.0
+offset_bottom = -320.0
+grow_horizontal = 0
+grow_vertical = 2
+scale = Vector2(1.6, 1.6)
+
+[node name="backcolor" type="ColorRect" parent="ui/ui_mid/player2" unique_id=551560205]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -326.0
+offset_right = 186.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0, 0, 0, 1)
+
+[node name="back" type="Control" parent="ui/ui_mid/player2" unique_id=298240837]
+layout_mode = 1
+anchors_preset = 6
+anchor_left = 1.0
+anchor_top = 0.5
+anchor_right = 1.0
+anchor_bottom = 0.5
+offset_top = -258.0
+offset_bottom = 258.0
+grow_horizontal = 0
+grow_vertical = 2
+
+[node name="exdeck" type="TextureRect" parent="ui/ui_mid/player2/back" unique_id=1081544617]
+custom_minimum_size = Vector2(102, 102)
+custom_maximum_size = Vector2(102, 102)
+layout_mode = 1
+offset_left = -102.0
+offset_top = -102.0
+
+[node name="PosRect" type="ColorRect" parent="ui/ui_mid/player2/back/exdeck" unique_id=909124542]
+layout_mode = 0
+offset_left = 95.0
+offset_top = 21.87499
+offset_right = 155.0
+offset_bottom = 81.87499
+
+[node name="ColorRect" type="ColorRect" parent="ui/ui_mid/player2/back/exdeck/PosRect" unique_id=152096827]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -20.0
+offset_top = -20.0
+offset_right = 20.0
+offset_bottom = 20.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0, 0, 0, 1)
+
+[node name="ColorRect" type="ColorRect" parent="ui/ui_mid/player2/back/exdeck/PosRect/ColorRect" unique_id=1543161203]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -10.0
+offset_top = -10.0
+offset_right = 10.0
+offset_bottom = 10.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="deck" type="TextureRect" parent="ui/ui_mid/player2/back" unique_id=1106315206]
+custom_minimum_size = Vector2(102, 102)
+custom_maximum_size = Vector2(102, 102)
+layout_mode = 1
+anchors_preset = 2
+anchor_top = 1.0
+anchor_bottom = 1.0
+offset_left = -102.0
+offset_top = -6.0
+offset_bottom = 96.0
+grow_vertical = 0
+
+[node name="PosRect" type="ColorRect" parent="ui/ui_mid/player2/back/deck" unique_id=634448036]
+layout_mode = 0
+offset_left = 97.625
+offset_top = 19.875038
+offset_right = 157.625
+offset_bottom = 79.87504
+
+[node name="ColorRect" type="ColorRect" parent="ui/ui_mid/player2/back/deck/PosRect" unique_id=1212432460]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -20.0
+offset_top = -20.0
+offset_right = 20.0
+offset_bottom = 20.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0, 0, 0, 1)
+
+[node name="ColorRect" type="ColorRect" parent="ui/ui_mid/player2/back/deck/PosRect/ColorRect" unique_id=966400653]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -10.0
+offset_top = -10.0
+offset_right = 10.0
+offset_bottom = 10.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="back1" type="TextureRect" parent="ui/ui_mid/player2/back" unique_id=1575146538]
+custom_minimum_size = Vector2(102, 102)
+custom_maximum_size = Vector2(102, 102)
+layout_mode = 0
+offset_left = -102.0
+offset_bottom = 102.0
+
+[node name="back2" type="TextureRect" parent="ui/ui_mid/player2/back" unique_id=1640291506]
+custom_minimum_size = Vector2(102, 102)
+custom_maximum_size = Vector2(102, 102)
+layout_mode = 0
+offset_left = -102.0
+offset_top = 102.0
+offset_bottom = 204.0
+
+[node name="back3" type="TextureRect" parent="ui/ui_mid/player2/back" unique_id=1260073900]
+custom_minimum_size = Vector2(102, 102)
+custom_maximum_size = Vector2(102, 102)
+layout_mode = 0
+offset_left = -102.0
+offset_top = 204.0
+offset_bottom = 306.0
+
+[node name="back4" type="TextureRect" parent="ui/ui_mid/player2/back" unique_id=786235557]
+custom_minimum_size = Vector2(102, 102)
+custom_maximum_size = Vector2(102, 102)
+layout_mode = 0
+offset_left = -102.0
+offset_top = 306.0
+offset_bottom = 408.0
+
+[node name="back5" type="TextureRect" parent="ui/ui_mid/player2/back" unique_id=347977997]
+custom_minimum_size = Vector2(102, 102)
+custom_maximum_size = Vector2(102, 102)
+layout_mode = 0
+offset_left = -102.0
+offset_top = 408.0
+offset_bottom = 510.0
+
+[node name="front" type="Control" parent="ui/ui_mid/player2" unique_id=288347538]
+layout_mode = 1
+anchors_preset = 6
+anchor_left = 1.0
+anchor_top = 0.5
+anchor_right = 1.0
+anchor_bottom = 0.5
+offset_left = -102.0
+offset_top = -258.0
+offset_right = -102.0
+offset_bottom = 258.0
+grow_horizontal = 0
+grow_vertical = 2
+
+[node name="field" type="TextureRect" parent="ui/ui_mid/player2/front" unique_id=157270872]
+custom_minimum_size = Vector2(102, 102)
+custom_maximum_size = Vector2(102, 102)
+layout_mode = 1
+offset_left = -102.0
+offset_top = -102.0
+
+[node name="PosRect" type="ColorRect" parent="ui/ui_mid/player2/front/field" unique_id=1520900138]
+layout_mode = 0
+offset_left = -116.0
+offset_top = 22.49999
+offset_right = -56.0
+offset_bottom = 82.49999
+
+[node name="ColorRect" type="ColorRect" parent="ui/ui_mid/player2/front/field/PosRect" unique_id=291705725]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -20.0
+offset_top = -20.0
+offset_right = 20.0
+offset_bottom = 20.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0, 0, 0, 1)
+
+[node name="ColorRect" type="ColorRect" parent="ui/ui_mid/player2/front/field/PosRect/ColorRect" unique_id=384570011]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -10.0
+offset_top = -10.0
+offset_right = 10.0
+offset_bottom = 10.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="grave" type="TextureRect" parent="ui/ui_mid/player2/front" unique_id=2072750249]
+custom_minimum_size = Vector2(102, 102)
+custom_maximum_size = Vector2(102, 102)
+layout_mode = 1
+anchors_preset = 2
+anchor_top = 1.0
+anchor_bottom = 1.0
+offset_left = -98.0
+offset_top = -6.0
+offset_right = 4.0
+offset_bottom = 96.0
+grow_vertical = 0
+
+[node name="PosRect" type="ColorRect" parent="ui/ui_mid/player2/front/grave" unique_id=2047070278]
+layout_mode = 0
+offset_left = -116.0
+offset_top = 21.124977
+offset_right = -56.0
+offset_bottom = 81.12498
+
+[node name="ColorRect" type="ColorRect" parent="ui/ui_mid/player2/front/grave/PosRect" unique_id=1027499318]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -20.0
+offset_top = -20.0
+offset_right = 20.0
+offset_bottom = 20.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0, 0, 0, 1)
+
+[node name="ColorRect" type="ColorRect" parent="ui/ui_mid/player2/front/grave/PosRect/ColorRect" unique_id=845140542]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -10.0
+offset_top = -10.0
+offset_right = 10.0
+offset_bottom = 10.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="front1" type="TextureRect" parent="ui/ui_mid/player2/front" unique_id=494844209]
+custom_minimum_size = Vector2(102, 102)
+custom_maximum_size = Vector2(102, 102)
+layout_mode = 0
+offset_left = -102.0
+offset_bottom = 102.0
+
+[node name="front2" type="TextureRect" parent="ui/ui_mid/player2/front" unique_id=542585022]
+custom_minimum_size = Vector2(102, 102)
+custom_maximum_size = Vector2(102, 102)
+layout_mode = 0
+offset_left = -102.0
+offset_top = 102.0
+offset_bottom = 204.0
+
+[node name="front3" type="TextureRect" parent="ui/ui_mid/player2/front" unique_id=1437499451]
+custom_minimum_size = Vector2(102, 102)
+custom_maximum_size = Vector2(102, 102)
+layout_mode = 0
+offset_left = -102.0
+offset_top = 204.0
+offset_bottom = 306.0
+
+[node name="front4" type="TextureRect" parent="ui/ui_mid/player2/front" unique_id=219235741]
+custom_minimum_size = Vector2(102, 102)
+custom_maximum_size = Vector2(102, 102)
+layout_mode = 0
+offset_left = -102.0
+offset_top = 306.0
+offset_bottom = 408.0
+
+[node name="front5" type="TextureRect" parent="ui/ui_mid/player2/front" unique_id=1983876385]
+custom_minimum_size = Vector2(102, 102)
+custom_maximum_size = Vector2(102, 102)
+layout_mode = 0
+offset_left = -102.0
+offset_top = 408.0
+offset_bottom = 510.0
+
+[node name="ex" type="Control" parent="ui/ui_mid/player2" unique_id=454670280]
+layout_mode = 1
+anchors_preset = 6
+anchor_left = 1.0
+anchor_top = 0.5
+anchor_right = 1.0
+anchor_bottom = 0.5
+offset_left = -204.0
+offset_top = -258.0
+offset_right = -204.0
+offset_bottom = 258.0
+grow_horizontal = 0
+grow_vertical = 2
+
+[node name="ex1" type="TextureRect" parent="ui/ui_mid/player2/ex" unique_id=1236427576]
+custom_minimum_size = Vector2(102, 102)
+custom_maximum_size = Vector2(102, 102)
+layout_mode = 0
+offset_left = -102.0
+offset_top = 306.0
+offset_bottom = 408.0
+flip_h = true
+
+[node name="ex2" type="TextureRect" parent="ui/ui_mid/player2/ex" unique_id=353342496]
+custom_minimum_size = Vector2(102, 102)
+custom_maximum_size = Vector2(102, 102)
+layout_mode = 0
+offset_left = -102.0
+offset_top = 102.0
+offset_bottom = 204.0
+flip_h = true
+
+[node name="Camera2D" type="Camera2D" parent="ui/ui_mid" unique_id=1879802186]
+anchor_mode = 0
+
+[node name="ring" type="Node2D" parent="ui/ui_mid" unique_id=755446207]
+
+[node name="temmplate" type="Node2D" parent="ui/ui_mid/ring" unique_id=1090443314]
+
+[node name="bling_p1" type="CPUParticles2D" parent="ui/ui_mid/ring/temmplate" unique_id=1667612476]
+visible = false
+position = Vector2(-259, 151)
+amount = 64
+texture = SubResource("GradientTexture2D_81wt4")
+lifetime = 1.2
+preprocess = 1.2
+randomness = 0.1
+direction = Vector2(0, -1)
+spread = 180.0
+gravity = Vector2(0, 0)
+initial_velocity_max = 2.0
+scale_amount_min = 0.15
+scale_amount_max = 0.4
+color_ramp = SubResource("Gradient_kcc3o")
+script = ExtResource("9_ygloa")
+
+[node name="bling_p2" type="CPUParticles2D" parent="ui/ui_mid/ring/temmplate" unique_id=2117870375]
+visible = false
+position = Vector2(284, 159)
+amount = 64
+texture = SubResource("GradientTexture2D_6rcc6")
+lifetime = 1.2
+preprocess = 1.2
+randomness = 0.1
+direction = Vector2(0, -1)
+spread = 180.0
+gravity = Vector2(0, 0)
+initial_velocity_max = 2.0
+scale_amount_min = 0.15
+scale_amount_max = 0.4
+color_ramp = SubResource("Gradient_ah8jo")
+script = ExtResource("9_ygloa")
+
+[node name="items" type="Node2D" parent="ui/ui_mid/ring" unique_id=1163302770]
+
+[node name="ui_middle" type="Control" parent="ui/ui_mid" unique_id=300716079]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+metadata/_edit_lock_ = true
+
+[node name="items" type="Control" parent="ui/ui_mid/ui_middle" unique_id=1004446102]
+custom_minimum_size = Vector2(1, 1)
+custom_maximum_size = Vector2(1, 1)
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -0.5
+offset_top = -0.5
+offset_right = 0.5
+offset_bottom = 0.5
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="ui_small" type="Control" parent="ui" unique_id=608303]
+visible = false
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme = ExtResource("2_6xbdy")
+
+[node name="player1" type="Control" parent="ui/ui_small" unique_id=1760238511]
+layout_mode = 1
+anchors_preset = 9
+anchor_bottom = 1.0
+offset_left = 550.0
+offset_top = -320.0
+offset_right = 550.0
+offset_bottom = -320.0
+grow_vertical = 2
+scale = Vector2(1.6, 1.6)
+
+[node name="backcolor" type="ColorRect" parent="ui/ui_small/player1" unique_id=1061776158]
+visible = false
+layout_mode = 1
+anchors_preset = 11
+anchor_left = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -186.0
+offset_right = 326.0
+grow_horizontal = 0
+grow_vertical = 2
+color = Color(0, 0, 0, 1)
+
+[node name="back" type="Control" parent="ui/ui_small/player1" unique_id=1503778016]
+layout_mode = 1
+anchors_preset = 4
+anchor_top = 0.5
+anchor_bottom = 0.5
+offset_top = -258.0
+offset_bottom = 258.0
+grow_vertical = 2
+
+[node name="deck" type="TextureRect" parent="ui/ui_small/player1/back" unique_id=113793339]
+custom_minimum_size = Vector2(102, 102)
+custom_maximum_size = Vector2(102, 102)
+layout_mode = 1
+anchors_preset = 2
+anchor_top = 1.0
+anchor_bottom = 1.0
+offset_top = -6.0
+offset_right = 102.0
+offset_bottom = 96.0
+grow_vertical = 0
+
+[node name="PosRect" type="ColorRect" parent="ui/ui_small/player1/back/deck" unique_id=1442316359]
+layout_mode = 0
+offset_left = -53.0
+offset_top = 21.124992
+offset_right = 7.0
+offset_bottom = 81.12499
+
+[node name="ColorRect" type="ColorRect" parent="ui/ui_small/player1/back/deck/PosRect" unique_id=113875555]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -20.0
+offset_top = -20.0
+offset_right = 20.0
+offset_bottom = 20.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0, 0, 0, 1)
+
+[node name="ColorRect" type="ColorRect" parent="ui/ui_small/player1/back/deck/PosRect/ColorRect" unique_id=1244821912]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -10.0
+offset_top = -10.0
+offset_right = 10.0
+offset_bottom = 10.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="exdeck" type="TextureRect" parent="ui/ui_small/player1/back" unique_id=1667164559]
+custom_minimum_size = Vector2(102, 102)
+custom_maximum_size = Vector2(102, 102)
+layout_mode = 1
+offset_top = -102.0
+offset_right = 102.0
+
+[node name="PosRect" type="ColorRect" parent="ui/ui_small/player1/back/exdeck" unique_id=996496153]
+layout_mode = 0
+offset_left = -53.124996
+offset_top = 20.624985
+offset_right = 6.875004
+offset_bottom = 80.624985
+
+[node name="ColorRect" type="ColorRect" parent="ui/ui_small/player1/back/exdeck/PosRect" unique_id=650466614]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -20.0
+offset_top = -20.0
+offset_right = 20.0
+offset_bottom = 20.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0, 0, 0, 1)
+
+[node name="ColorRect" type="ColorRect" parent="ui/ui_small/player1/back/exdeck/PosRect/ColorRect" unique_id=731399746]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -10.0
+offset_top = -10.0
+offset_right = 10.0
+offset_bottom = 10.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="back1" type="TextureRect" parent="ui/ui_small/player1/back" unique_id=1525864187]
+custom_minimum_size = Vector2(102, 102)
+custom_maximum_size = Vector2(102, 102)
+layout_mode = 0
+offset_right = 102.0
+offset_bottom = 102.0
+
+[node name="back2" type="TextureRect" parent="ui/ui_small/player1/back" unique_id=1346113864]
+custom_minimum_size = Vector2(102, 102)
+custom_maximum_size = Vector2(102, 102)
+layout_mode = 0
+offset_top = 102.0
+offset_right = 102.0
+offset_bottom = 204.0
+
+[node name="back3" type="TextureRect" parent="ui/ui_small/player1/back" unique_id=1054108586]
+custom_minimum_size = Vector2(102, 102)
+custom_maximum_size = Vector2(102, 102)
+layout_mode = 0
+offset_top = 204.0
+offset_right = 102.0
+offset_bottom = 306.0
+
+[node name="back4" type="TextureRect" parent="ui/ui_small/player1/back" unique_id=1379897170]
+custom_minimum_size = Vector2(102, 102)
+custom_maximum_size = Vector2(102, 102)
+layout_mode = 0
+offset_top = 306.0
+offset_right = 102.0
+offset_bottom = 408.0
+
+[node name="back5" type="TextureRect" parent="ui/ui_small/player1/back" unique_id=1955992689]
+custom_minimum_size = Vector2(102, 102)
+custom_maximum_size = Vector2(102, 102)
+layout_mode = 0
+offset_top = 408.0
+offset_right = 102.0
+offset_bottom = 510.0
+
+[node name="front" type="Control" parent="ui/ui_small/player1" unique_id=1501404775]
+layout_mode = 1
+anchors_preset = 4
+anchor_top = 0.5
+anchor_bottom = 0.5
+offset_left = 102.0
+offset_top = -258.0
+offset_right = 102.0
+offset_bottom = 258.0
+grow_vertical = 2
+
+[node name="field" type="TextureRect" parent="ui/ui_small/player1/front" unique_id=1086933370]
+custom_minimum_size = Vector2(102, 102)
+custom_maximum_size = Vector2(102, 102)
+layout_mode = 1
+offset_top = -102.0
+offset_right = 102.0
+
+[node name="PosRect" type="ColorRect" parent="ui/ui_small/player1/front/field" unique_id=1052943182]
+layout_mode = 0
+offset_left = 156.0
+offset_top = 21.87499
+offset_right = 216.0
+offset_bottom = 81.87499
+
+[node name="ColorRect" type="ColorRect" parent="ui/ui_small/player1/front/field/PosRect" unique_id=1210058483]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -20.0
+offset_top = -20.0
+offset_right = 20.0
+offset_bottom = 20.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0, 0, 0, 1)
+
+[node name="ColorRect" type="ColorRect" parent="ui/ui_small/player1/front/field/PosRect/ColorRect" unique_id=463877729]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -10.0
+offset_top = -10.0
+offset_right = 10.0
+offset_bottom = 10.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="grave" type="TextureRect" parent="ui/ui_small/player1/front" unique_id=420304627]
+custom_minimum_size = Vector2(102, 102)
+custom_maximum_size = Vector2(102, 102)
+layout_mode = 1
+anchors_preset = 2
+anchor_top = 1.0
+anchor_bottom = 1.0
+offset_top = -6.0
+offset_right = 102.0
+offset_bottom = 96.0
+grow_vertical = 0
+
+[node name="PosRect" type="ColorRect" parent="ui/ui_small/player1/front/grave" unique_id=548784435]
+layout_mode = 0
+offset_left = 156.74998
+offset_top = 21.125
+offset_right = 216.74998
+offset_bottom = 81.125
+
+[node name="ColorRect" type="ColorRect" parent="ui/ui_small/player1/front/grave/PosRect" unique_id=1514680074]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -20.0
+offset_top = -20.0
+offset_right = 20.0
+offset_bottom = 20.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0, 0, 0, 1)
+
+[node name="ColorRect" type="ColorRect" parent="ui/ui_small/player1/front/grave/PosRect/ColorRect" unique_id=1045390698]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -10.0
+offset_top = -10.0
+offset_right = 10.0
+offset_bottom = 10.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="front1" type="TextureRect" parent="ui/ui_small/player1/front" unique_id=1220455178]
+custom_minimum_size = Vector2(102, 102)
+custom_maximum_size = Vector2(102, 102)
+layout_mode = 0
+offset_right = 102.0
+offset_bottom = 102.0
+
+[node name="front2" type="TextureRect" parent="ui/ui_small/player1/front" unique_id=1584659404]
+custom_minimum_size = Vector2(102, 102)
+custom_maximum_size = Vector2(102, 102)
+layout_mode = 0
+offset_top = 102.0
+offset_right = 102.0
+offset_bottom = 204.0
+
+[node name="front3" type="TextureRect" parent="ui/ui_small/player1/front" unique_id=413348501]
+custom_minimum_size = Vector2(102, 102)
+custom_maximum_size = Vector2(102, 102)
+layout_mode = 0
+offset_top = 204.0
+offset_right = 102.0
+offset_bottom = 306.0
+
+[node name="front4" type="TextureRect" parent="ui/ui_small/player1/front" unique_id=879853727]
+custom_minimum_size = Vector2(102, 102)
+custom_maximum_size = Vector2(102, 102)
+layout_mode = 0
+offset_top = 306.0
+offset_right = 102.0
+offset_bottom = 408.0
+
+[node name="front5" type="TextureRect" parent="ui/ui_small/player1/front" unique_id=318493615]
+custom_minimum_size = Vector2(102, 102)
+custom_maximum_size = Vector2(102, 102)
+layout_mode = 0
+offset_top = 408.0
+offset_right = 102.0
+offset_bottom = 510.0
+
+[node name="ex" type="Control" parent="ui/ui_small/player1" unique_id=50939359]
+layout_mode = 1
+anchors_preset = 4
+anchor_top = 0.5
+anchor_bottom = 0.5
+offset_left = 102.0
+offset_top = -258.0
+offset_right = 102.0
+offset_bottom = 258.0
+grow_vertical = 2
+
+[node name="ex1" type="TextureRect" parent="ui/ui_small/player1/ex" unique_id=1275991874]
+custom_minimum_size = Vector2(102, 102)
+custom_maximum_size = Vector2(102, 102)
+layout_mode = 0
+offset_left = 102.0
+offset_top = 102.0
+offset_right = 204.0
+offset_bottom = 204.0
+
+[node name="ex2" type="TextureRect" parent="ui/ui_small/player1/ex" unique_id=102947651]
+custom_minimum_size = Vector2(102, 102)
+custom_maximum_size = Vector2(102, 102)
+layout_mode = 0
+offset_left = 102.0
+offset_top = 306.0
+offset_right = 204.0
+offset_bottom = 408.0
+
+[node name="TextureRect" type="TextureRect" parent="ui/ui_small/player1" unique_id=1973257806]
+layout_mode = 0
+offset_right = 40.0
+offset_bottom = 40.0
+
+[node name="player2" type="Control" parent="ui/ui_small" unique_id=1191705400]
+layout_mode = 1
+anchors_preset = 11
+anchor_left = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -554.0
+offset_top = -320.0
+offset_right = -554.0
+offset_bottom = -320.0
+grow_horizontal = 0
+grow_vertical = 2
+scale = Vector2(1.6, 1.6)
+
+[node name="backcolor" type="ColorRect" parent="ui/ui_small/player2" unique_id=234365452]
+visible = false
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -326.0
+offset_right = 186.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0, 0, 0, 1)
+
+[node name="back" type="Control" parent="ui/ui_small/player2" unique_id=784339488]
+layout_mode = 1
+anchors_preset = 6
+anchor_left = 1.0
+anchor_top = 0.5
+anchor_right = 1.0
+anchor_bottom = 0.5
+offset_top = -258.0
+offset_bottom = 258.0
+grow_horizontal = 0
+grow_vertical = 2
+
+[node name="exdeck" type="TextureRect" parent="ui/ui_small/player2/back" unique_id=282637477]
+custom_minimum_size = Vector2(102, 102)
+custom_maximum_size = Vector2(102, 102)
+layout_mode = 1
+offset_left = -102.0
+offset_top = -102.0
+
+[node name="PosRect" type="ColorRect" parent="ui/ui_small/player2/back/exdeck" unique_id=2042601078]
+layout_mode = 0
+offset_left = 95.0
+offset_top = 21.87499
+offset_right = 155.0
+offset_bottom = 81.87499
+
+[node name="ColorRect" type="ColorRect" parent="ui/ui_small/player2/back/exdeck/PosRect" unique_id=753859335]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -20.0
+offset_top = -20.0
+offset_right = 20.0
+offset_bottom = 20.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0, 0, 0, 1)
+
+[node name="ColorRect" type="ColorRect" parent="ui/ui_small/player2/back/exdeck/PosRect/ColorRect" unique_id=1367722131]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -10.0
+offset_top = -10.0
+offset_right = 10.0
+offset_bottom = 10.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="deck" type="TextureRect" parent="ui/ui_small/player2/back" unique_id=1967762830]
+custom_minimum_size = Vector2(102, 102)
+custom_maximum_size = Vector2(102, 102)
+layout_mode = 1
+anchors_preset = 2
+anchor_top = 1.0
+anchor_bottom = 1.0
+offset_left = -102.0
+offset_top = -6.0
+offset_bottom = 96.0
+grow_vertical = 0
+
+[node name="PosRect" type="ColorRect" parent="ui/ui_small/player2/back/deck" unique_id=1357653597]
+layout_mode = 0
+offset_left = 97.625
+offset_top = 19.875038
+offset_right = 157.625
+offset_bottom = 79.87504
+
+[node name="ColorRect" type="ColorRect" parent="ui/ui_small/player2/back/deck/PosRect" unique_id=750618361]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -20.0
+offset_top = -20.0
+offset_right = 20.0
+offset_bottom = 20.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0, 0, 0, 1)
+
+[node name="ColorRect" type="ColorRect" parent="ui/ui_small/player2/back/deck/PosRect/ColorRect" unique_id=310898750]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -10.0
+offset_top = -10.0
+offset_right = 10.0
+offset_bottom = 10.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="back1" type="TextureRect" parent="ui/ui_small/player2/back" unique_id=1361740654]
+custom_minimum_size = Vector2(102, 102)
+custom_maximum_size = Vector2(102, 102)
+layout_mode = 0
+offset_left = -102.0
+offset_bottom = 102.0
+
+[node name="back2" type="TextureRect" parent="ui/ui_small/player2/back" unique_id=1000451846]
+custom_minimum_size = Vector2(102, 102)
+custom_maximum_size = Vector2(102, 102)
+layout_mode = 0
+offset_left = -102.0
+offset_top = 102.0
+offset_bottom = 204.0
+
+[node name="back3" type="TextureRect" parent="ui/ui_small/player2/back" unique_id=983059116]
+custom_minimum_size = Vector2(102, 102)
+custom_maximum_size = Vector2(102, 102)
+layout_mode = 0
+offset_left = -102.0
+offset_top = 204.0
+offset_bottom = 306.0
+
+[node name="back4" type="TextureRect" parent="ui/ui_small/player2/back" unique_id=1359553151]
+custom_minimum_size = Vector2(102, 102)
+custom_maximum_size = Vector2(102, 102)
+layout_mode = 0
+offset_left = -102.0
+offset_top = 306.0
+offset_bottom = 408.0
+
+[node name="back5" type="TextureRect" parent="ui/ui_small/player2/back" unique_id=1600428105]
+custom_minimum_size = Vector2(102, 102)
+custom_maximum_size = Vector2(102, 102)
+layout_mode = 0
+offset_left = -102.0
+offset_top = 408.0
+offset_bottom = 510.0
+
+[node name="front" type="Control" parent="ui/ui_small/player2" unique_id=982127693]
+layout_mode = 1
+anchors_preset = 6
+anchor_left = 1.0
+anchor_top = 0.5
+anchor_right = 1.0
+anchor_bottom = 0.5
+offset_left = -102.0
+offset_top = -258.0
+offset_right = -102.0
+offset_bottom = 258.0
+grow_horizontal = 0
+grow_vertical = 2
+
+[node name="field" type="TextureRect" parent="ui/ui_small/player2/front" unique_id=354843661]
+custom_minimum_size = Vector2(102, 102)
+custom_maximum_size = Vector2(102, 102)
+layout_mode = 1
+offset_left = -102.0
+offset_top = -102.0
+
+[node name="PosRect" type="ColorRect" parent="ui/ui_small/player2/front/field" unique_id=1458087236]
+layout_mode = 0
+offset_left = -116.0
+offset_top = 22.49999
+offset_right = -56.0
+offset_bottom = 82.49999
+
+[node name="ColorRect" type="ColorRect" parent="ui/ui_small/player2/front/field/PosRect" unique_id=2140246606]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -20.0
+offset_top = -20.0
+offset_right = 20.0
+offset_bottom = 20.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0, 0, 0, 1)
+
+[node name="ColorRect" type="ColorRect" parent="ui/ui_small/player2/front/field/PosRect/ColorRect" unique_id=1254650770]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -10.0
+offset_top = -10.0
+offset_right = 10.0
+offset_bottom = 10.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="grave" type="TextureRect" parent="ui/ui_small/player2/front" unique_id=918324766]
+custom_minimum_size = Vector2(102, 102)
+custom_maximum_size = Vector2(102, 102)
+layout_mode = 1
+anchors_preset = 2
+anchor_top = 1.0
+anchor_bottom = 1.0
+offset_left = -98.0
+offset_top = -6.0
+offset_right = 4.0
+offset_bottom = 96.0
+grow_vertical = 0
+
+[node name="PosRect" type="ColorRect" parent="ui/ui_small/player2/front/grave" unique_id=385467049]
+layout_mode = 0
+offset_left = -116.0
+offset_top = 21.124977
+offset_right = -56.0
+offset_bottom = 81.12498
+
+[node name="ColorRect" type="ColorRect" parent="ui/ui_small/player2/front/grave/PosRect" unique_id=1370072660]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -20.0
+offset_top = -20.0
+offset_right = 20.0
+offset_bottom = 20.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0, 0, 0, 1)
+
+[node name="ColorRect" type="ColorRect" parent="ui/ui_small/player2/front/grave/PosRect/ColorRect" unique_id=485914576]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -10.0
+offset_top = -10.0
+offset_right = 10.0
+offset_bottom = 10.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="front1" type="TextureRect" parent="ui/ui_small/player2/front" unique_id=743305947]
+custom_minimum_size = Vector2(102, 102)
+custom_maximum_size = Vector2(102, 102)
+layout_mode = 0
+offset_left = -102.0
+offset_bottom = 102.0
+
+[node name="front2" type="TextureRect" parent="ui/ui_small/player2/front" unique_id=1586288573]
+custom_minimum_size = Vector2(102, 102)
+custom_maximum_size = Vector2(102, 102)
+layout_mode = 0
+offset_left = -102.0
+offset_top = 102.0
+offset_bottom = 204.0
+
+[node name="front3" type="TextureRect" parent="ui/ui_small/player2/front" unique_id=562201212]
+custom_minimum_size = Vector2(102, 102)
+custom_maximum_size = Vector2(102, 102)
+layout_mode = 0
+offset_left = -102.0
+offset_top = 204.0
+offset_bottom = 306.0
+
+[node name="front4" type="TextureRect" parent="ui/ui_small/player2/front" unique_id=452825117]
+custom_minimum_size = Vector2(102, 102)
+custom_maximum_size = Vector2(102, 102)
+layout_mode = 0
+offset_left = -102.0
+offset_top = 306.0
+offset_bottom = 408.0
+
+[node name="front5" type="TextureRect" parent="ui/ui_small/player2/front" unique_id=1505616204]
+custom_minimum_size = Vector2(102, 102)
+custom_maximum_size = Vector2(102, 102)
+layout_mode = 0
+offset_left = -102.0
+offset_top = 408.0
+offset_bottom = 510.0
+
+[node name="ex" type="Control" parent="ui/ui_small/player2" unique_id=728588861]
+layout_mode = 1
+anchors_preset = 6
+anchor_left = 1.0
+anchor_top = 0.5
+anchor_right = 1.0
+anchor_bottom = 0.5
+offset_left = -204.0
+offset_top = -258.0
+offset_right = -204.0
+offset_bottom = 258.0
+grow_horizontal = 0
+grow_vertical = 2
+
+[node name="ex1" type="TextureRect" parent="ui/ui_small/player2/ex" unique_id=1699287476]
+custom_minimum_size = Vector2(102, 102)
+custom_maximum_size = Vector2(102, 102)
+layout_mode = 0
+offset_left = -102.0
+offset_top = 306.0
+offset_bottom = 408.0
+flip_h = true
+
+[node name="ex2" type="TextureRect" parent="ui/ui_small/player2/ex" unique_id=109932518]
+custom_minimum_size = Vector2(102, 102)
+custom_maximum_size = Vector2(102, 102)
+layout_mode = 0
+offset_left = -102.0
+offset_top = 102.0
+offset_bottom = 204.0
+flip_h = true
+
+[node name="Camera2D" type="Camera2D" parent="ui/ui_small" unique_id=934490209]
+anchor_mode = 0
+
+[node name="ring" type="Node2D" parent="ui/ui_small" unique_id=1236915495]
+
+[node name="temmplate" type="Node2D" parent="ui/ui_small/ring" unique_id=1265062344]
+
+[node name="bling_p1" type="CPUParticles2D" parent="ui/ui_small/ring/temmplate" unique_id=1920771629]
+visible = false
+position = Vector2(-259, 151)
+amount = 64
+texture = SubResource("GradientTexture2D_ygloa")
+lifetime = 1.2
+preprocess = 1.2
+randomness = 0.1
+direction = Vector2(0, -1)
+spread = 180.0
+gravity = Vector2(0, 0)
+initial_velocity_max = 2.0
+scale_amount_min = 0.15
+scale_amount_max = 0.4
+color_ramp = SubResource("Gradient_6civk")
+script = ExtResource("9_ygloa")
+
+[node name="bling_p2" type="CPUParticles2D" parent="ui/ui_small/ring/temmplate" unique_id=806229011]
+visible = false
+position = Vector2(284, 159)
+amount = 64
+texture = SubResource("GradientTexture2D_7af2g")
+lifetime = 1.2
+preprocess = 1.2
+randomness = 0.1
+direction = Vector2(0, -1)
+spread = 180.0
+gravity = Vector2(0, 0)
+initial_velocity_max = 2.0
+scale_amount_min = 0.15
+scale_amount_max = 0.4
+color_ramp = SubResource("Gradient_81wt4")
+script = ExtResource("9_ygloa")
+
+[node name="items" type="Node2D" parent="ui/ui_small/ring" unique_id=1283393960]
+
+[node name="ui_middle" type="Control" parent="ui/ui_small" unique_id=1308855848]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+metadata/_edit_lock_ = true
+
+[node name="items" type="Control" parent="ui/ui_small/ui_middle" unique_id=1660527850]
+custom_minimum_size = Vector2(1, 1)
+custom_maximum_size = Vector2(1, 1)
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -0.5
+offset_top = -0.5
+offset_right = 0.5
+offset_bottom = 0.5
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="QrContriner1" type="VBoxContainer" parent="ui" unique_id=1758370118]
+layout_mode = 1
+anchors_preset = 11
+anchor_left = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -1646.0
+offset_right = -1646.0
 grow_horizontal = 0
 grow_vertical = 2
 alignment = 1
 
-[node name="qrCodeTemplate" type="TextureRect" parent="ui_big/player1/QrContriner" unique_id=1788582701]
+[node name="qrCodeTemplate" type="TextureRect" parent="ui/QrContriner1" unique_id=1788582701]
 visible = false
 custom_minimum_size = Vector2(128, 128)
 layout_mode = 2
@@ -438,7 +2342,7 @@ dark_module_color = Color(0, 0, 0, 1)
 auto_module_size = true
 quiet_zone_size = 4
 
-[node name="ip" type="Label" parent="ui_big/player1/QrContriner/qrCodeTemplate" unique_id=650028063]
+[node name="ip" type="Label" parent="ui/QrContriner1/qrCodeTemplate" unique_id=650028063]
 layout_mode = 1
 anchors_preset = 6
 anchor_left = 1.0
@@ -458,361 +2362,67 @@ text = "127.0.0.1:8080"
 horizontal_alignment = 1
 vertical_alignment = 1
 
-[node name="player2" type="Control" parent="ui_big" unique_id=1481827237]
+[node name="QrContriner2" type="VBoxContainer" parent="ui" unique_id=1999144057]
 layout_mode = 1
 anchors_preset = 11
 anchor_left = 1.0
 anchor_right = 1.0
 anchor_bottom = 1.0
-offset_left = -146.0
+offset_left = -274.0
 offset_right = -146.0
 grow_horizontal = 0
 grow_vertical = 2
+alignment = 1
 
-[node name="backcolor" type="ColorRect" parent="ui_big/player2" unique_id=438896630]
-layout_mode = 1
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-offset_left = -326.0
-offset_right = 186.0
-grow_horizontal = 2
-grow_vertical = 2
-color = Color(0, 0, 0, 1)
+[node name="qrCodeTemplate" type="TextureRect" parent="ui/QrContriner2" unique_id=1217513482]
+visible = false
+custom_minimum_size = Vector2(128, 128)
+layout_mode = 2
+expand_mode = 1
+stretch_mode = 3
+script = ExtResource("5_4rr2b")
+auto_update = true
+mode = 1
+error_correction = 1
+use_eci = false
+data = ""
+auto_version = true
+auto_mask_pattern = true
+light_module_color = Color(1, 1, 1, 1)
+dark_module_color = Color(0, 0, 0, 1)
+auto_module_size = true
+quiet_zone_size = 4
 
-[node name="back" type="Control" parent="ui_big/player2" unique_id=1978905516]
-layout_mode = 1
-anchors_preset = 6
-anchor_left = 1.0
-anchor_top = 0.5
-anchor_right = 1.0
-anchor_bottom = 0.5
-offset_top = -258.0
-offset_bottom = 258.0
-grow_horizontal = 0
-grow_vertical = 2
-
-[node name="exdeck" type="TextureRect" parent="ui_big/player2/back" unique_id=1255114458]
-custom_minimum_size = Vector2(102, 102)
-custom_maximum_size = Vector2(102, 102)
-layout_mode = 1
-offset_left = -102.0
-offset_top = -102.0
-
-[node name="PosRect" type="ColorRect" parent="ui_big/player2/back/exdeck" unique_id=375573167]
-layout_mode = 0
-offset_left = 95.0
-offset_top = -39.0
-offset_right = 155.0
-offset_bottom = 21.0
-
-[node name="ColorRect" type="ColorRect" parent="ui_big/player2/back/exdeck/PosRect" unique_id=2032786812]
-layout_mode = 1
-anchors_preset = 8
-anchor_left = 0.5
-anchor_top = 0.5
-anchor_right = 0.5
-anchor_bottom = 0.5
-offset_left = -20.0
-offset_top = -20.0
-offset_right = 20.0
-offset_bottom = 20.0
-grow_horizontal = 2
-grow_vertical = 2
-color = Color(0, 0, 0, 1)
-
-[node name="ColorRect" type="ColorRect" parent="ui_big/player2/back/exdeck/PosRect/ColorRect" unique_id=275530231]
-layout_mode = 1
-anchors_preset = 8
-anchor_left = 0.5
-anchor_top = 0.5
-anchor_right = 0.5
-anchor_bottom = 0.5
-offset_left = -10.0
-offset_top = -10.0
-offset_right = 10.0
-offset_bottom = 10.0
-grow_horizontal = 2
-grow_vertical = 2
-
-[node name="deck" type="TextureRect" parent="ui_big/player2/back" unique_id=857363402]
-custom_minimum_size = Vector2(102, 102)
-custom_maximum_size = Vector2(102, 102)
-layout_mode = 1
-anchors_preset = 2
-anchor_top = 1.0
-anchor_bottom = 1.0
-offset_left = -102.0
-offset_top = -6.0
-offset_bottom = 96.0
-grow_vertical = 0
-
-[node name="PosRect" type="ColorRect" parent="ui_big/player2/back/deck" unique_id=433185757]
-layout_mode = 0
-offset_left = 92.0
-offset_top = 80.0
-offset_right = 152.0
-offset_bottom = 140.0
-
-[node name="ColorRect" type="ColorRect" parent="ui_big/player2/back/deck/PosRect" unique_id=537036823]
-layout_mode = 1
-anchors_preset = 8
-anchor_left = 0.5
-anchor_top = 0.5
-anchor_right = 0.5
-anchor_bottom = 0.5
-offset_left = -20.0
-offset_top = -20.0
-offset_right = 20.0
-offset_bottom = 20.0
-grow_horizontal = 2
-grow_vertical = 2
-color = Color(0, 0, 0, 1)
-
-[node name="ColorRect" type="ColorRect" parent="ui_big/player2/back/deck/PosRect/ColorRect" unique_id=1736158442]
-layout_mode = 1
-anchors_preset = 8
-anchor_left = 0.5
-anchor_top = 0.5
-anchor_right = 0.5
-anchor_bottom = 0.5
-offset_left = -10.0
-offset_top = -10.0
-offset_right = 10.0
-offset_bottom = 10.0
-grow_horizontal = 2
-grow_vertical = 2
-
-[node name="back1" type="TextureRect" parent="ui_big/player2/back" unique_id=1630506923]
-custom_minimum_size = Vector2(102, 102)
-custom_maximum_size = Vector2(102, 102)
-layout_mode = 0
-offset_left = -102.0
-offset_bottom = 102.0
-
-[node name="back2" type="TextureRect" parent="ui_big/player2/back" unique_id=278801070]
-custom_minimum_size = Vector2(102, 102)
-custom_maximum_size = Vector2(102, 102)
-layout_mode = 0
-offset_left = -102.0
-offset_top = 102.0
-offset_bottom = 204.0
-
-[node name="back3" type="TextureRect" parent="ui_big/player2/back" unique_id=1466517571]
-custom_minimum_size = Vector2(102, 102)
-custom_maximum_size = Vector2(102, 102)
-layout_mode = 0
-offset_left = -102.0
-offset_top = 204.0
-offset_bottom = 306.0
-
-[node name="back4" type="TextureRect" parent="ui_big/player2/back" unique_id=345009114]
-custom_minimum_size = Vector2(102, 102)
-custom_maximum_size = Vector2(102, 102)
-layout_mode = 0
-offset_left = -102.0
-offset_top = 306.0
-offset_bottom = 408.0
-
-[node name="back5" type="TextureRect" parent="ui_big/player2/back" unique_id=1103853499]
-custom_minimum_size = Vector2(102, 102)
-custom_maximum_size = Vector2(102, 102)
-layout_mode = 0
-offset_left = -102.0
-offset_top = 408.0
-offset_bottom = 510.0
-
-[node name="front" type="Control" parent="ui_big/player2" unique_id=686232888]
+[node name="ip" type="Label" parent="ui/QrContriner2/qrCodeTemplate" unique_id=1410986403]
 layout_mode = 1
 anchors_preset = 6
 anchor_left = 1.0
 anchor_top = 0.5
 anchor_right = 1.0
 anchor_bottom = 0.5
-offset_left = -102.0
-offset_top = -258.0
-offset_right = -102.0
-offset_bottom = 258.0
+offset_left = -296.0
+offset_top = 6.0
+offset_right = -40.0
+offset_bottom = 46.0
 grow_horizontal = 0
 grow_vertical = 2
-
-[node name="field" type="TextureRect" parent="ui_big/player2/front" unique_id=1468582923]
-custom_minimum_size = Vector2(102, 102)
-custom_maximum_size = Vector2(102, 102)
-layout_mode = 1
-offset_left = -102.0
-offset_top = -102.0
-
-[node name="PosRect" type="ColorRect" parent="ui_big/player2/front/field" unique_id=1446341713]
-layout_mode = 0
-offset_left = -116.0
-offset_top = -39.0
-offset_right = -56.0
-offset_bottom = 21.0
-
-[node name="ColorRect" type="ColorRect" parent="ui_big/player2/front/field/PosRect" unique_id=991779507]
-layout_mode = 1
-anchors_preset = 8
-anchor_left = 0.5
-anchor_top = 0.5
-anchor_right = 0.5
-anchor_bottom = 0.5
-offset_left = -20.0
-offset_top = -20.0
-offset_right = 20.0
-offset_bottom = 20.0
-grow_horizontal = 2
-grow_vertical = 2
-color = Color(0, 0, 0, 1)
-
-[node name="ColorRect" type="ColorRect" parent="ui_big/player2/front/field/PosRect/ColorRect" unique_id=1087919031]
-layout_mode = 1
-anchors_preset = 8
-anchor_left = 0.5
-anchor_top = 0.5
-anchor_right = 0.5
-anchor_bottom = 0.5
-offset_left = -10.0
-offset_top = -10.0
-offset_right = 10.0
-offset_bottom = 10.0
-grow_horizontal = 2
-grow_vertical = 2
-
-[node name="grave" type="TextureRect" parent="ui_big/player2/front" unique_id=301878386]
-custom_minimum_size = Vector2(102, 102)
-custom_maximum_size = Vector2(102, 102)
-layout_mode = 1
-anchors_preset = 2
-anchor_top = 1.0
-anchor_bottom = 1.0
-offset_left = -98.0
-offset_top = -6.0
-offset_right = 4.0
-offset_bottom = 96.0
-grow_vertical = 0
-
-[node name="PosRect" type="ColorRect" parent="ui_big/player2/front/grave" unique_id=444371542]
-layout_mode = 0
-offset_left = -116.0
-offset_top = 96.0
-offset_right = -56.0
-offset_bottom = 156.0
-
-[node name="ColorRect" type="ColorRect" parent="ui_big/player2/front/grave/PosRect" unique_id=687545997]
-layout_mode = 1
-anchors_preset = 8
-anchor_left = 0.5
-anchor_top = 0.5
-anchor_right = 0.5
-anchor_bottom = 0.5
-offset_left = -20.0
-offset_top = -20.0
-offset_right = 20.0
-offset_bottom = 20.0
-grow_horizontal = 2
-grow_vertical = 2
-color = Color(0, 0, 0, 1)
-
-[node name="ColorRect" type="ColorRect" parent="ui_big/player2/front/grave/PosRect/ColorRect" unique_id=212400485]
-layout_mode = 1
-anchors_preset = 8
-anchor_left = 0.5
-anchor_top = 0.5
-anchor_right = 0.5
-anchor_bottom = 0.5
-offset_left = -10.0
-offset_top = -10.0
-offset_right = 10.0
-offset_bottom = 10.0
-grow_horizontal = 2
-grow_vertical = 2
-
-[node name="front1" type="TextureRect" parent="ui_big/player2/front" unique_id=1086708143]
-custom_minimum_size = Vector2(102, 102)
-custom_maximum_size = Vector2(102, 102)
-layout_mode = 0
-offset_left = -102.0
-offset_bottom = 102.0
-
-[node name="front2" type="TextureRect" parent="ui_big/player2/front" unique_id=1266374490]
-custom_minimum_size = Vector2(102, 102)
-custom_maximum_size = Vector2(102, 102)
-layout_mode = 0
-offset_left = -102.0
-offset_top = 102.0
-offset_bottom = 204.0
-
-[node name="front3" type="TextureRect" parent="ui_big/player2/front" unique_id=1357976459]
-custom_minimum_size = Vector2(102, 102)
-custom_maximum_size = Vector2(102, 102)
-layout_mode = 0
-offset_left = -102.0
-offset_top = 204.0
-offset_bottom = 306.0
-
-[node name="front4" type="TextureRect" parent="ui_big/player2/front" unique_id=1581747024]
-custom_minimum_size = Vector2(102, 102)
-custom_maximum_size = Vector2(102, 102)
-layout_mode = 0
-offset_left = -102.0
-offset_top = 306.0
-offset_bottom = 408.0
-
-[node name="front5" type="TextureRect" parent="ui_big/player2/front" unique_id=1985120424]
-custom_minimum_size = Vector2(102, 102)
-custom_maximum_size = Vector2(102, 102)
-layout_mode = 0
-offset_left = -102.0
-offset_top = 408.0
-offset_bottom = 510.0
-
-[node name="ex" type="Control" parent="ui_big/player2" unique_id=1414532792]
-layout_mode = 1
-anchors_preset = 6
-anchor_left = 1.0
-anchor_top = 0.5
-anchor_right = 1.0
-anchor_bottom = 0.5
-offset_left = -204.0
-offset_top = -258.0
-offset_right = -204.0
-offset_bottom = 258.0
-grow_horizontal = 0
-grow_vertical = 2
-
-[node name="ex1" type="TextureRect" parent="ui_big/player2/ex" unique_id=1963050705]
-custom_minimum_size = Vector2(102, 102)
-custom_maximum_size = Vector2(102, 102)
-layout_mode = 0
-offset_left = -102.0
-offset_top = 306.0
-offset_bottom = 408.0
-flip_h = true
-
-[node name="ex2" type="TextureRect" parent="ui_big/player2/ex" unique_id=1108459227]
-custom_minimum_size = Vector2(102, 102)
-custom_maximum_size = Vector2(102, 102)
-layout_mode = 0
-offset_left = -102.0
-offset_top = 102.0
-offset_bottom = 204.0
-flip_h = true
-
-[node name="lp" type="Panel" parent="ui_big/player2" unique_id=1210199099]
-layout_mode = 1
-anchors_preset = 2
-anchor_top = 1.0
-anchor_bottom = 1.0
-offset_left = -802.0
-offset_top = -432.0
-offset_right = -418.0
-offset_bottom = -176.0
-grow_vertical = 0
 rotation = -1.5707964
-theme_override_styles/panel = SubResource("StyleBoxTexture_4rr2b")
+pivot_offset_ratio = Vector2(0.5, 0)
+theme_override_font_sizes/font_size = 18
+text = "127.0.0.1:8080"
+horizontal_alignment = 1
+vertical_alignment = 1
 
-[node name="val" type="Label" parent="ui_big/player2/lp" unique_id=1397316268]
+[node name="duel1" type="Panel" parent="ui" unique_id=335268233]
+layout_mode = 0
+offset_left = 948.0
+offset_top = 432.0
+offset_right = 1332.0
+offset_bottom = 688.00006
+rotation = 1.5707964
+theme_override_styles/panel = SubResource("StyleBoxTexture_b3w7a")
+
+[node name="val" type="Label" parent="ui/duel1" unique_id=1350940801]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -833,58 +2443,39 @@ _current_font_size = 86
 _editor_defaults_set = true
 metadata/_custom_type_script = "uid://bttgnk3bb2a8i"
 
-[node name="QrContriner" type="VBoxContainer" parent="ui_big/player2" unique_id=1999144057]
+[node name="duel2" type="Panel" parent="ui" unique_id=1210199099]
 layout_mode = 1
-anchors_preset = 11
-anchor_left = 1.0
+anchors_preset = 2
+anchor_top = 1.0
+anchor_bottom = 1.0
+offset_left = 972.0
+offset_top = -432.0
+offset_right = 1356.0
+offset_bottom = -176.0
+grow_vertical = 0
+rotation = -1.5707964
+theme_override_styles/panel = SubResource("StyleBoxTexture_4rr2b")
+
+[node name="val" type="Label" parent="ui/duel2" unique_id=1397316268]
+layout_mode = 1
+anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
-offset_left = -128.0
-grow_horizontal = 0
+grow_horizontal = 2
 grow_vertical = 2
-alignment = 1
-
-[node name="qrCodeTemplate" type="TextureRect" parent="ui_big/player2/QrContriner" unique_id=1217513482]
-visible = false
-custom_minimum_size = Vector2(128, 128)
-layout_mode = 2
-expand_mode = 1
-stretch_mode = 3
-script = ExtResource("5_4rr2b")
-auto_update = true
-mode = 1
-error_correction = 1
-use_eci = false
-data = ""
-auto_version = true
-auto_mask_pattern = true
-light_module_color = Color(1, 1, 1, 1)
-dark_module_color = Color(0, 0, 0, 1)
-auto_module_size = true
-quiet_zone_size = 4
-
-[node name="ip" type="Label" parent="ui_big/player2/QrContriner/qrCodeTemplate" unique_id=1410986403]
-layout_mode = 1
-anchors_preset = 6
-anchor_left = 1.0
-anchor_top = 0.5
-anchor_right = 1.0
-anchor_bottom = 0.5
-offset_left = -296.0
-offset_top = 6.0
-offset_right = -40.0
-offset_bottom = 46.0
-grow_horizontal = 0
-grow_vertical = 2
-rotation = -1.5707964
-pivot_offset_ratio = Vector2(0.5, 0)
-theme_override_font_sizes/font_size = 18
-text = "127.0.0.1:8080"
+theme_override_constants/outline_size = 0
+theme_override_font_sizes/font_size = 86
+text = "Duel"
 horizontal_alignment = 1
 vertical_alignment = 1
-
-[node name="Camera2D" type="Camera2D" parent="ui_big" unique_id=2040473244]
-anchor_mode = 0
+autowrap_mode = 3
+clip_text = true
+script = ExtResource("7_xu2ek")
+_max_size = 86
+_outline_ratio = 0.0
+_current_font_size = 86
+_editor_defaults_set = true
+metadata/_custom_type_script = "uid://bttgnk3bb2a8i"
 
 [node name="showfield" type="Node3D" parent="." unique_id=276305112]
 

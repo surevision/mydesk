@@ -112,6 +112,15 @@ public partial class BattleManager : Node
         mainUI.backToTitle();
     }
 
+    public void switchSizeMode(string mode)
+    {
+        if (titleUI == null)
+        {
+            GD.Print("UI未就绪");
+            return;
+        }
+        titleUI.switchSizeMode(mode);
+    }
     public void startDuel()
     {
         

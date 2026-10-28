@@ -234,6 +234,10 @@ public partial class Connection : Node
                 on_mute(GetBool(data, "mute"));
                 break;
 
+            case "on_switch_sizemode":
+                on_switch_sizemode(GetString(data, "size_mode"));
+                break;
+
             case "on_light":
                 on_light(GetBool(data, "on"));
                 break;
@@ -402,6 +406,12 @@ public partial class Connection : Node
     public void on_coin(int player, int value)
     {
         BattleManager.getInstance().showCoin(player, value);
+    }
+
+    /// <summary>切换战场规模（实现留空，待补充具体投影逻辑）。</summary>
+    /// <param name="size_mode">战场规模："big"、"mid"、"small"。</param>
+    public void on_switch_sizemode(string size_mode)
+    {
     }
 
     /// <summary>静音 / 取消静音 display 的全部音频。</summary>

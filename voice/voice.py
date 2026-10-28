@@ -15,6 +15,13 @@ voice 模块入口：串口语音指令 → center WebSocket 消息。
     VGR → {"type": "on_game_reset"}
     VD  → {"type": "on_dice", "player": 0, "value": 1-6}
     VC  → {"type": "on_coin", "player": 0, "value": 0/1}
+    VSA → {"type": "on_summon_anim", "summon_type": "advance"}   升级召唤
+    VSF → {"type": "on_summon_anim", "summon_type": "fusion"}    融合召唤
+    VSS → {"type": "on_summon_anim", "summon_type": "synchro"}   同步召唤
+    VSX → {"type": "on_summon_anim", "summon_type": "xyz"}       超量召唤
+    VSP → {"type": "on_summon_anim", "summon_type": "pendulum"}  灵摆召唤
+    VSL → {"type": "on_summon_anim", "summon_type": "link"}      连接召唤
+    VSR → {"type": "on_summon_anim", "summon_type": "ritual"}    仪式召唤
 """
 
 import json
@@ -31,7 +38,7 @@ from ws_client import send_json
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 STATIC_DIR = os.path.join(BASE_DIR, "static")
 
-# 串口文本 → 动作（语音模块实际发送 VGS/VGR/VD/VC）
+# 串口文本 → 动作（语音模块实际发送 VGS/VGR/VD/VC/VSA-VSR）
 MESSAGE_ACTIONS = {
     "VGS": "game_start",
     "VGR": "game_reset",
@@ -99,7 +106,7 @@ class VoiceApp:
             payload = {"type": "on_summon_anim", "summon_type": "xyz"}
         elif action == 'summon_pendulum':
             payload = {"type": "on_summon_anim", "summon_type": "pendulum"}
-        elif action == 'summon_lilnk':
+        elif action == 'summon_link':
             payload = {"type": "on_summon_anim", "summon_type": "link"}
         elif action == 'summon_ritual':
             payload = {"type": "on_summon_anim", "summon_type": "ritual"}

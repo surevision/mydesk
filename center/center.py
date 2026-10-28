@@ -106,6 +106,10 @@ def main():
         if t in ("on_dice", "on_coin"):
             ws.broadcast(obj, exclude=client)
             return
+        # 切换战场规模：原样转发给其它端（display 端实现留空）
+        if t == "on_switch_sizemode":
+            ws.broadcast(obj, exclude=client)
+            return
         # 显示/隐藏定位方块：转为 display 用的 on_marker_guide（附带四角坐标）
         if t == "on_guide":
             show = bool(obj.get("show"))

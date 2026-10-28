@@ -4,23 +4,46 @@ using System.Collections.Generic;
 
 public partial class TitleUI : Node3D
 {
-    private const string targetScene = "res://scenes/main_big.tscn";
+    private const string targetScene = "res://scenes/main_{0}.tscn";
+
+    public string sizeMode = "big"; // small mid big
 
     public override void _Ready()
     {
         base._Ready();
         BattleManager.getInstance().titleUI = this;
         this.initLanQrCodes();  // 展示controller端地址
+        this.switchSizeMode();
     }
+
+
+    /// <summary>
+    /// 切换战场尺寸模式
+    /// </summary>
+    /// <param name="mode"></param>
+    public void switchSizeMode(string mode = null)
+    {
+        // small mid big
+        if (string.IsNullOrEmpty(mode))
+        {
+            mode = this.sizeMode;
+        }
+        GetNode<Control>("ui/ui_big").Visible = false;
+        GetNode<Control>("ui/ui_mid").Visible = false;
+        GetNode<Control>("ui/ui_small").Visible = false;
+        GetNode<Control>(string.Format("ui/ui_{0}", mode)).Visible = true;
+        this.sizeMode = mode;
+    }
+    
 
     public void onDuel()
     {
         GD.Print("start duel");
         Node fadeFancy = GetNode("/root/FancyFade");
-        PackedScene board = GD.Load<PackedScene>(targetScene);
+        PackedScene board = GD.Load<PackedScene>(string.Format(targetScene, this.sizeMode));
         if (board == null)
         {
-            GD.PushError($"加载棋盘场景失败: {targetScene}");
+            GD.PushError($"加载棋盘场景失败: {string.Format(targetScene, this.sizeMode)}");
             return;
         }
         fadeFancy.Call("circle_in", board.Instantiate());
@@ -65,8 +88,8 @@ public partial class TitleUI : Node3D
 
     public void initLanQrCodes()
     {
-        CanvasItem p1qrTemplate = this.GetNode<CanvasItem>("ui_big/player1/QrContriner/qrCodeTemplate");
-        CanvasItem p2qrTemplate = this.GetNode<CanvasItem>("ui_big/player2/QrContriner/qrCodeTemplate");
+        CanvasItem p1qrTemplate = this.GetNode<CanvasItem>("ui/QrContriner1/qrCodeTemplate");
+        CanvasItem p2qrTemplate = this.GetNode<CanvasItem>("ui/QrContriner2/qrCodeTemplate");
 
         List<string> ips = this.GetLanIPv4Addresses();
         foreach (string _ip in ips)

@@ -85,6 +85,7 @@ controller/
 | `on_guide`              | `show` |
 | `on_mute`               | `mute`（true=静音） |
 | `on_light`              | `on`（true=开启照明，false=关闭照明） |
+| `on_switch_sizemode`    | `size_mode`（big/mid/small，切换战场规模；display 端实现留空） |
 | `on_game_reset`         | 无（center 清空战场、置为未开始并广播空战场） |
 | `on_game_start`         | 无（center 置为已开始并广播给所有 controller 和 display） |
 
