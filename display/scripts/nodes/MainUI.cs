@@ -709,9 +709,30 @@ public partial class MainUI : Node3D
 
     }
 
-    public void showSummonAnim()
+    public void showSummonAnim(string animName)
     {
-        
+        AnimatedSprite3D animatedSprite3D = GetNode<AnimatedSprite3D>("showfield/middle/items/summon_anim/anim");
+        animatedSprite3D.Animation = animName;
+        animatedSprite3D.Play();
+        Godot.Collections.Dictionary<string, string> audioMap = new Godot.Collections.Dictionary<string, string>();
+        audioMap.Add("advance", "specialsummon");
+        audioMap.Add("normal", "specialsummon");
+        audioMap.Add("flip", "specialsummon");
+        audioMap.Add("special", "specialsummon2");
+        audioMap.Add("fusion", "summon2");
+        audioMap.Add("synchro", "summon2");
+        audioMap.Add("xyz", "summon2");
+        audioMap.Add("pendulum", "summon2");
+        audioMap.Add("link", "summon2");
+        audioMap.Add("ritual", "summon2");
+        if (audioMap.ContainsKey(animName))
+        {
+            AudioManager.getInstance().playSE(audioMap[animName]);
+        } 
+        else
+        {
+            AudioManager.getInstance().playSE(audioMap["normal"]);
+        }
     }
 
     public void playAtkSequence(int fromPlayer, ZoneType fromCellType, int fromCellIndex, int toPlayer, ZoneType toCellType, int toCellIndex, bool isDirect,

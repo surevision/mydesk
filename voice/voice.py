@@ -37,6 +37,13 @@ MESSAGE_ACTIONS = {
     "VGR": "game_reset",
     "VD": "dice",
     "VC": "coin",
+    "VSA": "summon_advance",
+    "VSF": "summon_fusion",
+    "VSS": "summon_synchro",
+    "VSX": "summon_xyz",
+    "VSP": "summon_pendulum",
+    "VSL": "summon_link",
+    "VSR": "summon_ritual",
 }
 _ACTIONS_LOWER = {k.lower(): v for k, v in MESSAGE_ACTIONS.items()}
 
@@ -80,8 +87,23 @@ class VoiceApp:
             payload = {"type": "on_game_reset"}
         elif action == "dice":
             payload = {"type": "on_dice", "player": 0, "value": random.randint(1, 6)}
-        else:  # coin
+        elif action == 'coin':
             payload = {"type": "on_coin", "player": 0, "value": random.randint(0, 1)}
+        elif action == 'summon_advance':
+            payload = {"type": "on_summon_anim", "summon_type": "advance"}
+        elif action == 'summon_fusion':
+            payload = {"type": "on_summon_anim", "summon_type": "fusion"}
+        elif action == 'summon_synchro':
+            payload = {"type": "on_summon_anim", "summon_type": "synchro"}
+        elif action == 'summon_xyz':
+            payload = {"type": "on_summon_anim", "summon_type": "xyz"}
+        elif action == 'summon_pendulum':
+            payload = {"type": "on_summon_anim", "summon_type": "pendulum"}
+        elif action == 'summon_lilnk':
+            payload = {"type": "on_summon_anim", "summon_type": "link"}
+        elif action == 'summon_ritual':
+            payload = {"type": "on_summon_anim", "summon_type": "ritual"}
+        
         payload["source"] = "voice"    # 供 center 打印「收到语音指令」日志（center 不转发该字段）
 
         ok = send_json(host, port, payload)

@@ -325,6 +325,7 @@ public partial class Connection : Node
     /// <param name="summon_type">召唤类型。</param>
     public void on_summon_anim(string summon_type)
     {
+        BattleManager.getInstance().showSummonAnim(summon_type);
     }
 
     /// <summary>播放破坏动画。</summary>

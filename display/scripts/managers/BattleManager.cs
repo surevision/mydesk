@@ -79,6 +79,16 @@ public partial class BattleManager : Node
         mainUI.showCoin(player, val);
     }
 
+    public void showSummonAnim(string animName)
+    {
+        if (mainUI == null)
+        {
+            GD.Print("UI未就绪");
+            return;
+        }
+        mainUI.showSummonAnim(animName);
+    }
+
     public void showAttack(int from_player, string from_cell_type, int from_cell_index,
         int to_player, string to_cell_type, int to_cell_index, bool is_direct)
     {
