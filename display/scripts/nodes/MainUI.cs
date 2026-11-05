@@ -341,9 +341,10 @@ public partial class MainUI : Node3D
         // string baseDir = "D:/Git/mydesk/display";
         string anchorAbsPath = ProjectSettings.GlobalizePath("res://icon.svg");
         string baseDir = Path.GetDirectoryName(anchorAbsPath);
-        if (Godot.FileAccess.FileExists(Path.GetDirectoryName(Path.Combine(baseDir, "../", "static", "picture"))))
+        string andidate = Path.GetFullPath(Path.Combine(baseDir, "../"));
+        if (Path.Exists(andidate))
         {
-            baseDir = Path.Combine(baseDir, "../", "static", "picture");
+            baseDir = andidate;
         }
         int exRotate90 = 90;
         if (cardData.FaceUp)
