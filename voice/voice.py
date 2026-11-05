@@ -22,6 +22,9 @@ voice 模块入口：串口语音指令 → center WebSocket 消息。
     VSP → {"type": "on_summon_anim", "summon_type": "pendulum"}  灵摆召唤
     VSL → {"type": "on_summon_anim", "summon_type": "link"}      连接召唤
     VSR → {"type": "on_summon_anim", "summon_type": "ritual"}    仪式召唤
+    VSNM → {"type": "on_summon_anim", "summon_type": "normal"}    通常召唤
+    VSFL → {"type": "on_summon_anim", "summon_type": "flip"}    反转召唤
+    VSSP → {"type": "on_summon_anim", "summon_type": "special"}    特殊召唤
 """
 
 import json
@@ -51,6 +54,9 @@ MESSAGE_ACTIONS = {
     "VSP": "summon_pendulum",
     "VSL": "summon_link",
     "VSR": "summon_ritual",
+    "VSNM": "summon_normal",
+    "VSFL": "summon_flip",
+    "VSSP": "summon_special",
 }
 _ACTIONS_LOWER = {k.lower(): v for k, v in MESSAGE_ACTIONS.items()}
 
@@ -110,6 +116,12 @@ class VoiceApp:
             payload = {"type": "on_summon_anim", "summon_type": "link"}
         elif action == 'summon_ritual':
             payload = {"type": "on_summon_anim", "summon_type": "ritual"}
+        elif action == 'summon_normal':
+            payload = {"type": "on_summon_anim", "summon_type": "normal"}
+        elif action == 'summon_flip':
+            payload = {"type": "on_summon_anim", "summon_type": "flip"}
+        elif action == 'summon_special':
+            payload = {"type": "on_summon_anim", "summon_type": "special"}
         
         payload["source"] = "voice"    # 供 center 打印「收到语音指令」日志（center 不转发该字段）
 
