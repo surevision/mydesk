@@ -70,30 +70,30 @@ controller/
 
 | type                    | 参数 |
 |-------------------------|------|
-| `on_battlefield_change` | `battlefield`（battlefield 的 JSON 字符串，完整快照） |
-| `on_lp_change`          | `player`, `lp` |
-| `on_summon_anim`        | `summon_type` |
-| `on_destroy_anim`       | `player`, `cell_type`, `cell_index` |
-| `on_attack_anim`        | `from_player/from_cell_type/from_cell_index`, `to_player/to_cell_type/to_cell_index`, `is_direct` |
-| `on_phase_anim`         | `phase_index`（draw/standby/main1/battle/main2/end） |
+| `on_ygo_battlefield_change` | `battlefield`（battlefield 的 JSON 字符串，完整快照） |
+| `on_ygo_lp_change`          | `player`, `lp` |
+| `on_ygo_summon_anim`        | `summon_type` |
+| `on_ygo_destroy_anim`       | `player`, `cell_type`, `cell_index` |
+| `on_ygo_attack_anim`        | `from_player/from_cell_type/from_cell_index`, `to_player/to_cell_type/to_cell_index`, `is_direct` |
+| `on_ygo_phase_anim`         | `phase_index`（draw/standby/main1/battle/main2/end） |
 | `on_play_bgm`           | `bgm_filename` |
 | `on_play_se`            | `se_filename` |
-| `on_card_relate_effect` | `from_*`, `to_*`（同上） |
-| `on_import_ydk`         | `player`, `ids`, `main`, `extra`, `side` |
+| `on_ygo_card_relate_effect` | `from_*`, `to_*`（同上） |
+| `on_ygo_import_ydk`         | `player`, `ids`, `main`, `extra`, `side` |
 | `on_dice`               | `player`（0=全部）, `value`（1-6） |
 | `on_coin`               | `player`（0=全部）, `value`（1=正面） |
 | `on_guide`              | `show` |
 | `on_mute`               | `mute`（true=静音） |
 | `on_light`              | `on`（true=开启照明，false=关闭照明） |
-| `on_switch_sizemode`    | `size_mode`（big/mid/small，切换战场规模；display 端实现留空） |
-| `on_game_reset`         | 无（center 清空战场、置为未开始并广播空战场） |
-| `on_game_start`         | 无（center 置为已开始并广播给所有 controller 和 display） |
+| `on_ygo_switch_sizemode`    | `size_mode`（big/mid/small，切换战场规模；display 端实现留空） |
+| `on_ygo_game_reset`         | 无（center 清空战场、置为未开始并广播空战场） |
+| `on_ygo_game_start`         | 无（center 置为已开始并广播给所有 controller 和 display） |
 
-上传 ydk 成功后立即发送 `on_import_ydk`，WebSocket 重连成功后也会补发已上传卡组；center 用这些 id 限制卡名识别范围。
+上传 ydk 成功后立即发送 `on_ygo_import_ydk`，WebSocket 重连成功后也会补发已上传卡组；center 用这些 id 限制卡名识别范围。
 
-进入页面默认只显示决斗界面：中央大号「决斗」按钮，上方显示 center 连接状态和「配置」按钮（含「导入卡组」，用于赛前上传卡组）。点击「决斗」后隐藏决斗界面、显示正常界面，发送 `on_game_start`，center 把战场属性 `started` 置为 `true` 并广播；**未开始时 center 不做识别**（预览、定位、摄像头/识别区域等设置仍可用）。
+进入页面默认只显示决斗界面：中央大号「决斗」按钮，上方显示 center 连接状态和「配置」按钮（含「导入卡组」，用于赛前上传卡组）。点击「决斗」后隐藏决斗界面、显示正常界面，发送 `on_ygo_game_start`，center 把战场属性 `started` 置为 `true` 并广播；**未开始时 center 不做识别**（预览、定位、摄像头/识别区域等设置仍可用）。
 
-顶部「决斗结束」按钮会先弹确认，确认后发送 `on_game_reset`；center 把战场复位为初始状态（`started=false`），并广播重置后的 `on_battlefield_change` 空战场，同时转发带 `battlefield` 字段的 `on_game_reset` 给其它 controller 和 display。controller 收到后重新显示决斗界面并隐藏正常操作界面。
+顶部「决斗结束」按钮会先弹确认，确认后发送 `on_ygo_game_reset`；center 把战场复位为初始状态（`started=false`），并广播重置后的 `on_ygo_battlefield_change` 空战场，同时转发带 `battlefield` 字段的 `on_ygo_game_reset` 给其它 controller 和 display。controller 收到后重新显示决斗界面并隐藏正常操作界面。
 
 ### battlefield 数据结构
 

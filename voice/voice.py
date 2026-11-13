@@ -11,20 +11,20 @@ voice 模块入口：串口语音指令 → center WebSocket 消息。
 - 只发送、不接收 center 的消息；发送失败忽略；串口失败 5 秒后重试。
 
 串口消息与 center 指令的对应关系：
-    VGS → {"type": "on_game_start"}
-    VGR → {"type": "on_game_reset"}
+    VGS → {"type": "on_ygo_game_start"}
+    VGR → {"type": "on_ygo_game_reset"}
     VD  → {"type": "on_dice", "player": 0, "value": 1-6}
     VC  → {"type": "on_coin", "player": 0, "value": 0/1}
-    VSA → {"type": "on_summon_anim", "summon_type": "advance"}   升级召唤
-    VSF → {"type": "on_summon_anim", "summon_type": "fusion"}    融合召唤
-    VSS → {"type": "on_summon_anim", "summon_type": "synchro"}   同步召唤
-    VSX → {"type": "on_summon_anim", "summon_type": "xyz"}       超量召唤
-    VSP → {"type": "on_summon_anim", "summon_type": "pendulum"}  灵摆召唤
-    VSL → {"type": "on_summon_anim", "summon_type": "link"}      连接召唤
-    VSR → {"type": "on_summon_anim", "summon_type": "ritual"}    仪式召唤
-    VSNM → {"type": "on_summon_anim", "summon_type": "normal"}    通常召唤
-    VSFL → {"type": "on_summon_anim", "summon_type": "flip"}    反转召唤
-    VSSP → {"type": "on_summon_anim", "summon_type": "special"}    特殊召唤
+    VSA → {"type": "on_ygo_summon_anim", "summon_type": "advance"}   升级召唤
+    VSF → {"type": "on_ygo_summon_anim", "summon_type": "fusion"}    融合召唤
+    VSS → {"type": "on_ygo_summon_anim", "summon_type": "synchro"}   同步召唤
+    VSX → {"type": "on_ygo_summon_anim", "summon_type": "xyz"}       超量召唤
+    VSP → {"type": "on_ygo_summon_anim", "summon_type": "pendulum"}  灵摆召唤
+    VSL → {"type": "on_ygo_summon_anim", "summon_type": "link"}      连接召唤
+    VSR → {"type": "on_ygo_summon_anim", "summon_type": "ritual"}    仪式召唤
+    VSNM → {"type": "on_ygo_summon_anim", "summon_type": "normal"}    通常召唤
+    VSFL → {"type": "on_ygo_summon_anim", "summon_type": "flip"}    反转召唤
+    VSSP → {"type": "on_ygo_summon_anim", "summon_type": "special"}    特殊召唤
 """
 
 import json
@@ -95,33 +95,33 @@ class VoiceApp:
             host, port = self.cfg["center_host"], self.cfg["center_port"]
 
         if action == "game_start":
-            payload = {"type": "on_game_start"}
+            payload = {"type": "on_ygo_game_start"}
         elif action == "game_reset":
-            payload = {"type": "on_game_reset"}
+            payload = {"type": "on_ygo_game_reset"}
         elif action == "dice":
             payload = {"type": "on_dice", "player": 0, "value": random.randint(1, 6)}
         elif action == 'coin':
             payload = {"type": "on_coin", "player": 0, "value": random.randint(0, 1)}
         elif action == 'summon_advance':
-            payload = {"type": "on_summon_anim", "summon_type": "advance"}
+            payload = {"type": "on_ygo_summon_anim", "summon_type": "advance"}
         elif action == 'summon_fusion':
-            payload = {"type": "on_summon_anim", "summon_type": "fusion"}
+            payload = {"type": "on_ygo_summon_anim", "summon_type": "fusion"}
         elif action == 'summon_synchro':
-            payload = {"type": "on_summon_anim", "summon_type": "synchro"}
+            payload = {"type": "on_ygo_summon_anim", "summon_type": "synchro"}
         elif action == 'summon_xyz':
-            payload = {"type": "on_summon_anim", "summon_type": "xyz"}
+            payload = {"type": "on_ygo_summon_anim", "summon_type": "xyz"}
         elif action == 'summon_pendulum':
-            payload = {"type": "on_summon_anim", "summon_type": "pendulum"}
+            payload = {"type": "on_ygo_summon_anim", "summon_type": "pendulum"}
         elif action == 'summon_link':
-            payload = {"type": "on_summon_anim", "summon_type": "link"}
+            payload = {"type": "on_ygo_summon_anim", "summon_type": "link"}
         elif action == 'summon_ritual':
-            payload = {"type": "on_summon_anim", "summon_type": "ritual"}
+            payload = {"type": "on_ygo_summon_anim", "summon_type": "ritual"}
         elif action == 'summon_normal':
-            payload = {"type": "on_summon_anim", "summon_type": "normal"}
+            payload = {"type": "on_ygo_summon_anim", "summon_type": "normal"}
         elif action == 'summon_flip':
-            payload = {"type": "on_summon_anim", "summon_type": "flip"}
+            payload = {"type": "on_ygo_summon_anim", "summon_type": "flip"}
         elif action == 'summon_special':
-            payload = {"type": "on_summon_anim", "summon_type": "special"}
+            payload = {"type": "on_ygo_summon_anim", "summon_type": "special"}
         
         payload["source"] = "voice"    # 供 center 打印「收到语音指令」日志（center 不转发该字段）
 

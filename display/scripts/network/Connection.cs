@@ -7,7 +7,7 @@ using System.Text;
 /// 作为 WebSocket 客户端连接到主控端（center），接收手动操作的游戏王投影场地的控制指令。
 ///
 /// 约定消息为 JSON 文本，格式：
-///   { "type": "on_lp_change", ...其他参数... }
+///   { "type": "on_ygo_lp_change", ...其他参数... }
 /// 其中 "type" 即为下面对应接口的名称，处理函数内部实现暂时留空，由具体投影逻辑补充。
 /// </summary>
 public partial class Connection : Node
@@ -166,27 +166,27 @@ public partial class Connection : Node
 
         switch (type)
         {
-            case "on_lp_change":
-                on_lp_change(GetInt(data, "player"), GetInt(data, "lp"));
+            case "on_ygo_lp_change":
+                on_ygo_lp_change(GetInt(data, "player"), GetInt(data, "lp"));
                 break;
 
-            case "on_battlefield_change":
-                on_battlefield_change(GetString(data, "battlefield"));
+            case "on_ygo_battlefield_change":
+                on_ygo_battlefield_change(GetString(data, "battlefield"));
                 break;
 
-            case "on_summon_anim":
-                on_summon_anim(GetString(data, "summon_type"));
+            case "on_ygo_summon_anim":
+                on_ygo_summon_anim(GetString(data, "summon_type"));
                 break;
 
-            case "on_destroy_anim":
-                on_destroy_anim(
+            case "on_ygo_destroy_anim":
+                on_ygo_destroy_anim(
                     GetInt(data, "player"),
                     GetString(data, "cell_type"),
                     GetInt(data, "cell_index"));
                 break;
 
-            case "on_attack_anim":
-                on_attack_anim(
+            case "on_ygo_attack_anim":
+                on_ygo_attack_anim(
                     GetInt(data, "from_player"),
                     GetString(data, "from_cell_type"),
                     GetInt(data, "from_cell_index"),
@@ -196,8 +196,8 @@ public partial class Connection : Node
                     GetBool(data, "is_direct"));
                 break;
 
-            case "on_phase_anim":
-                on_phase_anim(GetString(data, "phase_index"));
+            case "on_ygo_phase_anim":
+                on_ygo_phase_anim(GetString(data, "phase_index"));
                 break;
 
             case "on_marker_guide":
@@ -212,8 +212,8 @@ public partial class Connection : Node
                 on_play_se(GetString(data, "se_filename"));
                 break;
 
-            case "on_card_relate_effect":
-                on_card_relate_effect(
+            case "on_ygo_card_relate_effect":
+                on_ygo_card_relate_effect(
                     GetInt(data, "from_player"),
                     GetString(data, "from_cell_type"),
                     GetInt(data, "from_cell_index"),
@@ -234,20 +234,20 @@ public partial class Connection : Node
                 on_mute(GetBool(data, "mute"));
                 break;
 
-            case "on_switch_sizemode":
-                on_switch_sizemode(GetString(data, "size_mode"));
+            case "on_ygo_switch_sizemode":
+                on_ygo_switch_sizemode(GetString(data, "size_mode"));
                 break;
 
             case "on_light":
                 on_light(GetBool(data, "on"));
                 break;
 
-            case "on_game_reset":
-                on_game_reset(GetString(data, "battlefield"));
+            case "on_ygo_game_reset":
+                on_ygo_game_reset(GetString(data, "battlefield"));
                 break;
 
-            case "on_game_start":
-                on_game_start();
+            case "on_ygo_game_start":
+                on_ygo_game_start();
                 break;
 
             case "ping":
@@ -311,14 +311,14 @@ public partial class Connection : Node
     /// <summary>变更指定 player 的 LP。</summary>
     /// <param name="player">玩家编号。</param>
     /// <param name="lp">新的 LP 值。</param>
-    public void on_lp_change(int player, int lp)
+    public void on_ygo_lp_change(int player, int lp)
     {
         BattleManager.getInstance().setLp(player, lp);
     }
 
     /// <summary>战场情况发生变更。</summary>
     /// <param name="battlefield">战场情况的 JSON 字符串。</param>
-    public void on_battlefield_change(string battlefield)
+    public void on_ygo_battlefield_change(string battlefield)
     {
         GD.Print(battlefield);
         GD.Print("show battlefield");
@@ -327,7 +327,7 @@ public partial class Connection : Node
 
     /// <summary>播放召唤动画。</summary>
     /// <param name="summon_type">召唤类型。</param>
-    public void on_summon_anim(string summon_type)
+    public void on_ygo_summon_anim(string summon_type)
     {
         BattleManager.getInstance().showSummonAnim(summon_type);
     }
@@ -336,7 +336,7 @@ public partial class Connection : Node
     /// <param name="player">玩家编号。</param>
     /// <param name="cell_type">格子类型："front"、"back"、"ex"。</param>
     /// <param name="cell_index">格子索引。</param>
-    public void on_destroy_anim(int player, string cell_type, int cell_index)
+    public void on_ygo_destroy_anim(int player, string cell_type, int cell_index)
     {
     }
 
@@ -348,7 +348,7 @@ public partial class Connection : Node
     /// <param name="to_cell_type">被攻击方格子类型。</param>
     /// <param name="to_cell_index">被攻击方格子索引。</param>
     /// <param name="is_direct">是否为直接攻击。</param>
-    public void on_attack_anim(int from_player, string from_cell_type, int from_cell_index,
+    public void on_ygo_attack_anim(int from_player, string from_cell_type, int from_cell_index,
         int to_player, string to_cell_type, int to_cell_index, bool is_direct)
     {
         BattleManager.getInstance().showAttack(from_player, from_cell_type, from_cell_index,
@@ -357,7 +357,7 @@ public partial class Connection : Node
 
     /// <summary>播放阶段切换动画。</summary>
     /// <param name="phase_index">阶段："draw"、"standby"、"main1"、"battle"、"main2"、"end"。</param>
-    public void on_phase_anim(string phase_index)
+    public void on_ygo_phase_anim(string phase_index)
     {
     }
 
@@ -387,7 +387,7 @@ public partial class Connection : Node
     /// <param name="to_player">终点玩家编号。</param>
     /// <param name="to_cell_type">终点格子类型。</param>
     /// <param name="to_cell_index">终点格子索引。</param>
-    public void on_card_relate_effect(int from_player, string from_cell_type, int from_cell_index,
+    public void on_ygo_card_relate_effect(int from_player, string from_cell_type, int from_cell_index,
         int to_player, string to_cell_type, int to_cell_index)
     {
     }
@@ -410,7 +410,7 @@ public partial class Connection : Node
 
     /// <summary>切换战场规模（实现留空，待补充具体投影逻辑）。</summary>
     /// <param name="size_mode">战场规模："big"、"mid"、"small"。</param>
-    public void on_switch_sizemode(string size_mode)
+    public void on_ygo_switch_sizemode(string size_mode)
     {
         BattleManager.getInstance().switchSizeMode(size_mode);
     }
@@ -431,7 +431,7 @@ public partial class Connection : Node
 
     /// <summary>重新开始：接收重置后的战场并刷新显示。</summary>
     /// <param name="battlefield">重置后的 battlefield JSON 字符串。</param>
-    public void on_game_reset(string battlefield)
+    public void on_ygo_game_reset(string battlefield)
     {
         GD.Print(battlefield);
         GD.Print("show battlefield (reset)");
@@ -440,7 +440,7 @@ public partial class Connection : Node
     }
 
     /// <summary>开始决斗：预留 display 端处理接口。</summary>
-    public void on_game_start()
+    public void on_ygo_game_start()
     {
         BattleManager.getInstance().startDuel();
     }

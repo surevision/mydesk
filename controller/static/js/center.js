@@ -4,7 +4,7 @@
  * 浏览器端与 center 的 WebSocket 客户端。
  * 提供：连接/断开、自动重连、应用层心跳（ping/pong）。
  *
- * 消息为 JSON 文本，形如 { "type": "on_battlefield_change", ... }。
+ * 消息为 JSON 文本，形如 { "type": "on_ygo_battlefield_change", ... }。
  */
 export class CenterClient {
   constructor() {

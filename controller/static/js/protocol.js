@@ -4,26 +4,26 @@
  * controller 页面与 center 之间通信的「协议常量」与「数据结构说明」集中在此。
  *
  * 页面 -> center 的消息类型（复用 display 的 on_* 命名）：
- *   on_battlefield_change  { battlefield: "<battlefield JSON 字符串>" }   完整战场快照
- *   on_lp_change           { player, lp }                                 变更 LP
- *   on_summon_anim         { summon_type }                               播放召唤动画
- *   on_destroy_anim        { player, cell_type, cell_index }             播放破坏动画
- *   on_attack_anim         { from_player, from_cell_type, from_cell_index,
+ *   on_ygo_battlefield_change  { battlefield: "<battlefield JSON 字符串>" }   完整战场快照
+ *   on_ygo_lp_change           { player, lp }                                 变更 LP
+ *   on_ygo_summon_anim         { summon_type }                               播放召唤动画
+ *   on_ygo_destroy_anim        { player, cell_type, cell_index }             播放破坏动画
+ *   on_ygo_attack_anim         { from_player, from_cell_type, from_cell_index,
  *                            to_player, to_cell_type, to_cell_index, is_direct }
- *   on_phase_anim          { phase_index }                               播放阶段切换动画
+ *   on_ygo_phase_anim          { phase_index }                               播放阶段切换动画
  *   on_play_bgm            { bgm_filename }                              播放 BGM
  *   on_play_se             { se_filename }                               播放音效
- *   on_card_relate_effect  { from_player, from_cell_type, from_cell_index,
+ *   on_ygo_card_relate_effect  { from_player, from_cell_type, from_cell_index,
  *                            to_player, to_cell_type, to_cell_index }    卡片关联
- *   on_import_ydk          { player, ids, main, extra, side }            导入卡组
+ *   on_ygo_import_ydk          { player, ids, main, extra, side }            导入卡组
  *   on_dice                { player, value }                             掷骰子（player 0=全部，value 1-6）
  *   on_coin                { player, value }                             投硬币（player 0=全部，value 1=正面, 0=反面）
  *   on_guide               { show }                                      显示/隐藏 display 上的定位方块
  *   on_mute                { mute }                                      静音/取消静音 display 的全部音频
  *   on_light               { on }                                        开启/关闭照明（on=true 开启）
- *   on_switch_sizemode     { size_mode }                                 切换战场规模（big/mid/small，仅转发，display 端实现留空）
- *   on_game_reset          { battlefield }                             决斗结束（清空战场、置为未开始并广播）
- *   on_game_start          {}                                           开始决斗（置为已开始并广播）
+ *   on_ygo_switch_sizemode     { size_mode }                                 切换战场规模（big/mid/small，仅转发，display 端实现留空）
+ *   on_ygo_game_reset          { battlefield }                             决斗结束（清空战场、置为未开始并广播）
+ *   on_ygo_game_start          {}                                           开始决斗（置为已开始并广播）
  *
  * battlefield JSON 结构（由 controller 拟定，后续按需调整）：
  * {
@@ -64,7 +64,7 @@
  * }
  */
 
-// 阶段：与 display on_phase_anim 的 phase_index 对齐
+// 阶段：与 display on_ygo_phase_anim 的 phase_index 对齐
 export const PHASES = [
   { key: "draw", label: "抽卡" },
   { key: "standby", label: "准备" },
@@ -88,10 +88,10 @@ export const CELL_TYPES = [
 // 允许手动「这里有一张卡」/清除的格子类型（deck 不允许手动设置）
 export const SETTABLE_CELL_TYPES = ["front", "back", "ex", "field", "exdeck", "grave"];
 
-// 破坏动画支持的格子类型（与 display on_destroy_anim 说明一致）
+// 破坏动画支持的格子类型（与 display on_ygo_destroy_anim 说明一致）
 export const DESTROY_CELL_TYPES = ["front", "back", "ex"];
 
-// 召唤类型（on_summon_anim.summon_type）
+// 召唤类型（on_ygo_summon_anim.summon_type）
 export const SUMMON_TYPES = [
   { key: "normal", label: "通常召唤" },
   { key: "special", label: "特殊召唤" },
@@ -119,7 +119,7 @@ export const MARKER_TYPES = [
   { key: "equip", label: "装备", img: "assets/markers/equip.svg" },
 ];
 
-// 战场规模（on_switch_sizemode.size_mode）：与 display 的 main_big/main_mid/main_small 对应
+// 战场规模（on_ygo_switch_sizemode.size_mode）：与 display 的 main_big/main_mid/main_small 对应
 export const SIZE_MODES = [
   { key: "big", label: "大" },
   { key: "mid", label: "中" },
@@ -216,24 +216,24 @@ export function counterLabel(en) {
 
 // 消息类型常量
 export const MSG = {
-  BATTLEFIELD: "on_battlefield_change",
-  LP: "on_lp_change",
-  SUMMON: "on_summon_anim",
-  DESTROY: "on_destroy_anim",
-  ATTACK: "on_attack_anim",
-  PHASE: "on_phase_anim",
+  BATTLEFIELD: "on_ygo_battlefield_change",
+  LP: "on_ygo_lp_change",
+  SUMMON: "on_ygo_summon_anim",
+  DESTROY: "on_ygo_destroy_anim",
+  ATTACK: "on_ygo_attack_anim",
+  PHASE: "on_ygo_phase_anim",
   BGM: "on_play_bgm",
   SE: "on_play_se",
-  RELATE: "on_card_relate_effect",
-  IMPORT_YDK: "on_import_ydk",
+  RELATE: "on_ygo_card_relate_effect",
+  IMPORT_YDK: "on_ygo_import_ydk",
   DICE: "on_dice",
   COIN: "on_coin",
   GUIDE: "on_guide",
   MUTE: "on_mute",
   LIGHT: "on_light",
-  SWITCH_SIZEMODE: "on_switch_sizemode",
-  RESET: "on_game_reset",
-  START: "on_game_start",
+  SWITCH_SIZEMODE: "on_ygo_switch_sizemode",
+  RESET: "on_ygo_game_reset",
+  START: "on_ygo_game_start",
 };
 
 // 辅助：按 key 取 label

@@ -28,7 +28,7 @@ let swapped = false;
 // display 当前是否静音（由 center 广播同步）
 let muted = false;
 
-// 当前战场规模（仅本地记录，供「规模」弹窗高亮；下发 on_switch_sizemode）
+// 当前战场规模（仅本地记录，供「规模」弹窗高亮；下发 on_ygo_switch_sizemode）
 let sizeMode = "big";
 
 // 已导入卡组：{ "1": [id...], "2": [id...] }（供卡号「选择」弹窗使用）
@@ -206,7 +206,7 @@ function openCardDetailPanel(player, zone, index) {
   );
 }
 
-// 选择「直接攻击」：该卡直接攻击对方玩家，立即推送 on_attack_anim（is_direct=true），不记录攻击者
+// 选择「直接攻击」：该卡直接攻击对方玩家，立即推送 on_ygo_attack_anim（is_direct=true），不记录攻击者
 function selectDirectAttack(player, zone, index) {
   const from = { player: Number(player), zone, index: Number(index) };
   sendMsg(MSG.ATTACK, {
@@ -229,7 +229,7 @@ function selectAttacker(player, zone, index) {
   toast(`攻击者：P${player} ${cellLabel(attacker)}`, "success");
 }
 
-// 选择「被攻击」：记录被攻击者；若已选攻击者，则推送 on_attack_anim 给 center，
+// 选择「被攻击」：记录被攻击者；若已选攻击者，则推送 on_ygo_attack_anim 给 center，
 // 发送后清空攻击者/被攻击者，等待下次选择
 function selectTarget(player, zone, index) {
   target = { player: Number(player), zone, index: Number(index) };
@@ -408,7 +408,7 @@ function toggleSwap() {
   toast(swapped ? "已交换玩家显示位置（仅显示）" : "已恢复默认显示位置");
 }
 
-// 切换战场规模：下发 on_switch_sizemode（display 端实现留空）
+// 切换战场规模：下发 on_ygo_switch_sizemode（display 端实现留空）
 function setSizeMode(mode) {
   sizeMode = mode;
   sendMsg(MSG.SWITCH_SIZEMODE, { size_mode: mode });

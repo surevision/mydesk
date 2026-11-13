@@ -39,7 +39,7 @@ conda run -n ygodesk python center.py
   - **detector.onnx 框**：模型输出「正面/卡背」两类，代码只取**卡背类**（`cls_index=1`，得分 `obj×cls_back`），正面类输出忽略，不涉及亮度。卡背框**独立成卡**（不再与 yolo 框合并）：即背面卡牌；与 yolo 框（纵使认出了卡名）落同一格时，后处理的卡背会**覆盖**该格结果——detector 说背面就按背面。
   - `cardback_best.pt`（.pt 后备路径）例外：它不含正/反分类，仍用中心亮度判暗色卡背（`dark>0.6` 且 `mean_v<80`）。
 - 卡裁切移植 draw2：四个 OBB 角点先统一绕向、再从**短边**起重排，单应矫正成 `detect.crop_size`（默认 224）**方图**，使卡片长边始终竖直（横置/守备卡不再被压扁）。矫正后只剩 0°/180° 歧义：先用卡面上下亮度猜（正立时下半部更亮），置信度低于 `flip_low` 再试另一方向，且需比原方向好 `flip_margin` 倍才采纳。
-- 跟踪 id + **卡名缓存**：同一跟踪 id 的卡名识别结果只缓存 `name_cache_ttl` 秒（默认 3s），到点就用当前帧重跑 draw2 识别并更新——卡在不挪动的情况下翻面/换角度，卡名（或从「未识别」变「有卡名」）也会持续刷新，不必拿开重放；避免每帧重复跑卡名 ONNX。卡名候选可用已导入卡组约束（`on_import_ydk` → `DeckStore`，前 `top_k` 个里挑选）。导入卡组后，draw2 认出卡组外的卡名**不采信**（视为未识别 → 未知正面卡牌）。**这个识别方法可能后续还会变更。**
+- 跟踪 id + **卡名缓存**：同一跟踪 id 的卡名识别结果只缓存 `name_cache_ttl` 秒（默认 3s），到点就用当前帧重跑 draw2 识别并更新——卡在不挪动的情况下翻面/换角度，卡名（或从「未识别」变「有卡名」）也会持续刷新，不必拿开重放；避免每帧重复跑卡名 ONNX。卡名候选可用已导入卡组约束（`on_ygo_import_ydk` → `DeckStore`，前 `top_k` 个里挑选）。导入卡组后，draw2 认出卡组外的卡名**不采信**（视为未识别 → 未知正面卡牌）。**这个识别方法可能后续还会变更。**
 - **检测未知卡牌开关**（配置项 `detect_unknown`，管理页「检测未知卡牌」，默认开）：**关闭**时认不出卡名的正面卡牌不再写回战场，只保留「认得出卡名的正面卡牌」与「卡背卡牌」；判定放在卡名保持/短暂丢失保持之后，所以**认出过卡名的格子仍按记忆保持**（不算未知卡），不会因偶发未认出而闪掉；**打开**时与原来一致，认不出卡名的正面未知卡牌（`id=-1`）也会写回。
 - **卡名黑名单**：`blacklist.txt` 一行一个 `card_id`，命中后该卡名不按卡面处理。可直接编辑文件，也可在管理页「卡名黑名单」维护；保存后立即生效，无需重启识别。
 - 中心坐标 → `(玩家, 格子)`，落格结果写入战场（人工格优先）。
@@ -61,13 +61,13 @@ conda run -n ygodesk python center.py
 
 ## 消息路由
 
-- 收到 `on_battlefield_change`：解析并入 `state`，再广播给所有客户端。
-- 收到 `on_lp_change` / `on_phase_anim`：更新 `state` 并广播对应消息。
+- 收到 `on_ygo_battlefield_change`：解析并入 `state`，再广播给所有客户端。
+- 收到 `on_ygo_lp_change` / `on_ygo_phase_anim`：更新 `state` 并广播对应消息。
 - 收到 `on_guide`：转换为 `on_marker_guide`（附带定位四角坐标）后广播给 display。
 - 收到 `on_mute`：记录全局静音状态并广播 `{ type: "on_mute", mute }`，display 控制 Master 总线静音。
-- 收到 `on_game_start`：把战场属性 `started` 置为 `true`（恢复识别）并广播给所有 controller 和 display（display 端接口预留）。**不论当前是否已开始都照常广播**（重复指令由显示端自行判断处理）。
-- 收到 `on_game_reset`：把战场复位为初始状态（`started=false`，同时暂停识别），随后广播 `on_battlefield_change`（重置后的空战场），并向其它端转发带 `battlefield` 字段的 `on_game_reset`；display 端用该字段返回标题/刷新显示。**不论当前是否已开始都照常广播**（重复指令由显示端自行判断处理）。
-- 收到 `on_switch_sizemode`：原样转发给其它端（主要是 display，display 端实现留空）。
+- 收到 `on_ygo_game_start`：把战场属性 `started` 置为 `true`（恢复识别）并广播给所有 controller 和 display（display 端接口预留）。**不论当前是否已开始都照常广播**（重复指令由显示端自行判断处理）。
+- 收到 `on_ygo_game_reset`：把战场复位为初始状态（`started=false`，同时暂停识别），随后广播 `on_ygo_battlefield_change`（重置后的空战场），并向其它端转发带 `battlefield` 字段的 `on_ygo_game_reset`；display 端用该字段返回标题/刷新显示。**不论当前是否已开始都照常广播**（重复指令由显示端自行判断处理）。
+- 收到 `on_ygo_switch_sizemode`：原样转发给其它端（主要是 display，display 端实现留空）。
 - 其余 `on_*`（召唤/破坏/攻击/关联/音效/导入/骰子等）：原样转发给其它端（主要是 display）。
 - 新客户端连接时，立即下发一次当前战场快照和静音状态。
 - voice 模块发来的指令带 `source: "voice"`：center 收到后打印 `[center] 收到语音指令: {...}`，该字段不会转发给其它端。
@@ -81,7 +81,7 @@ conda run -n ygodesk python center.py
 
 识别到的卡牌用**中心坐标**落到格子：已定位（见下）走校准的单应映射。**定位成功前不启动解析**——本路所有玩家都完成校准且分辨率一致，才能开始检测与卡名识别，校准好会自动开始（「解析卡牌位置的回退方案」实际不会再用到）。
 
-**游戏未开始时（还没点「决斗」，即 `started=false`）整路不解析**：战场属性 `started` 由 controller 的「决斗 / 决斗结束」维护（`on_game_start` / `on_game_reset`），未开始时检测与卡名识别都不运行，但预览、定位校准、摄像头/识别区域等设置照常可用；开始后自动恢复。
+**游戏未开始时（还没点「决斗」，即 `started=false`）整路不解析**：战场属性 `started` 由 controller 的「决斗 / 决斗结束」维护（`on_ygo_game_start` / `on_ygo_game_reset`），未开始时检测与卡名识别都不运行，但预览、定位校准、摄像头/识别区域等设置照常可用；开始后自动恢复。
 
 ## 采集端（monitor）帧率 / 分辨率
 
